@@ -1,1 +1,44 @@
+name: APK derle
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Kaynak paketini aç (en son yüklenen irrismart-src*.zip)
+        run: |
+          ZIP=$(git log -1 --format= --name-only --diff-filter=AM -- 'irrismart-src*.zip' | head -1)
+          if [ -z "$ZIP" ] || [ ! -f "$ZIP" ]; then echo "HATA: depoda irrismart-src*.zip bulunamadı"; exit 1; fi
+          echo "Kullanılan paket: $ZIP"
+          mkdir -p app && unzip -oq "$ZIP" -d app
+
+      - name: Testler ve APK derlemesi
+        working-directory: app
+        env:
+          APK_OUT: ${{ github.workspace }}/IrriSmart-AI-debug.apk
+        run: bash ci/build-apk.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IrriSmart-AI-debug-apk
+          path: IrriSmart-AI-debug.apk
+          if-no-files-found: error
+          retention-days: 30
