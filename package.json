@@ -1,0 +1,27 @@
+{
+  "name": "irrigrow",
+  "version": "0.6.0",
+  "description": "IrriGrow - akıllı damla sulama projelendirme",
+  "scripts": {
+    "cap:add": "cap add android",
+    "cap:sync": "cap sync android",
+    "apk": "cd android && ./gradlew assembleDebug",
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "@capacitor-community/file-opener": "^6.0.1",
+    "@capacitor/android": "^6.2.3",
+    "@capacitor/core": "^6.2.3",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/geolocation": "^6.1.1",
+    "@capacitor/share": "^6.0.4"
+  },
+  "private": true,
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.3",
+    "dejavu-fonts-ttf": "^2.37.3",
+    "jspdf": "^2.5.2",
+    "leaflet": "^1.9.4",
+    "xlsx": "^0.18.5"
+  }
+}
