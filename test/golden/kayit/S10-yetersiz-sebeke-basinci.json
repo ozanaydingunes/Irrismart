@@ -1,0 +1,2354 @@
+{
+ "id": "S10-yetersiz-sebeke-basinci",
+ "kapsam": "Hidrant 1,5 bar: booster pompa gerekir",
+ "inp": {
+  "crop": "domates",
+  "area_da": 80,
+  "Q": 120,
+  "srcType": "sebeke",
+  "pAvail": 1.5
+ },
+ "manual": null,
+ "design": {
+  "ok": true,
+  "asm": [
+   "Arazi boyutları girilmedi: uzun kenarı kısa kenarın 2 katı olan dikdörtgen kabul edildi",
+   "Uzun kenar eğimi: 0 % kabul edildi",
+   "Kısa kenar eğimi: 0 % kabul edildi",
+   "Sıra arası: 1,4 m kabul edildi",
+   "Sıra üzeri: 0,4 m kabul edildi",
+   "Damlatıcı debisi: 2 l/h kabul edildi",
+   "Damlatıcı aralığı: 0,33 m kabul edildi",
+   "Damlatıcı çalışma basıncı: 10 m kabul edildi",
+   "Damlatıcı akış üssü x: 0,5 kabul edildi",
+   "Kabul edilebilir basınç farkı 1,9 m (debi farkı %10); %55 lateral, %45 manifold",
+   "Kaynaktan araziye mesafe: 0 m kabul edildi",
+   "Alt ünite debisi kaynak debisinin en fazla yarısı, manifold çapı tercihen en fazla Ø110 alınarak bölümlendi",
+   "Tepe ET0 6,5 mm/gün (genel değer)",
+   "Kc (orta dönem, FAO-56): 1,15 kabul edildi",
+   "Bitki örtü oranı: 0,9 kabul edildi",
+   "Uygulama randımanı: 0,9 kabul edildi",
+   "Toprak tınlı kabul edildi",
+   "Günlük pompa çalışma süresi: 20 saat kabul edildi",
+   "Aylık Kc: ilk ay 0,60, ikinci ay ara değer, son ay orta dönemin %80'i (FAO-56 eğrisine yaklaşık)",
+   "Kaynak-arazi kot farkı: 0 m kabul edildi",
+   "Ana hat kademeli: her segment, taşıdığı en büyük shift debisinde hız ≤ max(seçilen ana çaptaki hız, 0,9) ve ≤ 1,5 m/s olacak en küçük çapla; çap ana çapı geçmez, basınç sınıfı ana hatla aynı",
+   "Ana hat karşılaştırmasında pompa verimi %70, motor verimi %90; ana hatta %10 yerel kayıp payı; gübreleme + sayaç + çekvalf + sürgülü vana kaybı 2 m",
+   "Boru basınç sınıfı: (a) en alçak noktadaki çalışma basıncının 1,25 katı ≤ PN, (b) pompa kapama basıncı (jenerik eğri: görev basıncının 1,3 katı) + statik kot farkı ≤ PN; sürtünme kaybı ihmal edilir (güvenli yönde)",
+   "Elektrik fiyatı örnek değerdir (Ayarlar'dan güncelleyin)"
+  ],
+  "warn": [
+   "Seçilen pompa bazı shift’lerde gerekenden %107 fazla basınç üretiyor; basınç regülatörü veya frekans konvertörü önerilir.",
+   "Su darbesi ayrıntılı analiz edilmedi. Ani kapanmada (kritik süre 5,0 s'den kısa) Joukowsky üst sınırı ΔH ≈ 54 m (dalga hızı 299 m/s); bu durumda PN6 sınıfı aşılır. Vanalar en az 25 s'de kapanmalı; tasarım, su darbesi analizi yapılmadan kesin onaylı sayılmaz."
+  ],
+  "recBasis": "fiyatı eksik kalemler olduğundan, kaynak debisini en iyi kullanan (en az shift’li) düzen; yalnız süreye sığan düzenler arasından",
+  "field": {
+   "A": 80000,
+   "da": 80,
+   "mode": "dikdortgen",
+   "angle": 0,
+   "plants": 143000,
+   "Sr": 1.4,
+   "Sp": 0.4,
+   "tip": "serit",
+   "sLat": 0,
+   "sMan": 0,
+   "gradKnown": false,
+   "header": "top",
+   "Lmain": 747.6003999984015,
+   "Lcrit": 449.40039999840036
+  },
+  "emitter": {
+   "q": 2,
+   "Se": 0.33,
+   "pc": false,
+   "hNom": 10,
+   "pcMin": null,
+   "pcMax": null,
+   "x": 0.5,
+   "ne": null,
+   "dHallow": 1.8999999999999995,
+   "allowLat": 1.0449999999999997,
+   "allowMan": 0.8549999999999998
+  },
+  "lateral": {
+   "d": 16,
+   "ic": 13.8,
+   "Lmax": 51.480000000000004,
+   "count": 1144,
+   "len": 57200,
+   "planted": 57200,
+   "lead": 0,
+   "emitters": 172744,
+   "maxLen": 50,
+   "maxDH": 0.929569227726925,
+   "hfMax": 0.9395020834045696,
+   "vMax": 0.5608624800316504,
+   "hreqMax": 10.689352868836087,
+   "hreqMin": 10.689352868836087
+  },
+  "units": [
+   {
+    "band": 0,
+    "ax": 50,
+    "rows": 71,
+    "nLat": 142,
+    "Q": 42.88399999999996,
+    "Lm": 98.70000000000037,
+    "hf": 0.6388625211315115,
+    "varH": 0.6264911650582558,
+    "v": 1.4693169522876397,
+    "hIn": 11.457894749006128,
+    "hInMax": 11.628215389967599,
+    "hLatMax": 10.689352868836087,
+    "yIn": 200.20000000000047,
+    "yEnd": 100.8000000000001,
+    "rise": 0,
+    "path": 50.00039999840001,
+    "segs": [
+     0
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 0,
+    "ax": 50,
+    "rows": 72,
+    "nLat": 144,
+    "Q": 43.48799999999996,
+    "Lm": 100.1000000000001,
+    "hf": 0.6639117697206351,
+    "varH": 0.6512338772047668,
+    "v": 1.4900115572494375,
+    "hIn": 11.476264647091872,
+    "hInMax": 11.653264638556722,
+    "hLatMax": 10.689352868836087,
+    "yIn": 100.8000000000001,
+    "yEnd": 0,
+    "rise": 0,
+    "path": 149.4003999984004,
+    "segs": [
+     0,
+     4
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 1,
+    "ax": 150,
+    "rows": 71,
+    "nLat": 142,
+    "Q": 42.88399999999996,
+    "Lm": 98.70000000000037,
+    "hf": 0.6388625211315115,
+    "varH": 0.6264911650582558,
+    "v": 1.4693169522876397,
+    "hIn": 11.457894749006128,
+    "hInMax": 11.628215389967599,
+    "hLatMax": 10.689352868836087,
+    "yIn": 200.20000000000047,
+    "yEnd": 100.8000000000001,
+    "rise": 0,
+    "path": 150.0003999984,
+    "segs": [
+     0,
+     1
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 1,
+    "ax": 150,
+    "rows": 72,
+    "nLat": 144,
+    "Q": 43.48799999999996,
+    "Lm": 100.1000000000001,
+    "hf": 0.6639117697206351,
+    "varH": 0.6512338772047668,
+    "v": 1.4900115572494375,
+    "hIn": 11.476264647091872,
+    "hInMax": 11.653264638556722,
+    "hLatMax": 10.689352868836087,
+    "yIn": 100.8000000000001,
+    "yEnd": 0,
+    "rise": 0,
+    "path": 249.4003999984004,
+    "segs": [
+     0,
+     1,
+     5
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 2,
+    "ax": 250,
+    "rows": 71,
+    "nLat": 142,
+    "Q": 42.88399999999996,
+    "Lm": 98.70000000000037,
+    "hf": 0.6388625211315115,
+    "varH": 0.6264911650582558,
+    "v": 1.4693169522876397,
+    "hIn": 11.457894749006128,
+    "hInMax": 11.628215389967599,
+    "hLatMax": 10.689352868836087,
+    "yIn": 200.20000000000047,
+    "yEnd": 100.8000000000001,
+    "rise": 0,
+    "path": 250.0003999984,
+    "segs": [
+     0,
+     1,
+     2
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 2,
+    "ax": 250,
+    "rows": 72,
+    "nLat": 144,
+    "Q": 43.48799999999996,
+    "Lm": 100.1000000000001,
+    "hf": 0.6639117697206351,
+    "varH": 0.6512338772047668,
+    "v": 1.4900115572494375,
+    "hIn": 11.476264647091872,
+    "hInMax": 11.653264638556722,
+    "hLatMax": 10.689352868836087,
+    "yIn": 100.8000000000001,
+    "yEnd": 0,
+    "rise": 0,
+    "path": 349.4003999984004,
+    "segs": [
+     0,
+     1,
+     2,
+     6
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 3,
+    "ax": 350,
+    "rows": 71,
+    "nLat": 142,
+    "Q": 42.88399999999996,
+    "Lm": 98.70000000000037,
+    "hf": 0.6388625211315115,
+    "varH": 0.6264911650582558,
+    "v": 1.4693169522876397,
+    "hIn": 11.457894749006128,
+    "hInMax": 11.628215389967599,
+    "hLatMax": 10.689352868836087,
+    "yIn": 200.20000000000047,
+    "yEnd": 100.8000000000001,
+    "rise": 0,
+    "path": 350.0003999984,
+    "segs": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "pipe": "110/6/101.6"
+   },
+   {
+    "band": 3,
+    "ax": 350,
+    "rows": 72,
+    "nLat": 144,
+    "Q": 43.48799999999996,
+    "Lm": 100.1000000000001,
+    "hf": 0.6639117697206351,
+    "varH": 0.6512338772047668,
+    "v": 1.4900115572494375,
+    "hIn": 11.476264647091872,
+    "hInMax": 11.653264638556722,
+    "hLatMax": 10.689352868836087,
+    "yIn": 100.8000000000001,
+    "yEnd": 0,
+    "rise": 0,
+    "path": 449.40039999840036,
+    "segs": [
+     0,
+     1,
+     2,
+     3,
+     7
+    ],
+    "pipe": "110/6/101.6"
+   }
+  ],
+  "manifold": {
+   "count": 8,
+   "Qmax": 43.48799999999996,
+   "hfMax": 0.6639117697206351,
+   "varMax": 0.6512338772047668,
+   "vMax": 1.4900115572494375,
+   "LmMax": 100.1000000000001,
+   "byPipe": [
+    {
+     "pipe": "110/6",
+     "len": 800.8000000000019,
+     "count": 8
+    }
+   ]
+  },
+  "sectors": {
+   "Ns": 4,
+   "Qsec": 86.37199999999991,
+   "Qmin": 86.37199999999991,
+   "Qfield": 345.4879999999996,
+   "units": 8,
+   "groups": [
+    [
+     0,
+     1
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     4,
+     5
+    ],
+    [
+     6,
+     7
+    ]
+   ],
+   "Qj": [
+    86.37199999999991,
+    86.37199999999991,
+    86.37199999999991,
+    86.37199999999991
+   ]
+  },
+  "sectorAlts": [
+   {
+    "Ns": 4,
+    "manual": false,
+    "groups": [
+     [
+      0,
+      1
+     ],
+     [
+      2,
+      3
+     ],
+     [
+      4,
+      5
+     ],
+     [
+      6,
+      7
+     ]
+    ],
+    "Qj": [
+     86.37199999999991,
+     86.37199999999991,
+     86.37199999999991,
+     86.37199999999991
+    ],
+    "Qmax": 86.37199999999991,
+    "Qmin": 86.37199999999991,
+    "Hfix": [
+     5.8742330918749985,
+     5.8742330918749985,
+     5.8742330918749985,
+     5.8742330918749985
+    ],
+    "feasible": true,
+    "cycleHours": 7.674333333333333,
+    "avail": 20,
+    "kWh": 4025.2447639896536,
+    "energyCost": 14088.356673963788,
+    "compare": 33203.34197999746,
+    "basis": [
+     "ana hat",
+     "enerji"
+    ],
+    "missing": [
+     "shift vanası",
+     "pompa"
+    ],
+    "recommended": true,
+    "filter": "2 × Disk filtre 4\" (batarya) (120 mesh)",
+    "valve": "Shift vanası 3\" (hidrolik/solenoid)",
+    "main": {
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "v": 1.7585299667385315,
+     "H": [
+      21.851383678362218,
+      23.966520983928902,
+      26.081658289495593,
+      28.196795595062277
+     ],
+     "Hd": [
+      21.851383678362218,
+      23.966520983928902,
+      26.081658289495593,
+      28.196795595062277
+     ],
+     "Hp": [
+      6.551383678362219,
+      8.666520983928903,
+      10.781658289495594,
+      12.896795595062278
+     ],
+     "surplus": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "Pout": 28.196795595062277,
+     "Pop": 28.196795595062277,
+     "Pshut": 32.06583427358096,
+     "hf": 9.308486737728064,
+     "Hmax": 28.196795595062277,
+     "kWh": 3005.9317259616505,
+     "energyCost": 10520.761040865777,
+     "pipeCost": 145390.09799960823,
+     "annual": 29635.746346899447
+    },
+    "pump": {
+     "need": true,
+     "fromCatalog": true,
+     "id": "gen-santrifuj-75-15",
+     "tip": "santrifuj",
+     "Q": 86.37199999999991,
+     "H": 12.896795595062278,
+     "motor": 5.5,
+     "Pmax": 4.378280459946491,
+     "over": 2.065534142254598,
+     "kWh": 4025.2447639896536,
+     "Hshut": 19.5,
+     "Pshut": 34.8,
+     "pts": [
+      {
+       "Q": 86.37199999999991,
+       "Hreq": 6.551383678362219,
+       "H": 13.53210666666668,
+       "eta": 72.74469333333337,
+       "P": 4.378280459946491
+      },
+      {
+       "Q": 86.37199999999991,
+       "Hreq": 8.666520983928903,
+       "H": 13.53210666666668,
+       "eta": 72.74469333333337,
+       "P": 4.378280459946491
+      },
+      {
+       "Q": 86.37199999999991,
+       "Hreq": 10.781658289495594,
+       "H": 13.53210666666668,
+       "eta": 72.74469333333337,
+       "P": 4.378280459946491
+      },
+      {
+       "Q": 86.37199999999991,
+       "Hreq": 12.896795595062278,
+       "H": 13.53210666666668,
+       "eta": 72.74469333333337,
+       "P": 4.378280459946491
+      }
+     ],
+     "text": "Jenerik S-75/15 (yatay santrifüj pompa), 5,5 kW — görev noktası 86,4 m³/h @ 12,9 m"
+    }
+   },
+   {
+    "Ns": 8,
+    "manual": false,
+    "groups": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      2
+     ],
+     [
+      3
+     ],
+     [
+      4
+     ],
+     [
+      5
+     ],
+     [
+      6
+     ],
+     [
+      7
+     ]
+    ],
+    "Qj": [
+     42.88399999999996,
+     43.48799999999996,
+     42.88399999999996,
+     43.48799999999996,
+     42.88399999999996,
+     43.48799999999996,
+     42.88399999999996,
+     43.48799999999996
+    ],
+    "Qmax": 43.48799999999996,
+    "Qmin": 42.88399999999996,
+    "Hfix": [
+     7.206844947199995,
+     7.269447372799995,
+     7.206844947199995,
+     7.269447372799995,
+     7.206844947199995,
+     7.269447372799995,
+     7.206844947199995,
+     7.269447372799995
+    ],
+    "feasible": true,
+    "cycleHours": 15.348666666666666,
+    "avail": 20,
+    "kWh": 4352.027518909318,
+    "energyCost": 15232.096316182613,
+    "compare": 29975.573544727617,
+    "basis": [
+     "ana hat",
+     "enerji"
+    ],
+    "missing": [
+     "shift vanası",
+     "pompa"
+    ],
+    "recommended": false,
+    "filter": "1 × Disk filtre 3\" (120 mesh)",
+    "valve": "Shift vanası 3\" (hidrolik/solenoid)",
+    "main": {
+     "od": 110,
+     "pn": 6,
+     "ic": 103.6,
+     "v": 1.4330374566196793,
+     "H": [
+      21.094129037656014,
+      23.14752836693917,
+      22.96211119971747,
+      25.06452807290423,
+      24.83009336177892,
+      26.981527778869292,
+      26.698075523840373,
+      28.898527484834354
+     ],
+     "Hd": [
+      21.094129037656014,
+      23.14752836693917,
+      22.96211119971747,
+      25.06452807290423,
+      24.83009336177892,
+      26.981527778869292,
+      26.698075523840373,
+      28.898527484834354
+     ],
+     "Hp": [
+      5.794129037656015,
+      7.847528366939171,
+      7.6621111997174705,
+      9.764528072904232,
+      9.530093361778922,
+      11.681527778869293,
+      11.398075523840374,
+      13.598527484834355
+     ],
+     "surplus": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "Pout": 28.898527484834354,
+     "Pop": 28.898527484834354,
+     "Pshut": 32.97808573028466,
+     "hf": 8.61500434657514,
+     "Hmax": 28.898527484834354,
+     "kWh": 2988.2846426352994,
+     "energyCost": 10458.996249223548,
+     "pipeCost": 112140.05999976023,
+     "annual": 25202.47347776855
+    },
+    "pump": {
+     "need": true,
+     "fromCatalog": true,
+     "id": "gen-santrifuj-40-15",
+     "tip": "santrifuj",
+     "Q": 43.48799999999996,
+     "H": 13.598527484834355,
+     "motor": 3,
+     "Pmax": 2.3739684720691883,
+     "over": 2.468538971151316,
+     "kWh": 4352.027518909318,
+     "Hshut": 19.5,
+     "Pshut": 34.8,
+     "pts": [
+      {
+       "Q": 42.88399999999996,
+       "Hreq": 5.794129037656015,
+       "H": 14.303033333333344,
+       "eta": 70.83093333333335,
+       "P": 2.359755354529659
+      },
+      {
+       "Q": 43.48799999999996,
+       "Hreq": 7.847528366939171,
+       "H": 14.157066666666678,
+       "eta": 70.66986666666668,
+       "P": 2.3739684720691883
+      },
+      {
+       "Q": 42.88399999999996,
+       "Hreq": 7.6621111997174705,
+       "H": 14.303033333333344,
+       "eta": 70.83093333333335,
+       "P": 2.359755354529659
+      },
+      {
+       "Q": 43.48799999999996,
+       "Hreq": 9.764528072904232,
+       "H": 14.157066666666678,
+       "eta": 70.66986666666668,
+       "P": 2.3739684720691883
+      },
+      {
+       "Q": 42.88399999999996,
+       "Hreq": 9.530093361778922,
+       "H": 14.303033333333344,
+       "eta": 70.83093333333335,
+       "P": 2.359755354529659
+      },
+      {
+       "Q": 43.48799999999996,
+       "Hreq": 11.681527778869293,
+       "H": 14.157066666666678,
+       "eta": 70.66986666666668,
+       "P": 2.3739684720691883
+      },
+      {
+       "Q": 42.88399999999996,
+       "Hreq": 11.398075523840374,
+       "H": 14.303033333333344,
+       "eta": 70.83093333333335,
+       "P": 2.359755354529659
+      },
+      {
+       "Q": 43.48799999999996,
+       "Hreq": 13.598527484834355,
+       "H": 14.157066666666678,
+       "eta": 70.66986666666668,
+       "P": 2.3739684720691883
+      }
+     ],
+     "text": "Jenerik S-40/15 (yatay santrifüj pompa), 3,0 kW — görev noktası 43,5 m³/h @ 13,6 m"
+    }
+   }
+  ],
+  "main": {
+   "Lcrit": 449.40039999840036,
+   "Lmain": 747.6003999984015,
+   "teleskop": true,
+   "allPriced": true,
+   "alts": [
+    {
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "v": 1.7585299667385315,
+     "H": [
+      21.851383678362218,
+      23.966520983928902,
+      26.081658289495593,
+      28.196795595062277
+     ],
+     "Hmax": 28.196795595062277,
+     "hf": 9.308486737728064,
+     "kWh": 3005.9317259616505,
+     "energyCost": 10520.761040865777,
+     "pipeCost": 145390.09799960823,
+     "annual": 29635.746346899447,
+     "tags": [
+      "En düşük yıllık maliyet"
+     ],
+     "Pop": 28.196795595062277,
+     "Pshut": 32.06583427358096
+    },
+    {
+     "od": 160,
+     "pn": 6,
+     "ic": 150.6,
+     "v": 1.3468854153729064,
+     "H": [
+      20.468601222681183,
+      21.573491113760284,
+      22.67838100483938,
+      23.783270895918484
+     ],
+     "Hmax": 23.783270895918484,
+     "hf": 4.894962038584267,
+     "kWh": 2110.0481923336456,
+     "energyCost": 7385.16867316776,
+     "pipeCost": 189532.12799948826,
+     "annual": 32303.673382761343,
+     "tags": [
+      "Enerji verimli"
+     ],
+     "Pop": 23.783270895918484,
+     "Pshut": 26.328252164694028
+    },
+    {
+     "od": 200,
+     "pn": 6,
+     "ic": 188.2,
+     "v": 0.8624647536030433,
+     "H": [
+      19.664864712347413,
+      20.03805391341532,
+      20.41124311448323,
+      20.784432315551136
+     ],
+     "Hmax": 20.784432315551136,
+     "hf": 1.8961234582169242,
+     "kWh": 1522.3180534455694,
+     "energyCost": 5328.113187059493,
+     "pipeCost": 272412.19999920035,
+     "annual": 41143.17399115256,
+     "tags": [],
+     "Pop": 20.784432315551136,
+     "Pshut": 22.42976201021648
+    },
+    {
+     "od": 225,
+     "pn": 6,
+     "ic": 211.8,
+     "v": 0.6809711020384439,
+     "H": [
+      19.583232695094537,
+      19.793159167753302,
+      20.003085640412067,
+      20.213012113070832
+     ],
+     "Hmax": 20.213012113070832,
+     "hf": 1.3247032557366185,
+     "kWh": 1421.3815925868357,
+     "energyCost": 4974.835574053925,
+     "pipeCost": 317912.2519989924,
+     "annual": 46771.96006313149,
+     "tags": [],
+     "Pop": 20.213012113070832,
+     "Pshut": 21.68691574699208
+    },
+    {
+     "od": 250,
+     "pn": 6,
+     "ic": 235.4,
+     "v": 0.5512742117469397,
+     "H": [
+      19.54101701652946,
+      19.666512807500805,
+      19.79200859847215,
+      19.9175043894435
+     ],
+     "Hmax": 19.9175043894435,
+     "hf": 1.0291955321092876,
+     "kWh": 1369.1826964856932,
+     "energyCost": 4792.139437699926,
+     "pipeCost": 370412.31199875247,
+     "annual": 53491.64510175959,
+     "tags": [],
+     "Pop": 19.9175043894435,
+     "Pshut": 21.30275570627655
+    },
+    {
+     "od": 315,
+     "pn": 6,
+     "ic": 296.6,
+     "v": 0.3472468386306557,
+     "H": [
+      19.49863090854654,
+      19.53935516172165,
+      19.580079414896762,
+      19.620803668071872
+     ],
+     "Hmax": 19.620803668071872,
+     "hf": 0.732494810737657,
+     "kWh": 1316.7730676005162,
+     "energyCost": 4608.705736601807,
+     "pipeCost": 534912.4999980005,
+     "annual": 74935.67241560538,
+     "tags": [],
+     "Pop": 19.620803668071872,
+     "Pshut": 20.917044768493433
+    }
+   ],
+   "net": [
+    {
+     "id": "AH-01",
+     "kind": "baglanti",
+     "a": [
+      0,
+      200
+     ],
+     "b": [
+      50,
+      200.20000000000047
+     ],
+     "L": 50.00039999840001,
+     "parent": -1,
+     "down": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "Q": [
+      86.37199999999991,
+      86.37199999999991,
+      86.37199999999991,
+      86.37199999999991
+     ],
+     "Qmax": 86.37199999999991,
+     "v": 1.7585299667385315,
+     "hf": 1.0575771132987244
+    },
+    {
+     "id": "AH-02",
+     "kind": "baslik",
+     "a": [
+      50,
+      200.20000000000047
+     ],
+     "b": [
+      150,
+      200.20000000000047
+     ],
+     "L": 100,
+     "parent": 0,
+     "down": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+     ],
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "Q": [
+      0,
+      86.37199999999991,
+      86.37199999999991,
+      86.37199999999991
+     ],
+     "Qmax": 86.37199999999991,
+     "v": 1.7585299667385315,
+     "hf": 2.1151373055666878
+    },
+    {
+     "id": "AH-03",
+     "kind": "baslik",
+     "a": [
+      150,
+      200.20000000000047
+     ],
+     "b": [
+      250,
+      200.20000000000047
+     ],
+     "L": 100,
+     "parent": 1,
+     "down": [
+      4,
+      5,
+      6,
+      7
+     ],
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "Q": [
+      0,
+      0,
+      86.37199999999991,
+      86.37199999999991
+     ],
+     "Qmax": 86.37199999999991,
+     "v": 1.7585299667385315,
+     "hf": 2.1151373055666878
+    },
+    {
+     "id": "AH-04",
+     "kind": "baslik",
+     "a": [
+      250,
+      200.20000000000047
+     ],
+     "b": [
+      350,
+      200.20000000000047
+     ],
+     "L": 100,
+     "parent": 2,
+     "down": [
+      6,
+      7
+     ],
+     "od": 140,
+     "pn": 6,
+     "ic": 131.8,
+     "Q": [
+      0,
+      0,
+      0,
+      86.37199999999991
+     ],
+     "Qmax": 86.37199999999991,
+     "v": 1.7585299667385315,
+     "hf": 2.1151373055666878
+    },
+    {
+     "id": "AH-05",
+     "kind": "kol",
+     "a": [
+      50,
+      200.20000000000047
+     ],
+     "b": [
+      50,
+      100.8000000000001
+     ],
+     "L": 99.40000000000038,
+     "parent": 0,
+     "down": [
+      1
+     ],
+     "od": 110,
+     "pn": 6,
+     "ic": 103.6,
+     "Q": [
+      43.48799999999996,
+      0,
+      0,
+      0
+     ],
+     "Qmax": 43.48799999999996,
+     "v": 1.4330374566196793,
+     "hf": 1.905497707729277
+    },
+    {
+     "id": "AH-06",
+     "kind": "kol",
+     "a": [
+      150,
+      200.20000000000047
+     ],
+     "b": [
+      150,
+      100.8000000000001
+     ],
+     "L": 99.40000000000038,
+     "parent": 1,
+     "down": [
+      3
+     ],
+     "od": 110,
+     "pn": 6,
+     "ic": 103.6,
+     "Q": [
+      0,
+      43.48799999999996,
+      0,
+      0
+     ],
+     "Qmax": 43.48799999999996,
+     "v": 1.4330374566196793,
+     "hf": 1.905497707729277
+    },
+    {
+     "id": "AH-07",
+     "kind": "kol",
+     "a": [
+      250,
+      200.20000000000047
+     ],
+     "b": [
+      250,
+      100.8000000000001
+     ],
+     "L": 99.40000000000038,
+     "parent": 2,
+     "down": [
+      5
+     ],
+     "od": 110,
+     "pn": 6,
+     "ic": 103.6,
+     "Q": [
+      0,
+      0,
+      43.48799999999996,
+      0
+     ],
+     "Qmax": 43.48799999999996,
+     "v": 1.4330374566196793,
+     "hf": 1.905497707729277
+    },
+    {
+     "id": "AH-08",
+     "kind": "kol",
+     "a": [
+      350,
+      200.20000000000047
+     ],
+     "b": [
+      350,
+      100.8000000000001
+     ],
+     "L": 99.40000000000038,
+     "parent": 3,
+     "down": [
+      7
+     ],
+     "od": 110,
+     "pn": 6,
+     "ic": 103.6,
+     "Q": [
+      0,
+      0,
+      0,
+      43.48799999999996
+     ],
+     "Qmax": 43.48799999999996,
+     "v": 1.4330374566196793,
+     "hf": 1.905497707729277
+    }
+   ]
+  },
+  "head": {
+   "depth": 0,
+   "dZ": 0,
+   "Havail": 15.299999999999999,
+   "static0": 0,
+   "filter": 3.874233091874998,
+   "valve": 6.066107168112234,
+   "fixed": 5.8742330918749985,
+   "riseMax": 0
+  },
+  "inlet": {
+   "hLatIn": 10.689352868836087,
+   "hManIn": 11.476264647091872
+  },
+  "pump": {
+   "need": true,
+   "fromCatalog": true,
+   "id": "gen-santrifuj-75-15",
+   "tip": "santrifuj",
+   "Q": 86.37199999999991,
+   "H": 12.896795595062278,
+   "motor": 5.5,
+   "Pmax": 4.378280459946491,
+   "over": 2.065534142254598,
+   "kWh": 4025.2447639896536,
+   "Hshut": 19.5,
+   "Pshut": 34.8,
+   "pts": [
+    {
+     "Q": 86.37199999999991,
+     "Hreq": 6.551383678362219,
+     "H": 13.53210666666668,
+     "eta": 72.74469333333337,
+     "P": 4.378280459946491
+    },
+    {
+     "Q": 86.37199999999991,
+     "Hreq": 8.666520983928903,
+     "H": 13.53210666666668,
+     "eta": 72.74469333333337,
+     "P": 4.378280459946491
+    },
+    {
+     "Q": 86.37199999999991,
+     "Hreq": 10.781658289495594,
+     "H": 13.53210666666668,
+     "eta": 72.74469333333337,
+     "P": 4.378280459946491
+    },
+    {
+     "Q": 86.37199999999991,
+     "Hreq": 12.896795595062278,
+     "H": 13.53210666666668,
+     "eta": 72.74469333333337,
+     "P": 4.378280459946491
+    }
+   ],
+   "text": "Jenerik S-75/15 (yatay santrifüj pompa), 5,5 kW — görev noktası 86,4 m³/h @ 12,9 m",
+   "verified": false,
+   "count": 54
+  },
+  "filter": {
+   "text": "2 × Disk filtre 4\" (batarya) (120 mesh)",
+   "missing": [],
+   "items": [
+    {
+     "id": "gen-disk-4",
+     "n": 2
+    }
+   ]
+  },
+  "valve": {
+   "text": "Shift vanası 3\" (hidrolik/solenoid)",
+   "over": false
+  },
+  "schedule": {
+   "et0": 6.5,
+   "kc": 1.15,
+   "Kr": 1,
+   "Ea": 0.9,
+   "net": 7.475,
+   "gross": 8.305555555555555,
+   "RAW": 22.05,
+   "Imax": 2,
+   "interval": 1,
+   "AR": 4.329004329004329,
+   "t": 1.9185833333333333,
+   "hoursPerDay": 20,
+   "monthly": [
+    {
+     "ay": "May",
+     "m": 5,
+     "kc": 0.6,
+     "et0": 4.55,
+     "net": 2.73,
+     "gross": 3.033333333333333,
+     "interval": 1,
+     "sure": 0.7007,
+     "m3da": 94.03333333333333,
+     "lt_bitki": 1.6986666666666663
+    },
+    {
+     "ay": "Haz",
+     "m": 6,
+     "kc": 0.875,
+     "et0": 5.72,
+     "net": 5.005,
+     "gross": 5.561111111111111,
+     "interval": 1,
+     "sure": 1.2846166666666665,
+     "m3da": 166.83333333333331,
+     "lt_bitki": 3.114222222222222
+    },
+    {
+     "ay": "Tem",
+     "m": 7,
+     "kc": 1.15,
+     "et0": 6.5,
+     "net": 7.475,
+     "gross": 8.305555555555555,
+     "interval": 1,
+     "sure": 1.9185833333333333,
+     "m3da": 257.47222222222223,
+     "lt_bitki": 4.651111111111111
+    },
+    {
+     "ay": "Ağu",
+     "m": 8,
+     "kc": 1.15,
+     "et0": 6.045,
+     "net": 6.95175,
+     "gross": 7.724166666666666,
+     "interval": 1,
+     "sure": 1.7842825,
+     "m3da": 239.44916666666666,
+     "lt_bitki": 4.325533333333333
+    },
+    {
+     "ay": "Eyl",
+     "m": 9,
+     "kc": 0.9199999999999999,
+     "et0": 4.42,
+     "net": 4.0664,
+     "gross": 4.518222222222222,
+     "interval": 1,
+     "sure": 1.0437093333333332,
+     "m3da": 135.54666666666665,
+     "lt_bitki": 2.530204444444444
+    }
+   ],
+   "seasonMm": 893.3347222222222,
+   "seasonM3": 71466.77777777778,
+   "lpPlant": 4.651111111111111,
+   "soil": "Tınlı",
+   "cycleHours": 7.674333333333333,
+   "pumpHours": 206.85748210582673,
+   "kWh": 4025.2447639896536,
+   "energyCost": 14088.356673963788,
+   "epSrc": "ornek"
+  },
+  "surge": {
+   "a": 299.4800804051627,
+   "dH": 53.68447460078935,
+   "Tc": 4.9926552643299855,
+   "tClose": 25,
+   "E": 3000000000,
+   "Pline": 28.196795595062277,
+   "peak": 81.88127019585163,
+   "pnH": 61.199999999999996,
+   "exceeds": true
+  },
+  "bom": [
+   {
+    "key": "lateral:16",
+    "grup": "Lateral",
+    "kalem": "Damla borusu Ø16, 2,0 l/h, 33 cm",
+    "miktar": 58916,
+    "birim": "m",
+    "fiyat": 4.5,
+    "kaynak": "ornek",
+    "tutar": 265122,
+    "opsiyonel": false
+   },
+   {
+    "key": "startKonnektor",
+    "grup": "Lateral",
+    "kalem": "Start konnektör Ø16 (contalı)",
+    "miktar": 1167,
+    "birim": "adet",
+    "fiyat": 6,
+    "kaynak": "ornek",
+    "tutar": 7002,
+    "opsiyonel": false
+   },
+   {
+    "key": "lateralSonu",
+    "grup": "Lateral",
+    "kalem": "Lateral sonu (kör tapa) Ø16",
+    "miktar": 1167,
+    "birim": "adet",
+    "fiyat": 3,
+    "kaynak": "ornek",
+    "tutar": 3501,
+    "opsiyonel": false
+   },
+   {
+    "key": "pe:110:6",
+    "grup": "Manifold",
+    "kalem": "PE100 boru Ø110 PN6",
+    "miktar": 825,
+    "birim": "m",
+    "fiyat": 225,
+    "kaynak": "ornek",
+    "tutar": 185625,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pe-son:110",
+    "grup": "Manifold",
+    "kalem": "Manifold sonu yıkama vanası / tapa Ø110",
+    "miktar": 8,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pe-giris:110",
+    "grup": "Manifold",
+    "kalem": "Manifold giriş bağlantısı (PVC×PE geçiş + T) Ø110",
+    "miktar": 8,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "pvc:140:6",
+    "grup": "Ana hat",
+    "kalem": "PVC-U boru Ø140 PN6",
+    "miktar": 358,
+    "birim": "m",
+    "fiyat": 245,
+    "kaynak": "ornek",
+    "tutar": 87710,
+    "opsiyonel": false
+   },
+   {
+    "key": "pvc:110:6",
+    "grup": "Ana hat",
+    "kalem": "PVC-U boru Ø110 PN6",
+    "miktar": 406,
+    "birim": "m",
+    "fiyat": 150,
+    "kaynak": "ornek",
+    "tutar": 60900,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pvc-red:140x110",
+    "grup": "Ana hat",
+    "kalem": "PVC redüksiyon Ø140×Ø110",
+    "miktar": 4,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pvc-dirsek:140",
+    "grup": "Ana hat",
+    "kalem": "PVC dirsek Ø140",
+    "miktar": 6,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pvc-te:140",
+    "grup": "Ana hat",
+    "kalem": "PVC te / redüksiyonlu te Ø140",
+    "miktar": 12,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "fitting:pvc-tapa:140",
+    "grup": "Ana hat",
+    "kalem": "PVC kör tapa Ø140",
+    "miktar": 4,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "vana:gen-sv-3\"",
+    "grup": "Vana",
+    "kalem": "Shift vanası 3\" (hidrolik/solenoid) (manifold girişi)",
+    "miktar": 8,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "vana:hava-1",
+    "grup": "Vana",
+    "kalem": "Hava tahliye vanası (vakum kırıcı) 1\"",
+    "miktar": 9,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "vana:surgulu:140",
+    "grup": "Vana",
+    "kalem": "Ana sürgülü vana (Ø140 hatta)",
+    "miktar": 1,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "vana:cekvalf:140",
+    "grup": "Vana",
+    "kalem": "Çekvalf (Ø140 hatta)",
+    "miktar": 1,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "filtre:gen-disk-4",
+    "grup": "Filtre",
+    "kalem": "Disk filtre 4\" (batarya) (120 mesh)",
+    "miktar": 2,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "kontrol:manometre",
+    "grup": "Kontrol",
+    "kalem": "Manometre (filtre giriş-çıkış)",
+    "miktar": 2,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "kontrol:sayac",
+    "grup": "Kontrol",
+    "kalem": "Su sayacı",
+    "miktar": 1,
+    "birim": "adet",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   },
+   {
+    "key": "kontrol:gubre",
+    "grup": "Kontrol",
+    "kalem": "Gübre tankı / venturi",
+    "miktar": 1,
+    "birim": "takım",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": true
+   },
+   {
+    "key": "pompa:gen-santrifuj-75-15",
+    "grup": "Pompa",
+    "kalem": "Jenerik S-75/15 (yatay santrifüj pompa), 5,5 kW",
+    "miktar": 1,
+    "birim": "takım",
+    "fiyat": null,
+    "kaynak": null,
+    "tutar": null,
+    "opsiyonel": false
+   }
+  ],
+  "cost": {
+   "total": null,
+   "subtotal": 609860,
+   "missing": 14,
+   "example": 6,
+   "priced": 6
+  }
+ },
+ "exports": {
+  "excel": {
+   "Özet": [
+    [
+     "Kalem",
+     "Değer",
+     "Birim"
+    ],
+    [
+     "Proje",
+     "S10-yetersiz-sebeke-basinci",
+     ""
+    ],
+    [
+     "Tarih",
+     "<TARİH>",
+     ""
+    ],
+    [
+     "Bitki",
+     "Domates (açık tarla)",
+     ""
+    ],
+    [
+     "Tasarım geometrisi",
+     "Eşdeğer dikdörtgen",
+     ""
+    ],
+    [
+     "Alan",
+     80,
+     "da"
+    ],
+    [
+     "Eğim (lateral yönü)",
+     0,
+     "%"
+    ],
+    [
+     "Eğim (manifold yönü)",
+     0,
+     "%"
+    ],
+    [
+     "Sıra arası",
+     1.4,
+     "m"
+    ],
+    [
+     "Sıra üzeri",
+     0.4,
+     "m"
+    ],
+    [
+     "Bitki sayısı",
+     143000,
+     "adet"
+    ],
+    [
+     "Damlatıcı debisi",
+     2,
+     "l/h"
+    ],
+    [
+     "Damlatıcı aralığı",
+     0.33,
+     "m"
+    ],
+    [
+     "Damlatıcı tipi",
+     "Normal",
+     ""
+    ],
+    [
+     "Shift sayısı",
+     4,
+     "adet"
+    ],
+    [
+     "En büyük shift debisi",
+     86.37199999999991,
+     "m³/h"
+    ],
+    [
+     "Pompa",
+     "Jenerik S-75/15 (yatay santrifüj pompa), 5,5 kW — görev noktası 86,4 m³/h @ 12,9 m",
+     ""
+    ],
+    [
+     "Filtrasyon",
+     "2 × Disk filtre 4\" (batarya) (120 mesh)",
+     ""
+    ],
+    [
+     "Shift vanası",
+     "Shift vanası 3\" (hidrolik/solenoid) × 8",
+     ""
+    ],
+    [
+     "Toplam malzeme bedeli",
+     "Hesaplanmadı — 14 kalemin fiyatı eksik",
+     ""
+    ]
+   ],
+   "Hidrolik": [
+    [
+     "Kalem",
+     "Değer",
+     "Birim"
+    ],
+    [
+     "Lateral çapı",
+     16,
+     "mm"
+    ],
+    [
+     "Lateral iç çapı",
+     13.8,
+     "mm"
+    ],
+    [
+     "İzin verilen maks. lateral boyu",
+     51.480000000000004,
+     "m"
+    ],
+    [
+     "En uzun lateral",
+     50,
+     "m"
+    ],
+    [
+     "Lateral adedi",
+     1144,
+     "adet"
+    ],
+    [
+     "Toplam lateral uzunluğu",
+     57200,
+     "m"
+    ],
+    [
+     "Kör lateral (damlatıcısız)",
+     0,
+     "m"
+    ],
+    [
+     "Damlatıcı adedi",
+     172744,
+     "adet"
+    ],
+    [
+     "Maks. lateral basınç farkı",
+     0.929569227726925,
+     "m"
+    ],
+    [
+     "Lateral için izin",
+     1.0449999999999997,
+     "m"
+    ],
+    [
+     "Lateral giriş basıncı (maks.)",
+     10.689352868836087,
+     "m"
+    ],
+    [
+     "Alt ünite (manifold) adedi",
+     8,
+     "adet"
+    ],
+    [
+     "En uzun manifold",
+     100.1000000000001,
+     "m"
+    ],
+    [
+     "Maks. manifold debisi",
+     43.48799999999996,
+     "m³/h"
+    ],
+    [
+     "Maks. manifold hızı",
+     1.4900115572494375,
+     "m/s"
+    ],
+    [
+     "Maks. manifold basınç farkı",
+     0.6512338772047668,
+     "m"
+    ],
+    [
+     "Manifold için izin",
+     0.8549999999999998,
+     "m"
+    ],
+    [
+     "Manifold giriş basıncı (maks.)",
+     11.476264647091872,
+     "m"
+    ],
+    [
+     "Ana hat",
+     "PVC-U Ø140 PN6",
+     ""
+    ],
+    [
+     "Ana hat iç çapı",
+     131.8,
+     "mm"
+    ],
+    [
+     "Ana hat uzunluğu",
+     747.6003999984015,
+     "m"
+    ],
+    [
+     "Kritik yol",
+     449.40039999840036,
+     "m"
+    ],
+    [
+     "Ana hat hızı (en büyük shift)",
+     1.7585299667385315,
+     "m/s"
+    ],
+    [
+     "Ana hat kaybı (kritik yol)",
+     9.308486737728064,
+     "m"
+    ],
+    [
+     "Kuyu seviyesi / emme",
+     0,
+     "m"
+    ],
+    [
+     "Kaynak-arazi kot farkı",
+     0,
+     "m"
+    ],
+    [
+     "Arazi içi maks. yükselme",
+     0,
+     "m"
+    ],
+    [
+     "Filtre kaybı (kirlenme payı dahil)",
+     3.874233091874998,
+     "m"
+    ],
+    [
+     "Shift vanası kaybı",
+     6.066107168112234,
+     "m"
+    ],
+    [
+     "Gübreleme + sayaç + vanalar",
+     2,
+     "m"
+    ],
+    [
+     "Gerekli basma yüksekliği (maks.)",
+     28.196795595062277,
+     "m"
+    ],
+    [
+     "Mevcut şebeke basıncı",
+     15.299999999999999,
+     "m"
+    ]
+   ],
+   "Shift’ler": [
+    [
+     "Shift",
+     "Alt ünite",
+     "Debi (m³/h)",
+     "Gerekli H (m)"
+    ],
+    [
+     1,
+     2,
+     86.37199999999991,
+     21.851383678362218
+    ],
+    [
+     2,
+     2,
+     86.37199999999991,
+     23.966520983928902
+    ],
+    [
+     3,
+     2,
+     86.37199999999991,
+     26.081658289495593
+    ],
+    [
+     4,
+     2,
+     86.37199999999991,
+     28.196795595062277
+    ]
+   ],
+   "Shift alternatifleri": [
+    [
+     "Shift sayısı",
+     "En büyük shift (m³/h)",
+     "Tur süresi (h)",
+     "Süreye sığar",
+     "Ana hat",
+     "Maks. H (m)",
+     "Motor (kW)",
+     "Enerji (kWh/yıl)",
+     "Karşılaştırma (TL/yıl)",
+     "Durum"
+    ],
+    [
+     4,
+     86.37199999999991,
+     7.674333333333333,
+     "Evet",
+     "Ø140 PN6",
+     28.196795595062277,
+     5.5,
+     4025.2447639896536,
+     "Fiyat eksik",
+     "SEÇİLİ Önerilen"
+    ],
+    [
+     8,
+     43.48799999999996,
+     15.348666666666666,
+     "Evet",
+     "Ø110 PN6",
+     28.898527484834354,
+     3,
+     4352.027518909318,
+     "Fiyat eksik",
+     ""
+    ]
+   ],
+   "Ana hat alternatifleri": [
+    [
+     "Çap",
+     "PN",
+     "Hız (m/s)",
+     "Kayıp (m)",
+     "Maks. H (m)",
+     "Enerji (kWh/yıl)",
+     "Boru (TL)",
+     "Enerji (TL/yıl)",
+     "Yıllık (TL)",
+     "Not"
+    ],
+    [
+     140,
+     6,
+     1.7585299667385315,
+     9.308486737728064,
+     28.196795595062277,
+     3005.9317259616505,
+     145390.09799960823,
+     10520.761040865777,
+     29635.746346899447,
+     "SEÇİLİ En düşük yıllık maliyet"
+    ],
+    [
+     160,
+     6,
+     1.3468854153729064,
+     4.894962038584267,
+     23.783270895918484,
+     2110.0481923336456,
+     189532.12799948826,
+     7385.16867316776,
+     32303.673382761343,
+     "Enerji verimli"
+    ],
+    [
+     200,
+     6,
+     0.8624647536030433,
+     1.8961234582169242,
+     20.784432315551136,
+     1522.3180534455694,
+     272412.19999920035,
+     5328.113187059493,
+     41143.17399115256,
+     ""
+    ],
+    [
+     225,
+     6,
+     0.6809711020384439,
+     1.3247032557366185,
+     20.213012113070832,
+     1421.3815925868357,
+     317912.2519989924,
+     4974.835574053925,
+     46771.96006313149,
+     ""
+    ],
+    [
+     250,
+     6,
+     0.5512742117469397,
+     1.0291955321092876,
+     19.9175043894435,
+     1369.1826964856932,
+     370412.31199875247,
+     4792.139437699926,
+     53491.64510175959,
+     ""
+    ],
+    [
+     315,
+     6,
+     0.3472468386306557,
+     0.732494810737657,
+     19.620803668071872,
+     1316.7730676005162,
+     534912.4999980005,
+     4608.705736601807,
+     74935.67241560538,
+     ""
+    ]
+   ],
+   "Su ihtiyacı": [
+    [
+     "Kalem",
+     "Değer",
+     "Birim"
+    ],
+    [
+     "Tepe ET0",
+     6.5,
+     "mm/gün"
+    ],
+    [
+     "Kc",
+     1.15,
+     ""
+    ],
+    [
+     "Kr",
+     1,
+     ""
+    ],
+    [
+     "Net ihtiyaç",
+     7.475,
+     "mm/gün"
+    ],
+    [
+     "Brüt ihtiyaç",
+     8.305555555555555,
+     "mm/gün"
+    ],
+    [
+     "Bitki başına (tepe)",
+     4.651111111111111,
+     "l/gün"
+    ],
+    [
+     "Uygulama hızı",
+     4.329004329004329,
+     "mm/h"
+    ],
+    [
+     "Kolay alınabilir su (RAW)",
+     22.05,
+     "mm"
+    ],
+    [
+     "Sulama aralığı",
+     1,
+     "gün"
+    ],
+    [
+     "Maks. aralık (toprak)",
+     2,
+     "gün"
+    ],
+    [
+     "Shift başına süre",
+     1.9185833333333333,
+     "saat"
+    ],
+    [
+     "Bir tur süresi",
+     7.674333333333333,
+     "saat"
+    ],
+    [
+     "Sezonluk su",
+     71466.77777777778,
+     "m³"
+    ],
+    [
+     "Sezonluk su (dekar başına)",
+     893.3347222222222,
+     "m³/da"
+    ],
+    [
+     "Sezonluk pompa çalışması",
+     206.85748210582673,
+     "saat"
+    ],
+    [
+     "Sezonluk enerji",
+     4025.2447639896536,
+     "kWh"
+    ],
+    [
+     "Sezonluk enerji bedeli",
+     14088.356673963788,
+     "TL"
+    ]
+   ],
+   "Aylık program": [
+    [
+     "Ay",
+     "Kc",
+     "ET0 (mm/gün)",
+     "Brüt (mm/gün)",
+     "Aralık (gün)",
+     "Süre (saat/shift)",
+     "Su (m³/da·ay)"
+    ],
+    [
+     "May",
+     0.6,
+     4.55,
+     3.033333333333333,
+     1,
+     0.7007,
+     94.03333333333333
+    ],
+    [
+     "Haz",
+     0.875,
+     5.72,
+     5.561111111111111,
+     1,
+     1.2846166666666665,
+     166.83333333333331
+    ],
+    [
+     "Tem",
+     1.15,
+     6.5,
+     8.305555555555555,
+     1,
+     1.9185833333333333,
+     257.47222222222223
+    ],
+    [
+     "Ağu",
+     1.15,
+     6.045,
+     7.724166666666666,
+     1,
+     1.7842825,
+     239.44916666666666
+    ],
+    [
+     "Eyl",
+     0.9199999999999999,
+     4.42,
+     4.518222222222222,
+     1,
+     1.0437093333333332,
+     135.54666666666665
+    ]
+   ],
+   "Malzeme (fiyatlı)": [
+    [
+     "Grup",
+     "Kalem",
+     "Miktar",
+     "Birim",
+     "Birim fiyat (TL)",
+     "Tutar (TL)",
+     "Fiyat kaynağı"
+    ],
+    [
+     "Lateral",
+     "Damla borusu Ø16, 2,0 l/h, 33 cm",
+     58916,
+     "m",
+     4.5,
+     265122,
+     "Örnek fiyat"
+    ],
+    [
+     "Lateral",
+     "Start konnektör Ø16 (contalı)",
+     1167,
+     "adet",
+     6,
+     7002,
+     "Örnek fiyat"
+    ],
+    [
+     "Lateral",
+     "Lateral sonu (kör tapa) Ø16",
+     1167,
+     "adet",
+     3,
+     3501,
+     "Örnek fiyat"
+    ],
+    [
+     "Manifold",
+     "PE100 boru Ø110 PN6",
+     825,
+     "m",
+     225,
+     185625,
+     "Örnek fiyat"
+    ],
+    [
+     "Ana hat",
+     "PVC-U boru Ø140 PN6",
+     358,
+     "m",
+     245,
+     87710,
+     "Örnek fiyat"
+    ],
+    [
+     "Ana hat",
+     "PVC-U boru Ø110 PN6",
+     406,
+     "m",
+     150,
+     60900,
+     "Örnek fiyat"
+    ]
+   ],
+   "Malzeme (fiyatsız)": [
+    [
+     "Grup",
+     "Kalem",
+     "Miktar",
+     "Birim"
+    ],
+    [
+     "Manifold",
+     "Manifold sonu yıkama vanası / tapa Ø110",
+     8,
+     "adet"
+    ],
+    [
+     "Manifold",
+     "Manifold giriş bağlantısı (PVC×PE geçiş + T) Ø110",
+     8,
+     "adet"
+    ],
+    [
+     "Ana hat",
+     "PVC redüksiyon Ø140×Ø110",
+     4,
+     "adet"
+    ],
+    [
+     "Ana hat",
+     "PVC dirsek Ø140",
+     6,
+     "adet"
+    ],
+    [
+     "Ana hat",
+     "PVC te / redüksiyonlu te Ø140",
+     12,
+     "adet"
+    ],
+    [
+     "Ana hat",
+     "PVC kör tapa Ø140",
+     4,
+     "adet"
+    ],
+    [
+     "Vana",
+     "Shift vanası 3\" (hidrolik/solenoid) (manifold girişi)",
+     8,
+     "adet"
+    ],
+    [
+     "Vana",
+     "Hava tahliye vanası (vakum kırıcı) 1\"",
+     9,
+     "adet"
+    ],
+    [
+     "Vana",
+     "Ana sürgülü vana (Ø140 hatta)",
+     1,
+     "adet"
+    ],
+    [
+     "Vana",
+     "Çekvalf (Ø140 hatta)",
+     1,
+     "adet"
+    ],
+    [
+     "Filtre",
+     "Disk filtre 4\" (batarya) (120 mesh)",
+     2,
+     "adet"
+    ],
+    [
+     "Kontrol",
+     "Manometre (filtre giriş-çıkış)",
+     2,
+     "adet"
+    ],
+    [
+     "Kontrol",
+     "Su sayacı",
+     1,
+     "adet"
+    ],
+    [
+     "Kontrol",
+     "Gübre tankı / venturi (opsiyonel)",
+     1,
+     "takım"
+    ],
+    [
+     "Pompa",
+     "Jenerik S-75/15 (yatay santrifüj pompa), 5,5 kW",
+     1,
+     "takım"
+    ]
+   ],
+   "Maliyet": [
+    [
+     "Kalem",
+     "Değer",
+     "Birim"
+    ],
+    [
+     "Fiyatlı kalemler ara toplamı (opsiyoneller hariç)",
+     609860,
+     "TL"
+    ],
+    [
+     "Fiyatı eksik zorunlu kalem",
+     14,
+     "adet"
+    ],
+    [
+     "Örnek fiyatlı kalem",
+     6,
+     "adet"
+    ],
+    [
+     "TOPLAM MALZEME BEDELİ",
+     "Hesaplanmadı (eksik fiyat)",
+     ""
+    ]
+   ],
+   "Varsayımlar": [
+    [
+     "#",
+     "Varsayım / uyarı"
+    ],
+    [
+     1,
+     "Arazi boyutları girilmedi: uzun kenarı kısa kenarın 2 katı olan dikdörtgen kabul edildi"
+    ],
+    [
+     2,
+     "Uzun kenar eğimi: 0 % kabul edildi"
+    ],
+    [
+     3,
+     "Kısa kenar eğimi: 0 % kabul edildi"
+    ],
+    [
+     4,
+     "Sıra arası: 1,4 m kabul edildi"
+    ],
+    [
+     5,
+     "Sıra üzeri: 0,4 m kabul edildi"
+    ],
+    [
+     6,
+     "Damlatıcı debisi: 2 l/h kabul edildi"
+    ],
+    [
+     7,
+     "Damlatıcı aralığı: 0,33 m kabul edildi"
+    ],
+    [
+     8,
+     "Damlatıcı çalışma basıncı: 10 m kabul edildi"
+    ],
+    [
+     9,
+     "Damlatıcı akış üssü x: 0,5 kabul edildi"
+    ],
+    [
+     10,
+     "Kabul edilebilir basınç farkı 1,9 m (debi farkı %10); %55 lateral, %45 manifold"
+    ],
+    [
+     11,
+     "Kaynaktan araziye mesafe: 0 m kabul edildi"
+    ],
+    [
+     12,
+     "Alt ünite debisi kaynak debisinin en fazla yarısı, manifold çapı tercihen en fazla Ø110 alınarak bölümlendi"
+    ],
+    [
+     13,
+     "Tepe ET0 6,5 mm/gün (genel değer)"
+    ],
+    [
+     14,
+     "Kc (orta dönem, FAO-56): 1,15 kabul edildi"
+    ],
+    [
+     15,
+     "Bitki örtü oranı: 0,9 kabul edildi"
+    ],
+    [
+     16,
+     "Uygulama randımanı: 0,9 kabul edildi"
+    ],
+    [
+     17,
+     "Toprak tınlı kabul edildi"
+    ],
+    [
+     18,
+     "Günlük pompa çalışma süresi: 20 saat kabul edildi"
+    ],
+    [
+     19,
+     "Aylık Kc: ilk ay 0,60, ikinci ay ara değer, son ay orta dönemin %80'i (FAO-56 eğrisine yaklaşık)"
+    ],
+    [
+     20,
+     "Kaynak-arazi kot farkı: 0 m kabul edildi"
+    ],
+    [
+     21,
+     "Ana hat kademeli: her segment, taşıdığı en büyük shift debisinde hız ≤ max(seçilen ana çaptaki hız, 0,9) ve ≤ 1,5 m/s olacak en küçük çapla; çap ana çapı geçmez, basınç sınıfı ana hatla aynı"
+    ],
+    [
+     22,
+     "Ana hat karşılaştırmasında pompa verimi %70, motor verimi %90; ana hatta %10 yerel kayıp payı; gübreleme + sayaç + çekvalf + sürgülü vana kaybı 2 m"
+    ],
+    [
+     23,
+     "Boru basınç sınıfı: (a) en alçak noktadaki çalışma basıncının 1,25 katı ≤ PN, (b) pompa kapama basıncı (jenerik eğri: görev basıncının 1,3 katı) + statik kot farkı ≤ PN; sürtünme kaybı ihmal edilir (güvenli yönde)"
+    ],
+    [
+     24,
+     "Elektrik fiyatı örnek değerdir (Ayarlar'dan güncelleyin)"
+    ],
+    [
+     "Uyarı",
+     "Seçilen pompa bazı shift’lerde gerekenden %107 fazla basınç üretiyor; basınç regülatörü veya frekans konvertörü önerilir."
+    ],
+    [
+     "Uyarı",
+     "Su darbesi ayrıntılı analiz edilmedi. Ani kapanmada (kritik süre 5,0 s'den kısa) Joukowsky üst sınırı ΔH ≈ 54 m (dalga hızı 299 m/s); bu durumda PN6 sınıfı aşılır. Vanalar en az 25 s'de kapanmalı; tasarım, su darbesi analizi yapılmadan kesin onaylı sayılmaz."
+    ]
+   ]
+  },
+  "pafta": {
+   "format": "A3",
+   "scale": 2000,
+   "W": 420,
+   "H": 297,
+   "svgSha256": "d94693e85f3baa6991c9ea6e6ad74c17406c0a5113b3997a8ca54fcf7408298d"
+  },
+  "dxf": {
+   "length": 119557,
+   "sha256": "c4894ff3d2d3fc738ffc839d31aab21f82fa60e203050d293162fc1edb0bf78d"
+  }
+ }
+}
