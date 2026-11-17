@@ -73,10 +73,11 @@ jobs:
           BT="$ANDROID_HOME/build-tools/36.0.0"
           ls -l "$APK"
           BADGING=$("$BT/aapt2" dump badging "$APK")
-          echo "$BADGING" | grep -E "^(package|sdkVersion|targetSdkVersion|application-label):"
+          echo "$BADGING" | grep -E "^(package|sdkVersion|minSdkVersion|targetSdkVersion|application-label):"
           PKG=$(echo "$BADGING" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
           VC=$(echo "$BADGING" | sed -n "s/^package: .* versionCode='\([^']*\)'.*/\1/p")
-          MIN=$(echo "$BADGING" | sed -n "s/^sdkVersion:'\([^']*\)'/\1/p")
+          # aapt2 34 "sdkVersion:", aapt2 36 "minSdkVersion:" yazar
+          MIN=$(echo "$BADGING" | sed -n "s/^\(min\)\{0,1\}[sS]dkVersion:'\([^']*\)'/\2/p")
           TGT=$(echo "$BADGING" | sed -n "s/^targetSdkVersion:'\([^']*\)'/\1/p")
           EXPECT_VC=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' android/app/build.gradle)
           "$BT/apksigner" verify --verbose --print-certs "$APK" | grep -E "Verified|Signer #1 certificate (DN|SHA-256)"
