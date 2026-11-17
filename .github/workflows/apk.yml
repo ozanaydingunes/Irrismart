@@ -33,6 +33,28 @@ jobs:
       - name: Hidrolik denetim (tools/audit.js)
         run: node tools/audit.js
 
+  arayuz:
+    name: Arayüz testleri (tarayıcı)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Chromium kur (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      # Hidrolik paneli: masaüstü (1280 px) ve mobil (390 px) aynı veri, görünürlük, taşma, dokunma hedefi, tema ve karşıtlık
+      - name: Arayüz testleri
+        run: npm run test:ui
+
   apk:
     name: Debug APK
     needs: test
