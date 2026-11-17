@@ -1,7 +1,7 @@
 # IrriGrow v0.6.1 — Damla sulama ön projelendirme (Android)
 
 ## Platform
-Capacitor 8 · Android hedef API 36 (Android 16) · en düşük API 24 (Android 7.0) · JDK 21 · Gradle 8.14.3 / AGP 8.13.
+Capacitor 8 · Android hedef API 36 (Android 16) · en düşük API 24 (Android 7.0) · Node 22 · JDK 21 · Gradle 8.14.3 / AGP 8.13.
 Test paketi `com.irrigrow.app.dev` (sabit debug imzası; eski sürümlerin üzerine kurulur).
 
 ## Dosya yapısı

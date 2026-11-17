@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # IrriGrow — Android debug APK derleme betiği (GitLab CI 'apk' işi bunu çalıştırır).
-# Yerelde de çalışır: Android SDK yoksa indirir. Gereken: node 20, JDK 21, unzip, curl.
+# Yerelde de çalışır: Android SDK yoksa indirir. Gereken: node 22, JDK 21, unzip, curl.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
