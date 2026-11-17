@@ -1,4 +1,8 @@
-# IrriGrow v0.6.0 — Damla sulama ön projelendirme (Android)
+# IrriGrow v0.6.1 — Damla sulama ön projelendirme (Android)
+
+## Platform
+Capacitor 8 · Android hedef API 36 (Android 16) · en düşük API 24 (Android 7.0) · JDK 21 · Gradle 8.14.3 / AGP 8.13.
+Test paketi `com.irrigrow.app.dev` (sabit debug imzası; eski sürümlerin üzerine kurulur).
 
 ## Dosya yapısı
 | Dosya | Görev |
@@ -18,7 +22,7 @@
 | `www/js/store.js` | Proje şeması (v2), güvenli migrasyon, bozuk veri kurtarma, revizyon geçmişi, kopyalama |
 | `tools/audit.js` | Faz 1 denetimi: motoru bağımsız Darcy-Weisbach ve denge hesaplarıyla karşılaştırır |
 | `tools/verify-excel.js` | LibreOffice ile bağımsız Excel doğrulaması (CI dışında) |
-| `test/*.test.js` | 90 otomatik test (`npm test`) |
+| `test/*.test.js` | 94 otomatik test (`npm test`); `upgrade.test.js` eski sürüm verisinin korunmasını sınar |
 | `ci/build-apk.sh` | APK derleme betiği (CI ve yerelde) |
 
 ## Katalog yükleme
@@ -38,5 +42,5 @@ Capacitor'ın ürettiği dosyalar (`android/app/src/main/assets/`, `android/capa
 ## Yerelde
 ```
 npm ci && npm test
-bash ci/build-apk.sh     # JDK 17 + internet gerekir
+bash ci/build-apk.sh     # JDK 21 + internet gerekir
 ```
