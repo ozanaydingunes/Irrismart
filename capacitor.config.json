@@ -2,5 +2,15 @@
   "appId": "com.irrigrow.app.dev",
   "appName": "IrriGrow",
   "webDir": "www",
-  "android": { "allowMixedContent": false }
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "android": { "allowMixedContent": false },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
 }
