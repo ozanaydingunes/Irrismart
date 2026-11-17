@@ -1,4 +1,8 @@
-# IrriGrow v0.6.0 — Damla sulama ön projelendirme (Android)
+# IrriGrow v0.6.1 — Damla sulama ön projelendirme (Android)
+
+## Platform
+Capacitor 8 · Android hedef API 36 (Android 16) · en düşük API 24 (Android 7.0) · Node 22 · JDK 21 · Gradle 8.14.3 / AGP 8.13.
+Test paketi `com.irrigrow.app.dev` (sabit debug imzası; eski sürümlerin üzerine kurulur).
 
 ## Dosya yapısı
 | Dosya | Görev |
@@ -18,7 +22,7 @@
 | `www/js/store.js` | Proje şeması (v2), güvenli migrasyon, bozuk veri kurtarma, revizyon geçmişi, kopyalama |
 | `tools/audit.js` | Faz 1 denetimi: motoru bağımsız Darcy-Weisbach ve denge hesaplarıyla karşılaştırır |
 | `tools/verify-excel.js` | LibreOffice ile bağımsız Excel doğrulaması (CI dışında) |
-| `test/*.test.js` | 118 otomatik test (`npm test`): 90 birim/entegrasyon testi + MH-0 altın kayıt ve bağımsız doğrulama |
+| `test/*.test.js` | 122 otomatik test (`npm test`): 90 birim/entegrasyon testi + 4 sürüm yükseltme testi (`upgrade.test.js`) + 28 MH-0 altın kayıt ve bağımsız doğrulama testi |
 | `test/golden/`, `tools/golden.js` | Altın referans kaydı: 18 senaryo + hidrolik tablo; sonuçlar habersizce değişemez |
 | `test/dogrulama.test.js`, `test/ref/epanet.js` | Bağımsız doğrulama: analitik çözümler ve EPANET 2.3 (epanet-js) |
 | `tools/dogrulama-ozet.js` | Doğrulamada ölçülen farkların özeti |
@@ -43,5 +47,5 @@ Capacitor'ın ürettiği dosyalar (`android/app/src/main/assets/`, `android/capa
 ## Yerelde
 ```
 npm ci && npm test
-bash ci/build-apk.sh     # JDK 17 + internet gerekir
+bash ci/build-apk.sh     # JDK 21 + internet gerekir
 ```
