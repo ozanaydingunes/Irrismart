@@ -1,0 +1,41 @@
+# IrriGrow — Git'e eklenmeyecek dosyalar
+
+# Bağımlılıklar
+node_modules/
+.npm/
+
+# Yerel Android SDK (ci/build-apk.sh indirir)
+.android-sdk/
+
+# Derleme çıktıları
+*.apk
+*.aab
+*.ap_
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capturedResults/
+.gradle/
+
+# Capacitor'ın `npx cap sync android` ile ürettiği dosyalar (android/.gitignore ile aynı)
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+android/capacitor-cordova-android-plugins/
+
+# Test / araç çıktıları
+coverage/
+*.log
+tmp/
+
+# IDE ve işletim sistemi
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Not: android/app/irrismart-debug.keystore bilinçli olarak depodadır (sabit debug imzası;
+# güncellemelerin eski sürümün üzerine kurulabilmesi için). Yayın anahtarı ASLA depoya eklenmez.

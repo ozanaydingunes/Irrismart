@@ -1,0 +1,6 @@
+{
+  "appId": "com.irrigrow.app.dev",
+  "appName": "IrriGrow",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}

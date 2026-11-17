@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">IrriGrow</string>
+    <string name="title_activity_main">IrriGrow</string>
+    <string name="package_name">com.irrigrow.app.dev</string>
+    <string name="custom_url_scheme">com.irrigrow.app.dev</string>
+</resources>

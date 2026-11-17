@@ -1,0 +1,164 @@
+:root{
+  --bg:#f3f6f4; --card:#fff; --ink:#15231c; --muted:#5f6f66; --line:#dde5e0;
+  --pri:#0f6b45; --pri2:#e3f2ea; --warn:#9a5b00; --warnbg:#fff4e0; --err:#a1242b; --errbg:#fdeaea;
+  --tab:64px; --top:62px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header.top{position:fixed;top:0;left:0;right:0;height:calc(var(--top) + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);display:flex;align-items:center;gap:8px;background:#fff;color:var(--pri);border-bottom:1px solid var(--line);z-index:1000;padding-left:6px;padding-right:6px}
+header .ttl{flex:1;display:flex;flex-direction:column;line-height:1.15}
+header .ttl span{font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{background:none;border:0;color:inherit;font-size:22px;width:44px;height:44px;border-radius:10px}
+main{position:fixed;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--tab) + env(safe-area-inset-bottom));left:0;right:0;overflow:hidden}
+.view{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+.view.on{display:block}
+.pad{padding:14px 14px 28px;max-width:720px;margin:0 auto}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;height:calc(var(--tab) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:#fff;border-top:1px solid var(--line);z-index:1000}
+nav.tabs button{flex:1;background:none;border:0;color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+nav.tabs button i{font-style:normal;font-size:19px}
+nav.tabs button.on{color:var(--pri);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.card h3{margin:0 0 10px;font-size:15px;color:var(--pri)}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:11px 14px;font-size:15px;font-weight:500}
+.btn.sm{padding:8px 10px;font-size:13px}
+.btn.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.ghost{background:transparent}
+.btn.block{display:block;width:100%}
+.btn.danger{color:var(--err)}
+.row{display:flex;gap:8px;align-items:center}.wrap{flex-wrap:wrap}
+.muted{color:var(--muted)}.small{font-size:12.5px}.center{text-align:center}
+.proj{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.proj .t{flex:1;min-width:0}.proj .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+fieldset{border:1px solid var(--line);border-radius:14px;background:#fff;margin:12px 0;padding:6px 14px 12px}
+legend{font-weight:600;color:var(--pri);padding:0 6px}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f.one{grid-template-columns:1fr}
+label{display:flex;flex-direction:column;font-size:12.5px;color:var(--muted);gap:4px;margin-top:8px}
+input,select{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:10px;background:#fbfcfb;width:100%;min-width:0}
+input:focus,select:focus{outline:2px solid var(--pri2);border-color:var(--pri)}
+.kv{display:grid;grid-template-columns:minmax(42%,1fr) auto;gap:6px 12px;font-size:14px}
+.kv div:nth-child(odd){color:var(--muted)}.kv div:nth-child(even){font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.big{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.big div{background:var(--pri2);border-radius:12px;padding:10px}
+.big b{display:block;font-size:20px;color:var(--pri);font-variant-numeric:tabular-nums}
+.big span{font-size:12px;color:var(--muted)}
+.note{border-radius:12px;padding:10px 12px;margin:8px 0;font-size:13.5px}
+.note.warn{background:var(--warnbg);color:var(--warn)}.note.err{background:var(--errbg);color:var(--err)}
+.note ul{margin:4px 0 0;padding-left:18px}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 5px;border-bottom:1px solid var(--line);text-align:end;vertical-align:top}
+th:first-child,td:first-child{text-align:start}
+th{color:var(--muted);font-weight:600;font-size:12px}
+tr.sel td{background:var(--pri2);font-weight:600}
+tr.click{cursor:pointer}
+.scroll{overflow-x:auto}
+.tag{display:inline-block;font-size:11px;background:var(--pri);color:#fff;border-radius:6px;padding:1px 6px;margin-left:4px}
+details summary{cursor:pointer;color:var(--pri);font-weight:600}
+#map{position:absolute;inset:0 0 var(--mapbar,150px) 0}
+.mapbar{position:absolute;left:0;right:0;bottom:0;min-height:var(--mapbar,150px);background:#fff;border-top:1px solid var(--line);padding:8px 10px}
+.mapinfo{font-size:13px;margin-bottom:6px;min-height:36px}
+.vtx{background:#ffd400;border:2px solid #0f5132;border-radius:50%}
+#toast{position:fixed;left:50%;bottom:calc(var(--tab) + 18px);transform:translateX(-50%);background:#15231c;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:2000;max-width:90%}
+#toast.on{opacity:.95}
+.layout svg{width:100%;height:auto;background:#f7faf8;border-radius:10px}
+.sticky{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding-top:14px}
+
+.ferr{color:var(--err);font-size:12px}
+input.bad{border-color:var(--err);background:var(--errbg)}
+.bad{color:var(--err)}
+.tag.warn{background:#9a5b00}
+.btn:disabled{opacity:.45}
+input.price{width:92px;padding:6px 8px;text-align:right}
+.srcm{background:#00bcd4;color:#fff;border:2px solid #fff;border-radius:50%;font:bold 12px/18px sans-serif;text-align:center}
+.mapbar .row .btn{flex:1;min-width:0;padding:8px 4px}
+
+header .ttl{flex-direction:row;align-items:center;gap:10px;min-width:0}
+header .logo{height:50px;width:auto;flex:none}
+header .ttl span{color:var(--muted);font-size:13px;opacity:1;border-left:1px solid var(--line);padding-left:10px}
+.hero{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 14px}
+.hero img{width:min(78%,360px);height:auto}
+.hero span{color:var(--muted);font-size:13px}
+#splash{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:5000;transition:opacity .35s}
+#splash img{width:min(72%,420px);height:auto}
+#splash.off{opacity:0;pointer-events:none}
+#fileSheet{display:none}
+#fileSheet.on{display:block}
+#fileSheet .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000}
+#fileSheet .sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));z-index:3001;box-shadow:0 -4px 20px rgba(0,0,0,.15);word-break:break-all}
+
+/* Hidrolik tablo — Excel görünümü */
+.pad.wide{max-width:1200px}
+.seg{display:flex;gap:6px;margin-bottom:10px}
+.seg button{flex:1;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 6px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.xltab{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.xltab th,.xltab td{border:1px solid #c9d2cd;padding:0;height:30px;white-space:nowrap}
+.xltab th{background:#eef2ef;color:#15231c;font-weight:600;padding:4px 6px;text-align:center}
+.xltab th.rl{text-align:start;position:sticky;inset-inline-start:0;z-index:1;min-width:140px}
+.xltab td.cell-in{background:#fbd5b5}
+.xltab td.cell-in input,.xltab td.cell-in select{border:0;border-radius:0;background:transparent;padding:4px 6px;height:30px;width:100%;min-width:72px;font-size:12.5px;text-align:end}
+.xltab td.cell-in select{text-align:start;min-width:84px}
+.xltab.fr td.cell-in select[data-k=material]{min-width:150px}
+.xltab td.cell-out{background:#fff;padding:4px 8px;text-align:end;font-variant-numeric:tabular-nums;min-width:64px}
+.xltab td.grey{background:#f2f2f2}
+.xltab td.redcell{background:#f4a6a6;color:#7a0d0d;font-weight:600}
+.xltab td.badcell{outline:2px solid var(--err);outline-offset:-2px}
+.xltab td.unit{background:#fff;color:var(--muted);padding:4px 6px;font-style:italic}
+.legend{display:inline-block;width:14px;height:12px;border:1px solid #c9d2cd;vertical-align:middle}
+span.cell-in.legend{background:#fbd5b5} span.cell-out.legend{background:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:6px 12px;font-size:13px}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
+.hero select{width:auto;padding:6px 10px;font-size:13px}
+nav.tabs button{font-size:10.5px}
+/* Sağdan sola diller */
+[dir=rtl] th,[dir=rtl] td{text-align:start}
+[dir=rtl] th:first-child,[dir=rtl] td:first-child{text-align:start}
+[dir=rtl] .kv div:nth-child(even){text-align:start}
+[dir=rtl] #map{direction:ltr}
+
+/* Faz 2: harita modları, istasyon, boru bilgisi, tam ekran, shift etiketleri */
+#mModes{display:flex;gap:4px;margin-bottom:6px}
+#mModes button{flex:1;min-width:0;padding:6px 2px;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:8px;color:var(--ink,#15231c)}
+#mModes button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.stam{background:#fff;border:2px solid #c62828;border-radius:6px;font:bold 11px/16px sans-serif;text-align:center;color:#c62828}
+.rtv{background:#c62828;border:2px solid #fff;border-radius:50%}
+.slab{background:rgba(255,255,255,.88);border:1px solid #15231c;border-radius:6px;padding:2px 5px;font:600 11px/1.25 sans-serif;color:#15231c;white-space:nowrap;width:auto!important;height:auto!important}
+.leaflet-popup-content{font-size:13px;line-height:1.45;margin:10px 12px}
+.leaflet-popup-content table{border-collapse:collapse}
+.leaflet-popup-content td{padding:1px 6px 1px 0;border:0}
+body.mapfull header,body.mapfull nav.tabs{display:none}
+body.mapfull #v-arazi{position:fixed;inset:0;z-index:1500;background:#fff}
+body.mapfull main{top:0;bottom:0}
+.mlegend{position:absolute;top:8px;right:8px;z-index:500;background:rgba(255,255,255,.92);border-radius:8px;padding:6px 8px;font-size:11px;line-height:1.5;pointer-events:none;width:auto;height:auto;border:0}
+.mlegend i{display:inline-block;width:16px;height:4px;vertical-align:middle;margin-right:4px}
+.ucard{border:1px solid var(--line);border-radius:10px;margin:6px 0;background:#fff}
+.ucard summary{padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ucard .in{padding:0 10px 10px}
+.zsmall .slab .d{display:none}
+.zsmall .slab{padding:1px 4px}
+
+/* Faz 2b: harita üzerinde proje görünümü */
+.sboxw{background:none;border:0}
+.sbox{background:rgba(255,255,255,.94);border:1px solid #15231c;border-radius:4px;font:11px/1.3 sans-serif;color:#15231c;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.25);transform:translate(-50%,-50%)}
+.sbox .sh{color:#fff;font-weight:700;padding:2px 6px;border-radius:3px 3px 0 0;white-space:nowrap}
+.sbox .bd{padding:2px 6px}
+.sbox .bd div{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
+.zsmall .sbox .bd div:not(.k){display:none}
+.ztiny .sbox .bd{display:none}
+.ztiny .sbox{min-width:0}
+.eqm{background:none;border:0}
+.znoeq .eqs{display:none}
+.plab{background:none;border:0;overflow:visible}
+.plab span{position:absolute;left:0;top:0;white-space:nowrap;font-weight:700;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;transform-origin:0 0}
+.plab.pm span{color:#b71c1c}.plab.pf span{color:#0d47a1;font-weight:600}.plab.pl span{color:#1b5e20;font-weight:600}
+
+.techf{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.chips label.chip{display:inline-flex;flex-direction:row;white-space:nowrap;align-items:center;gap:4px;font-size:12px;border:1px solid var(--line);border-radius:14px;padding:3px 8px;margin:3px 3px 0 0;background:#fff}
+.techwrap{position:relative;background:#fff;border:1px solid var(--line);border-radius:10px;height:min(62vh,640px);overflow:hidden;margin-bottom:12px}
+#techSvg,#techSvg svg{width:100%;height:100%;display:block;touch-action:none}
+.techbar{position:absolute;right:8px;top:8px;z-index:2;display:flex;flex-direction:column;gap:4px}
+.techbar .btn{min-width:34px}
+nav.tabs button{min-width:0}
+nav.tabs button span{font-size:10px}
