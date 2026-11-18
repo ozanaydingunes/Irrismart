@@ -330,6 +330,35 @@ Her kriter otomatik testle doğrulanır (`test/store.test.js`, `test/manual.test
 | V-15 | Bütün bu davranışlar Android (Capacitor) ve web masaüstünde aynıdır. | Aynı testler iki ortamda. |
 | V-16 | Hesap motoru ve MH-0 altın kayıtları değişmez. | Mevcut altın kayıt testi + hesap parmak izi. |
 
+### 14.1 MH-MANUEL-1A gözden geçirmesi (18.11.2026, kodlama öncesi)
+
+Mevcut kod (`store.js`, `app.js`, WEB-2 `desk.js`, PR #8 `solver.js`) ile plan yeniden
+karşılaştırıldı. Plan geçerli; aşağıdaki eksikler ve netleştirmeler 1A kapsamına eklenir.
+
+| No | Bulgu | Plana etkisi |
+|---|---|---|
+| G-1 | **Proje silme geri alınamıyor.** Projeler ekranındaki "Sil" yalnız onay sorar ve projeyi kalıcı siler. | Yeni kriter **V-17**. "Silinenler" alanı: silinen proje revizyonlarıyla birlikte saklanır, geri alınabilir; kalıcı silme ayrı onayla. JSON yedek bu alanı da taşır. |
+| G-2 | **Birden fazla sekme/pencere** (WEB-2 ile masaüstünde olası): iki sekme aynı depoya yazınca son yazan kazanır; diğerindeki değişiklik sessizce kaybolur. Bugün `storage` olayı dinlenmiyor. | Yeni kriter **V-18**. Başka sekmede değişiklik algılanınca uyarı ve yeniden yükleme; eski sekmenin üzerine yazması engellenir. |
+| G-3 | **Göç güvenlik ağı yok.** Şema 3'e geçişten önce ham verinin bir kopyası alınmıyor. | Yeni kriter **V-19**. İlk göçten önce ham depolama metni ayrı anahtara bir kez kopyalanır (kurtarma için); kopya ancak kullanıcı isteyince silinir. |
+| G-4 | `hydro` alanı karışık: elle girilen hidrolik tablo değerleri (`fields`) **mühendislik verisi**, `ptab`/`tab`/`pshift` ise **ekran durumu**. | `STATE_FIELDS` iki gruba ayrılır: mühendislik durumu (revizyona girer, değişiklik sayılır) ve görünüm durumu (revizyona girer ama yalnız onun değişmesi yeni revizyon oluşturmaz). V-01 testi bu ayrımı da denetler. |
+| G-5 | V-01'in yalnız `cur.<alan>` metin taraması yetmez: projeye `p.…`, `projects[i] = …`, `Object.assign(p, …)` ve PR #8'in `cur.akil` yazımlarıyla da dokunuluyor. | V-01 iki yöntemle: (a) statik tarama genişletilir; (b) arayüz testlerinde proje nesnesi `Proxy` ile izlenir ve yazılan her anahtarın listede olduğu doğrulanır. |
+| G-6 | Revizyonlar tam kopya; ölçüm: test2 ≈ 0,3 KB, 60 köşeli parsel sınırı tek başına ≈ 2,3 KB. Güzergâh, elle shift atamaları ve hidrolik tablo eklenince proje başına 20 revizyon ≈ 50–100 KB olabilir; çok projeli kullanımda tarayıcı sınırına (≈ 5 MB) yaklaşılabilir. | Revizyonda yalnız değişen alanlar saklanır (ilk revizyon tam, sonrakiler fark) **veya** boyut bütçesi; V-13 eşiği somutlaştırılır: %70'te bilgi, %85'te uyarı + yedek önerisi, %95'te yeni revizyon için onay. Hesapla türetilen veriler (ör. `akil.alternatifler`) revizyona girmez; yalnız kararlar (`akil.onay`) girer. |
+| G-7 | Sınırda sorma (V-08) her hesapta açılırsa rahatsız eder (revizyon bugün her başarılı hesaptan sonra alınıyor). | Sınıra ulaşıldığında hesap çalışmaya devam eder; revizyon alınmadığını gösteren kalıcı bir şerit çıkar ve kullanıcı karar verene kadar **hiçbir revizyon silinmez**. Soru yalnız kullanıcı işlemi başlatınca sorulur. |
+| G-8 | V-09'da "içerik aynı" tanımı yok: `updated` zaman damgası her kayıtta değişir. | Karşılaştırma yalnız mühendislik `STATE_FIELDS` üzerinden; zaman damgaları ve görünüm durumu yok sayılır. |
+| G-9 | V-05 için uygulama yöntemi: bütün projeler tek `localStorage` anahtarında; tek `setItem` zaten ya tamamen yazılır ya hiç. | "Bütün ya da hiç" = yeni dizi bellekte hazırlanır, tek yazma; yazma hata verirse bellekteki proje nesnesi işlem öncesi kopyasına döndürülür. Test: `setItem` hatası taklidi. |
+| G-10 | Android'de uygulamayı kaldırmak WebView deposunu siler; bu, yazılımla önlenemez. | Ayarlar ve yedek uyarısında "uygulamayı kaldırmadan önce yedek alın" metni; V-15 Capacitor taklidine ek olarak **gerçek cihaz** kontrol maddesi. |
+
+Yeni kabul kriterleri (V-01…V-16'ya ek):
+
+| Kod | Kriter | Doğrulama |
+|---|---|---|
+| V-17 | Silinen proje, revizyonlarıyla birlikte "Silinenler"den geri alınabilir; kalıcı silme ayrı onay ister. | Sil → geri al → derin eşitlik. |
+| V-18 | Aynı uygulama iki sekmede açıkken bir sekmedeki kayıt diğerinde algılanır; eski sekme yeni veriyi sessizce ezemez. | İki sayfalı tarayıcı testi (`storage` olayı). |
+| V-19 | Şema 3 göçünden önce ham veri bir kez kurtarma anahtarına kopyalanır; göç başarısız olursa veri bu kopyadan geri gelir. | Göç sırasında hata taklidi. |
+
+Bu notlar kodlama değildir; 1A kodlaması PR #8 tamamlandıktan sonra ve proje sahibinin onayıyla
+başlar.
+
 ## 15. Hesap ve ekran testleri (MH-MANUEL-1B…4)
 
 | Grup | Senaryo |
@@ -351,7 +380,7 @@ Her kriter otomatik testle doğrulanır (`test/store.test.js`, `test/manual.test
 4. Uygulanmayan istekler istenen / uygulanan / neden / seçilebilir değerlerle gösterilir.
 5. Su darbesi için hiçbir taslak "uygun/güvenli" etiketi alamaz; "Mühendislik doğrulaması gerekli" kalır.
 6. Otomatik ve manuel alternatifler aynı tabloda karşılaştırılır; hesaplanmayan özellik uygun görünmez.
-7. §14'teki V-01…V-16'nın tamamı geçer.
+7. §14 ve §14.1'deki V-01…V-19'un tamamı geçer.
 8. Android ve masaüstünde aynı özellikler ve aynı JSON.
 9. Yeni metinler 7 dilde; açık/koyu temada karşıtlık ≥ 4,5.
 10. Bütün eski test takımları ve altın kayıtlar geçer; MH-MANUEL-1…4 hesap motorunu değiştirmez.
