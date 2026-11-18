@@ -29,6 +29,19 @@ olmadan `main` dalına birleştirilmez.
 | 7 | **MH-2** | Eğim ve kot analizi | MH-KML |
 | 8 | **MH-3** | Arazi kotlarının hidrolik motorla entegrasyonu | MH-2 |
 
+### Paralel iz: MH-WEB — masaüstü web sürümü (onay bekliyor)
+
+Plan: [docs/mh-web-plan.md](mh-web-plan.md). Android ve web aynı `www/` kodunu ve aynı hesap motorunu kullanır.
+
+| Aşama | Kapsam | Durum |
+|---|---|---|
+| **MH-WEB-1** | GitHub Pages test ortamı (`https://ozanaydingunes.github.io/Irrismart/`), web bilgilendirme notu, dağıtım iş akışı | Plan — onay bekliyor |
+| **MH-WEB-2** | Masaüstü düzeni: geniş harita + yan mühendislik paneli | Plan — tasarım önizlemesi sonra |
+| **MH-WEB-3** | Harita üzerinden lateral ve manifold düzenleme (shift ve ana hat düzenleme bugün de var) | Ayrı teknik plan ve onay gerekli (motor girdisi) |
+| **MH-WEB-4** | KML/KMZ yükleme web'de (MH-KML tamamlanınca) | MH-KML'e bağlı |
+
+Bulut eşitlemesi yoktur; web ve telefon arasında taşıma JSON yedekle yapılır.
+
 Bir aşamaya, önceki aşamanın PR'ı onaylanmadan kodlama olarak başlanmaz.
 MH-KML, kendi aşaması gelmeden başka bir geliştirmenin içinde yarım ya da geçici olarak
 kodlanmaz; ayrı teknik planı ve ayrı PR'ı olur.
