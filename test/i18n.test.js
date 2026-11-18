@@ -8,10 +8,13 @@ const DYN = ['Kuyu', 'Yüzey suyu', 'Şebeke / hidrant', 'Su kaynağı', 'Göl/k
   'Parsel', 'Ekipman', 'Etiketler', 'Shift kutuları', 'Tablolar', 'Müşteri / işletme', 'İl', 'İlçe', 'Mevki', 'Proje mühendisi', 'Proje tarihi', 'Pafta no', 'Yatay', 'Dikey', 'Renkli', 'Siyah-beyaz', 'Tek pafta', 'Çoklu pafta', 'Otomatik', 'yatay', 'dikey'];
 function keys() {
   const out = new Set();
-  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js']) {
+  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js', 'platform.js', 'desk.js']) {
     const s = fs.readFileSync(W(f), 'utf8');
     for (const m of s.matchAll(/\b(?:t|T|tr|sn)\(\s*'((?:[^'\\]|\\.)*)'/g)) out.add(m[1].replace(/\\'/g, "'"));
   }
+  // MH-WEB-2 masaüstü paneli: başlık, KPI, satır ve sekme etiketleri yardımcı işlevlerle çevrilir
+  const dk = fs.readFileSync(W('desk.js'), 'utf8');
+  for (const re of [/\b(?:head|kpi)\(\s*'([^']+)'/g, /\[\s*'([^']+)',\s*(?:N\(|api\.|esc\(|`)/g, /\['\w+', '([^']+)'\]/g]) for (const m of dk.matchAll(re)) out.add(m[1]);
   const h = fs.readFileSync(path.join(__dirname, '..', 'www', 'index.html'), 'utf8');
   for (const m of h.matchAll(/data-i18n>([^<]+)</g)) out.add(m[1].trim());
   const a = fs.readFileSync(W('app.js'), 'utf8');

@@ -7,7 +7,10 @@
     "cap:sync": "cap sync android",
     "apk": "cd android && ./gradlew assembleDebug",
     "test": "node test/run.js",
-    "test:ui": "node test-ui/panel.ui.js && node test-ui/uyari.ui.js && node test-ui/kapasite.ui.js"
+    "test:ui": "node test-ui/panel.ui.js && node test-ui/uyari.ui.js && node test-ui/kapasite.ui.js",
+    "test:web": "node test-ui/web.ui.js",
+    "test:desk": "node test-ui/desk.ui.js",
+    "onizleme": "node tools/onizleme.js"
   },
   "dependencies": {
     "@capacitor-community/file-opener": "^8.0.1",

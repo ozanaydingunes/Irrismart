@@ -56,7 +56,9 @@
   // JSON proje yedeği ("Yedekle" / "Yedekten yükle"). Uygulama ve testler aynı fonksiyonları kullanır.
   // Excel/PDF raporları yedek değildir; yalnız bu biçim geri yüklenebilir.
   function backupPayload(projects, settings, catalog, date) {
-    return { uygulama: 'IrriGrow', yedekSurum: 1, tarih: (date || new Date()).toISOString(), projects, settings, catalog };
+    // Her proje sürüm bilgisi (schema) ile yazılır; yeni oluşturulmuş ve henüz yeniden açılmamış projeler de dahil.
+    // migrateProject yeni nesne döndürür: kayıtlı liste değişmez, mevcut alanlara dokunulmaz.
+    return { uygulama: 'IrriGrow', yedekSurum: 1, sema: SCHEMA, tarih: (date || new Date()).toISOString(), projects: (projects || []).map(migrateProject), settings, catalog };
   }
   // Dosya metnini çözer; geçersizse hata fırlatır (msg: çevrilecek metin). Dönüş: geçerli projeler, ayarlar, katalog
   function readBackup(text) {
