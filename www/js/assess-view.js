@@ -29,12 +29,20 @@
       return `<li class="ak-sol ak-sol-${DZ_CLASS[c.durum]}" data-tur="${c.tur}" data-durum="${c.durum}">
         <div class="ak-solh"><b>${esc(tx(c.baslik))}</b>${dz(c.durum)}</div>
         <p class="ak-why">${esc(tx(c.gerekce))}</p>
+        ${c.motorNot ? `<p class="ak-why">${esc(tx(c.motorNot))}</p>` : ''}
+        ${c.motor ? motorLine(c.motor) : ''}
+        ${c.kalan ? `<p class="ak-key">${esc(tx(c.kalan))}</p>` : ''}
         ${c.varsayim ? `<p class="ak-asm">${esc(tx(c.varsayim))}</p>` : ''}
         ${c.kapsam ? `<p class="ak-asm">${esc(tx(c.kapsam))}</p>` : ''}
-        ${c.asama && c.durum === 'degerlendirilmedi' ? `<p class="ak-later">${esc(t('Bu sürümde hesaplanmıyor; {x} aşamasında gelecek.', { x: c.asama }))}</p>` : ''}
+        ${c.asama && c.durum === 'degerlendirilmedi' ? `<p class="ak-later">${esc(c.asama === 'MH-AKIL-2' ? t('“Kapasite alternatifleri” bölümünden motorla hesaplanabilir.') : t('Bu sürümde hesaplanmıyor; {x} aşamasında gelecek.', { x: c.asama }))}</p>` : ''}
         ${c.gerekenVeri && c.gerekenVeri.length ? `<div class="ak-need"><span>${esc(t('Gereken veri'))}:</span>${list(c.gerekenVeri)}</div>` : ''}
         ${altTable(c.tablo)}
       </li>`;
+    }
+    // Motor sonucu (MH-AKIL-2): girdiler ve başlıca çıktılar
+    function motorLine(m) {
+      const it = (l, v, d, u) => `<span><small>${esc(t(l))}</small> ${N(v, d)}${u ? ' ' + esc(u) : ''}</span>`;
+      return `<div class="ak-motor">${it('Kaynak', m.Q, 1, 'm³/h')}${it('Günlük süre', m.H, 1, 'h')}${it('Aralık', m.I, 0, t('gün'))}${it('Shift', m.Ns, 0)}${it('Tur', m.cycle, 2, 'h')}${it('Sınır', m.avail, 1, 'h')}${it('Gerekli H', m.Hmax, 1, 'm')}${it('Motor', m.motor, 1, 'kW')}${it('Enerji', m.kWh, 0, 'kWh')}<span><small>${esc(t('Ana hat'))}</small> Ø${esc(m.od)} PN${esc(m.pn)}</span></div>`;
     }
     function detailBlock(x) {
       const a = x.ayrinti; if (!a) return '';
@@ -74,7 +82,39 @@
         ${Ares.findings.length ? Ares.findings.map(x => card(x, opt.onay !== false)).join('') : `<p class="muted small">${esc(t('Yapılandırılmış uyarı yok.'))}</p>`}
         ${Ares.findings.length ? legend : ''}${other}</section>`;
     }
-    return { render, card, solution };
+    // ---------- MH-AKIL-2: Kapasite alternatifleri kartı ----------
+    const AD = { mevcut: 'Mevcut durum', kaynak: 'Kaynak debisi (mevcut süre)', sure: 'Günlük çalışma süresi', 'kaynak-sure': 'Kaynak debisi + süre', aralik: 'Sulama aralığı' };
+    const ST = { uygun: ['ok', 'Uygun'], 'kapasite-uygun': ['warn', 'Kapasite uygun, kritik uyarı açık'], uygunsuz: ['bad', 'Uygunsuz'] };
+    const stb = d => `<span class="ak-dz ak-dz-${ST[d][0]}" data-alt-durum="${d}">${esc(t(ST[d][1]))}</span>`;
+    function alternatives(S, o = {}) {
+      const head = `<section class="card ak" id="kapasite"><h3>${esc(t('Kapasite alternatifleri'))}</h3>`;
+      const btn = lbl => `<button class="btn primary block" id="bKap" style="min-height:44px">${esc(t(lbl))}</button>`;
+      const intro = `<p class="ak-asm">${esc(t('Her alternatif gerçek hesap motoruyla, yalnız ilgili girdi değiştirilerek hesaplanır: kaynak debisi, günlük çalışma süresi, ikisi birlikte ve sulama aralığı. Proje verileriniz değişmez.'))}</p>`;
+      if (o.running) return head + intro + `<div class="ak-prog" role="status"><span style="width:${Math.min(100, (o.done || 0) / 12 * 100)}%"></span></div><p class="ak-asm">${esc(t('Hesaplanıyor… {n} motor çalıştırması', { n: o.done || 0 }))}</p></section>`;
+      if (!S) return head + intro + (o.stale ? `<p class="ak-key">${esc(t('Proje girdileri değiştiği için kayıtlı alternatifler geçersiz; yeniden hesaplayın.'))}</p>` : '') + btn('Kapasite alternatiflerini hesapla') + '</section>';
+      const v = S.hacim0, sh = S.shift;
+      const vol = `<h4 class="ak-h4">${esc(t('Hacimler (günlük)'))}</h4><div class="ak-tiles">
+        ${tile({ ad: { t: 'Bitkinin brüt ihtiyacı (brüt × hedef alan)', p: {} }, deger: v.ihtiyac, birim: 'm³', d: 0, kaynak: 'hesap' })}
+        ${tile({ ad: { t: 'Damlatıcıların uyguladığı hacim', p: {} }, deger: v.uygulanan, birim: 'm³', d: 0, kaynak: 'hesap' })}
+        ${tile({ ad: { t: 'Damlatıcı kapsama oranı', p: {} }, deger: v.kapsama * 100, birim: '%', d: 2, kaynak: 'hesap' })}
+        ${tile({ ad: { t: 'Mevcut kaynak kapasitesi', p: {} }, deger: v.kaynak, birim: 'm³', d: 0, kaynak: 'hesap' })}</div>
+        ${v.kapsama < 1 - 1e-6 ? `<p class="ak-asm">${esc(t('Damlatıcılar hedef alanın %{k} kadarını kaplıyor; kalan alanın su ihtiyacı ortadan kalkmaz. Kapasite uygunluğu için kaynak, bitkinin brüt ihtiyacını da karşılamalıdır.', { k: fmt(v.kapsama * 100, 2) }))}</p>` : ''}`;
+      const shiftP = `<p class="ak-asm">${esc(sh.kanit ? t('Yalnız shift sayısı: kaynakla her gruplamada en az {n} shift gerekir; tur ≥ {c} h > {av} h. Motorun hesapladığı {k} alternatifin hiçbiri sığmıyor.', { n: sh.nsLB, c: fmt(sh.cycLB, 2), av: fmt(sh.avail, 1), k: sh.liste.length }) : t('Yalnız shift sayısı: motorun hesapladığı {k} alternatif “Mühendislik değerlendirmesi” bölümünde.', { k: sh.liste.length }))}</p>`;
+      const rows = S.rows.filter(x => x.girdi);
+      const anyOk = rows.some(x => x.durum === 'uygun');
+      const th = ['Alternatif', 'Durum', 'Kaynak m³/h', 'Süre h/gün', 'Aralık gün', 'Shift', 'Tur / sınır h', 'En büyük shift m³/h', 'Gerekli H m', 'Motor kW', 'Enerji kWh/yıl', 'Ana hat', 'Kaynak / ihtiyaç m³/gün'];
+      const td = (i, html) => `<td data-label="${esc(t(th[i]))}">${html}</td>`;
+      const tr = x => `<tr data-alt="${esc(x.id)}" class="${x.id === 'mevcut' ? 'ak-ref' : ''}">${td(0, `<b>${esc(t(AD[x.aile]))}</b>`)}${td(1, `<span>${stb(x.durum)}${x.acik.length ? `<br><small>${esc(x.acik.join(', '))}</small>` : ''}${x.enKucuk === false ? `<br><small>${esc(t('en küçük olmayabilir'))}</small>` : ''}</span>`)}${td(2, N(x.girdi.Q, 1))}${td(3, N(x.girdi.H, 1))}${td(4, N(x.girdi.I, 0))}${td(5, N(x.Ns, 0))}${td(6, `<span>${N(x.cycle, 2)} / ${N(x.avail, 1)}</span>`)}${td(7, N(x.Qmax, 1))}${td(8, N(x.Hmax, 1))}${td(9, N(x.motor, 1))}${td(10, N(x.kWh, 0))}${td(11, `Ø${esc(x.od)} PN${esc(x.pn)}`)}${td(12, `<span>${N(x.hacim.kaynak, 0)} / ${N(x.hacim.ihtiyac, 0)}</span>`)}</tr>`;
+      const fail = S.rows.filter(x => !x.girdi).map(x => `<li>${esc(t(AD[x.aile]))}: ${esc(x.imkansiz ? t('bu sürede tek shift bile sığmıyor') : t('aranan aralıkta uygun debi bulunamadı'))}</li>`).join('');
+      return head + `<p class="ak-asm">${esc(t('{n} motor çalıştırmasıyla hesaplandı.', { n: S.calistirma || 0 }))}</p>` + vol + shiftP +
+        `<div class="scroll"><table class="ak-alt"><thead><tr>${th.map(h => `<th>${esc(t(h))}</th>`).join('')}</tr></thead><tbody>${rows.map(tr).join('')}</tbody></table></div>` +
+        (fail ? `<ul class="ak-ul">${fail}</ul>` : '') +
+        (S.notes || []).filter(x => x.kod === 'aralik-imax').map(x => `<p class="ak-asm">${esc(t('{m} günden uzun aralıklar toprağın kolay alınabilir suyunu aştığı için hesaplanmadı (bitki su stresi).', { m: x.Imax }))}</p>`).join('') +
+        `<p class="${anyOk ? 'ak-asm' : 'ak-key'}">${esc(anyOk ? t('“Uygun”: kapasite koşulları sağlanıyor ve hiçbir kritik uyarı kalmıyor. Seçim ve karşılaştırma MH-AKIL-4’te yapılacak.') : t('Bütün zorunlu kontrolleri sağlayan alternatif bulunamadı. “Kapasite uygun, kritik uyarı açık” satırları kesin çözüm olarak önerilmez.'))}</p>
+        <p class="ak-asm">${esc(t('Kaynak debileri motorun shift gruplama kuralı ve bu yerleşim için bulunan en küçük değerlerdir; 0,1 m³/h altının uygun olmadığı motorla doğrulanmıştır. Mutlak teorik minimum değildir. Kuyu verimi pompa deneyiyle doğrulanmalıdır.'))}</p>` +
+        btn('Yeniden hesapla') + '</section>';
+    }
+    return { render, card, solution, alternatives };
   }
 
   const api = { make, LV_CLASS, DZ_CLASS, ONAY };

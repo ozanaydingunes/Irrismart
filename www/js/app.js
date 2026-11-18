@@ -2,7 +2,7 @@
 (function () {
   const D = window.IRRI_DATA, E = window.IrriEngine, V = window.IrriValidate, Ct = window.IrriCatalog, Gm = window.IrriGeom, HT = window.IrriHydroTable, I = window.IrriI18n;
   const t = I.t;
-  const HV = window.IrriHydroView, HP = window.IrriHydroPanel, AS = window.IrriAssess, AV = window.IrriAssessView;
+  const HV = window.IrriHydroView, HP = window.IrriHydroPanel, AS = window.IrriAssess, AV = window.IrriAssessView, SO = window.IrriSolver;
   // MH-AKIL-1: uyarı katmanı. Sonuç, Hidrolik, PDF ve Excel aynı çağrıyı kullanır (IrriAssess.forProject).
   const assessOf = r => AS.forProject(cur, r);
   const $ = s => document.querySelector(s);
@@ -447,7 +447,10 @@
     if (!r.ok) { el.innerHTML = notes + `<button class="btn block" id="bBack">${t('Verilere dön')}</button>`; $('#bBack').onclick = () => show('veri'); return; }
     const s = r.schedule, m = r.main.sel, sel = r.sel;
     const A = assessOf(r);
-    const akil = AV.make({ t, fmt, esc }).render(A) + (I.lang !== 'tr' && (A.other.length || r.asm.length) ? `<p class="muted small">${t('Hesap notları (uyarılar ve varsayımlar) şu an yalnız Türkçe gösterilir.')}</p>` : '');
+    const hasKap = A.findings.some(x => x.kod === 'W-KAP-01');
+    const altValid = SO.valid(cur, r), altStale = !!(cur.akil && cur.akil.alternatifler) && !altValid;
+    const kapCard = hasKap || altValid ? AV.make({ t, fmt, esc }).alternatives(altValid ? cur.akil.alternatifler : null, { stale: altStale, running: kapRunning, done: kapDone }) : '';
+    const akil = AV.make({ t, fmt, esc }).render(A) + kapCard + (I.lang !== 'tr' && (A.other.length || r.asm.length) ? `<p class="muted small">${t('Hesap notları (uyarılar ve varsayımlar) şu an yalnız Türkçe gösterilir.')}</p>` : '');
     el.innerHTML = `
     <div class="big">
       <div><b>${fmt(r.field.da, 1)} da</b><span>${esc(t(D.CROPS[cur.inp.crop].ad))} · ${r.field.mode === 'parsel' ? t('parsel') : t('dikdörtgen')}</span></div>
@@ -521,9 +524,18 @@
       if (x.value === 'yok') delete cur.akil.onay[x.dataset.onay]; else cur.akil.onay[x.dataset.onay] = x.value;
       persist(); toast(t('Kaydedildi'));
     });
+    const bk = $('#bKap'); if (bk) bk.onclick = async () => {
+      if (kapRunning) return;
+      kapRunning = true; kapDone = 0; const p = cur; renderResult();
+      try {
+        const res = await SO.run(r, p.inp, settings, designOpt(), { k: AS.planK(p), tarih: new Date().toISOString(), onProgress: n => { kapDone = n; const pr = document.querySelector('#kapasite .ak-prog span'); if (pr) pr.style.width = Math.min(100, n / 12 * 100) + '%'; const tx = document.querySelector('#kapasite .ak-prog + p'); if (tx) tx.textContent = t('Hesaplanıyor… {n} motor çalıştırması', { n }); } });
+        p.akil = p.akil || {}; p.akil.alternatifler = SO.pack(p, r, res); persist();
+      } catch (e) { toast(t('Alternatifler hesaplanamadı: ') + (e && e.message || e)); }
+      finally { kapRunning = false; if (cur === p) { renderResult(); const k = document.getElementById('kapasite'); if (k) k.scrollIntoView({ block: 'start' }); } }
+    };
     if (pendingFocus) { const c = document.getElementById('ak-' + pendingFocus); pendingFocus = null; if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); } }
   }
-  let pendingFocus = null;
+  let pendingFocus = null, kapRunning = false, kapDone = 0;
   const monthName = m => new Date(2026, m - 1, 1).toLocaleDateString(I.locale, { month: 'short' });
   function bindExport(a, b, r) {
     const run = (btn, label, fn) => { const el = $(btn); el.onclick = async () => { if (el.disabled) return; el.disabled = true; const old = el.textContent; el.textContent = t('{x} hazırlanıyor…', { x: label }); try { await fn(); } catch (e) { toast(t('{x} hatası: ', { x: label }) + (e && e.message || e)); } finally { el.disabled = false; el.textContent = old; } }; };
