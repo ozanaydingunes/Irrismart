@@ -74,14 +74,25 @@ Proje sahibi tarafından daha önce talep edilmiş, onaylanmış geliştirme ger
   alınır. Motorun boşluk desteği yoksa bu açıkça uyarılır; boşluk yok sayılmaz.
 - Koordinat doğruluğu: WGS84 boylam/enlem sırası, yükseklik bileşeninin ayrıştırılması,
   geçersiz/kendini kesen poligon, kapanmamış halka ve yinelenen nokta denetimi.
-- Alan hesabı: projeksiyonlu (yerel düzlem) alan ve dosyadaki ad/açıklama ile karşılaştırma.
+- Parsel sınırları içe aktarılınca haritada otomatik gösterilir ve harita sınırlara yaklaşır.
+- Alan ve çevre hesabı: projeksiyonlu (yerel düzlem) alan ve çevre; dosyadaki ad/açıklama ile
+  karşılaştırma.
 - İçe aktarılan sınır haritada elle düzeltilebilir (köşe taşıma, ekleme, silme).
 - Mevcut proje veri modeliyle uyum: sonuç `cur.poly` yapısına dönüşür, kaynak dosya bilgisi
   (`kaynak: 'kml'`, dosya adı, parsel adı) ayrıca saklanır.
+- İçe aktarılan veriler projeye kaydedilir ve JSON proje yedeğine dahil olur.
+- Mevcut "Haritada çiz" akışı ve elle çizilmiş eski projeler aynen korunur.
 - İçe aktarılan araziler MH-AKIL-3 (Akıllı Arazi Bölme) ve MH-2 (Eğim Analizi) modüllerinde
   kullanılabilir.
 - KML'deki yükseklik değerleri MH-2 tamamlanana kadar hesapta **kullanılmaz** ve
   kullanılmış gibi gösterilmez.
+
+**Testler:** dosya doğrulama (bozuk zip, `doc.kml` olmayan KMZ, geçersiz XML, desteklenmeyen
+geometri, boş dosya) ve geometri doğrulama (kapanmamış halka, kendini kesen poligon, yinelenen
+nokta, boşluk, çoklu parsel, bilinen alan ve çevreli örnek dosyalar). Google Earth ve QGIS
+çıktısı örnek dosyalarla sınanır.
+
+**Teknik plan:** MH-KML aşaması başlamadan önce ayrı teknik plan hazırlanır ve onaya sunulur.
 
 **Bu aşamada yapılmayacaklar:** GeoJSON, SHP ve diğer formatlar. Her biri ileride ayrı
 aşama olarak planlanacak:
