@@ -46,6 +46,21 @@ Bir aşamaya, önceki aşamanın PR'ı onaylanmadan kodlama olarak başlanmaz.
 MH-KML, kendi aşaması gelmeden başka bir geliştirmenin içinde yarım ya da geçici olarak
 kodlanmaz; ayrı teknik planı ve ayrı PR'ı olur.
 
+### Paralel iz: MH-MANUEL — manuel mühendislik müdahalesi ve senaryo simülasyonu (plan onay bekliyor)
+
+Plan: [docs/mh-manuel-plan.md](mh-manuel-plan.md). Uyarının altından ilgili fiziksel girdiler bir
+taslakta değiştirilir, aynı motorla yeniden hesaplanır, eski/yeni karşılaştırılır ve onayla revizyon
+kaydıyla projeye uygulanır. Android ve masaüstünde ortak; hesap motoru değişmez.
+
+| Aşama | Kapsam | Durum |
+|---|---|---|
+| **MH-MANUEL-1** | Düzenleme ekranı, girdiler ve geçici taslak | Plan onay bekliyor |
+| **MH-MANUEL-2** | Gerçek motorla yeniden hesaplama ve uyarı farkı | 1'e bağlı |
+| **MH-MANUEL-3** | Karşılaştırma, değişiklik geçmişi, proje revizyonları | 2'ye bağlı |
+| **MH-MANUEL-4** | Harita, malzeme ve rapor entegrasyonu | 3'e bağlı |
+| **MH-MANUEL-5** | MH-AKIL-2, MH-AKIL-5, MH-KML ve arazi bölme ile entegrasyon | İlgili aşamalara bağlı |
+| (ayrı onay) | PN sınıfı, pompa modeli, boru malzemesi gibi bugün motor girdisi olmayan kaldıraçlar | Bağımsız doğrulama + hesap değişiklik kaydı |
+
 ## Bütün aşamalar için kurallar
 
 1. Hesap motoru (`www/js/engine.js`) formülleri ve MH-0 altın kayıtları korunur. Bir hesap
@@ -122,4 +137,5 @@ aşama olarak planlanacak:
 ## Ayrıntılı planlar
 
 - MH-AKIL-1: [docs/mh-akil-1-plan.md](mh-akil-1-plan.md)
+- MH-MANUEL: [docs/mh-manuel-plan.md](mh-manuel-plan.md) (onay bekliyor)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.
