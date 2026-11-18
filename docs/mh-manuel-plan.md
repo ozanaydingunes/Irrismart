@@ -174,7 +174,7 @@ katalog verisi hazır); E-2 ve E-6 gerçek üretici kataloğu gerektirir; E-4 MH
 ```js
 // Şema 3. Eski projelerde alan yoksa boş kabul edilir; hiçbir mevcut alan silinmez.
 const STATE_FIELDS = ['inp', 'poly', 'src', 'route', 'station', 'shiftEdit', 'akil', 'techOpt',
-                      'hydro', 'meta', 'elev', 'drawPos', 'name'];      // tek liste; testle denetlenir
+                      'hydro', 'meta', 'elev', 'geoKaynak', 'drawPos', 'name'];      // tek liste; testle denetlenir
 
 project.revs[i] = {
   rev, t, note,
@@ -277,24 +277,23 @@ Enter ile yeniden hesapla. **Android:** tam ekran sayfa, sabit "Yeniden hesapla"
 
 ## 13. Alt aşamalar ve geliştirme sırası
 
+Onaylanan sıra (proje sahibi, 18.11.2026):
+
 | Sıra | Aşama | Kapsam |
 |---|---|---|
-| 1 | **WEB-2 (PR #10)** | Masaüstü kullanıcı kabul testi, sonra birleştirme kararı |
-| 2 | **MH-AKIL-2 (PR #8)** | Telefon testi; main ile çakışmaların çözülmesi (bugün `package.json`, `app.css`, `i18n-dict.js`; PR #10 birleşince `app.js` de); ayrı birleştirme onayı |
-| 3 | **MH-MANUEL-1A — veri koruma** | Şema 3, `STATE_FIELDS`, tam anlık görüntü ve geri yükleme, sessiz silmenin kaldırılması, sabitleme, yedek çakışma koruması, revizyon listesi ve geri dönüş ekranı (§8, §14) |
-| 3 | **MH-MANUEL-1B — taslak ve ekran** | Kaldıraç kaydı, seçim listeleri, taslak modeli, düzenleme ekranı, Taslağı kaydet / İptal. Sonuç alanı "Hesaplanmadı" |
-| 4 | **MH-MANUEL-2** | Yeniden hesaplama, istenen–uygulanan, uyarı farkı, K6 etiketi |
-| 5 | **MH-MANUEL-3** | Karşılaştırma ve fark metinleri, Projeye uygula (bütün ya da hiç), değişiklik kaydı |
-| 6 | **MH-KML** | KML/KMZ içe aktarma (Android + masaüstü, sürükle-bırak) |
-| 7 | **MH-MANUEL-4** | Harita önizlemesi, malzeme farkı, PDF/Excel bölümü |
-| 8 | **MH-AKIL-5** | Su darbesi ileri ön değerlendirmesi (`veri.gecici` girdileriyle) |
-| 9 | **MH-MANUEL-5** | MH-AKIL-2 satırından taslak, otomatik ↔ manuel karşılaştırma, MH-AKIL-5, MH-KML ve arazi bölme |
-| ayrı | **MH-MOTOR-1** (M-0, E-1, E-3) | Ayrı plan/PR/doğrulama; MH-MANUEL-3'ten sonra herhangi bir noktada |
-| ayrı | **MH-MOTOR-2** (E-2, E-6) | Gerçek üretici kataloğu geldiğinde |
-| ayrı | **MH-MOTOR-3** (E-5) | Üretici verisiyle |
-| korunur | MH-AKIL-3 (arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı yol haritasındaki yerleriyle |
+| 1 | **PR #8 — MH-AKIL-2** | Android kabul testi ve birleştirme kararı |
+| 2 | **MH-MANUEL-1A** | Proje, revizyon ve yedekleme güvenliği (V-01…V-19); KML için `geoKaynak` alanı ve güvenli geometri değişimi |
+| 3 | **MH-KML** | KML/KMZ ile gerçek arazi yükleme (`docs/mh-kml-plan.md`) |
+| 4 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
+| 5 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
+| 6 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
+| 7 | **MH-SHIFT-2** | Manuel shift sayısı |
+| 8 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
+| 9 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
+| 10 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
+| korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-AKIL-5 (su darbesi), MH-MANUEL-5, MH-2 (kot/eğim), MH-3 (kot–hidrolik), MH-MOTOR-1/2/3 | Yol haritasında; her biri ayrı plan ve onay |
 
-**Sıranın değerlendirmesi.** Önerdiğiniz sıra teknik bağımlılıklarla uyumlu; üç küçük öneri:
+**Önceki değerlendirme (geçmiş kayıt).** Aşağıdaki öneriler uygulandı: PR #10 PR #8'den önce birleştirildi; MH-MANUEL-1 1A/1B olarak bölündü; MH-KML 1A'nın hemen arkasına alındı.
 
 1. **PR #10 önce, PR #8 sonra birleşsin.** İkisi `app.js`, `app.css`, `i18n-dict.js` ve
    `package.json` dosyalarına dokunuyor. PR #10 birleştikten sonra PR #8'in çakışmalarını bir kez
@@ -329,6 +328,21 @@ Her kriter otomatik testle doğrulanır (`test/store.test.js`, `test/manual.test
 | V-14 | Bozuk depolama verisi bugünkü gibi kurtarma anahtarına ayrılır; taslak/revizyon alanı bozuksa proje yine açılır, bozuk parça kurtarma alanına alınır. | Bozuk fikstürler. |
 | V-15 | Bütün bu davranışlar Android (Capacitor) ve web masaüstünde aynıdır. | Aynı testler iki ortamda. |
 | V-16 | Hesap motoru ve MH-0 altın kayıtları değişmez. | Mevcut altın kayıt testi + hesap parmak izi. |
+
+### 14.0 1A'nın MH-KML için hazırlaması gerekenler (sıra değişikliği, 18.11.2026)
+
+MH-KML artık 1A'nın hemen arkasında. 1A bu nedenle şunları da içerir (kod yalnız veri modeli ve
+güvenlik kuralıdır; KML ayrıştırıcısı MH-KML'dedir):
+
+- `STATE_FIELDS` içinde `geoKaynak` (içe aktarma kaynağı: dosya, parsel adı, tarih, boşluk sayısı)
+  içinde `yukseklikler` (KML'den gelen köşe yükseklikleri — **saklanır, hesapta kullanılmaz**).
+  Mevcut `elev` alanı (Open-Meteo DEM özeti: en düşük/en yüksek kot) ayrı kalır; iki kaynak
+  karıştırılmaz.
+- **Güvenli geometri değişimi** işlevi: sınır değişmeden önce tam revizyon; elle shift atamaları
+  için koru / uyarla / ayrı taslak / onayla sıfırla seçenekleri (MH-SHIFT §8); onaysız uygulanmaz.
+- **İçe aktarma = yeni proje** varsayılanı için `create` yolu: mevcut hiçbir projeye dokunmaz.
+- Testler: V-02/V-07 `geoKaynak` (yükseklikler dahil) ve `elev` alanlarıyla; geometri değişimi iptal edilince proje
+  bayt bayt aynı (V-03 genişletmesi).
 
 ### 14.1 MH-MANUEL-1A gözden geçirmesi (18.11.2026, kodlama öncesi)
 

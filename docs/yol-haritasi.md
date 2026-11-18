@@ -23,7 +23,7 @@ olmadan `main` dalına birleştirilmez.
 | 1 | ~~MH-AKIL-1~~ | **Tamamlandı** (PR #6) | — |
 | 2 | **MH-AKIL-2** | Otomatik shift ve kaynak kapasitesi alternatifleri | MH-AKIL-1 (tamamlandı) — kodlama onaylandı |
 | 3 | **MH-AKIL-5** | Su darbesi ön değerlendirmesi | MH-AKIL-1 |
-| 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma | — (veri modeli MH-AKIL-1 ile uyumlu) |
+| 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma (sıra: MH-MANUEL-1A'dan hemen sonra) | MH-MANUEL-1A |
 | 5 | **MH-AKIL-3** | Akıllı arazi bölme ve alternatif proje oluşturma | MH-AKIL-2, MH-KML |
 | 6 | **MH-AKIL-4** | Teknik ve ekonomik alternatif karşılaştırması | MH-AKIL-2, MH-AKIL-3 |
 | 7 | **MH-2** | Eğim ve kot analizi | MH-KML |
@@ -53,22 +53,22 @@ Plan: [docs/mh-manuel-plan.md](mh-manuel-plan.md). Uyarının altından ilgili f
 taslakta değiştirilir, aynı motorla yeniden hesaplanır, eski/yeni karşılaştırılır ve onayla revizyon
 kaydıyla projeye uygulanır. Android ve masaüstünde ortak; MH-MANUEL-1…4 hesap motorunu değiştirmez.
 
-Onaylanan geliştirme sırası (gerekçeler planın §13'ünde):
+Onaylanan geliştirme sırası (proje sahibi, 18.11.2026 — son hâli):
 
 | Sıra | Aşama | Durum |
 |---|---|---|
-| 1 | MH-WEB-2 (PR #10) — masaüstü kullanıcı kabul testi ve birleştirme | Tamamlandı — birleştirildi, canlı sitede yayında |
-| 2 | MH-AKIL-2 (PR #8) — telefon testi, main ile çakışma çözümü, ayrı onay | Telefon testi bekliyor |
-| 3 | MH-MANUEL-1A — veri koruma (tam revizyon, sessiz silme yok, yedek çakışma koruması) | Plan |
-| 3 | MH-MANUEL-1B — taslak modeli ve düzenleme ekranı | Plan |
-| 4 | MH-MANUEL-2 — yeniden hesaplama ve uyarı farkları | Plan |
-| 5 | MH-MANUEL-3 — karşılaştırma, uygulama, geri dönüş | Plan |
-| 6 | MH-KML — KML/KMZ içe aktarma | Onaylı gereksinim |
-| 7 | MH-MANUEL-4 — harita, malzeme ve rapor entegrasyonu | Plan |
-| 8 | MH-AKIL-5 — su darbesi ileri ön değerlendirmesi | Plan |
-| 9 | MH-MANUEL-5 — otomatik çözümler, su darbesi ve arazi modülleriyle entegrasyon | Plan |
-| MH-SHIFT-1/2/3 | Manuel shift sayısı ve haritadan shift düzenleme ([plan](mh-shift-plan.md)). Onaylı sıra: PR #8 → 1A → 1B → SHIFT-1 → MANUEL-2 → SHIFT-2 → MANUEL-3 → SHIFT-3. İlk sürümde yöntem A (yan yana) varsayılan, B (dengeli) deneysel, C (komşulu dengeli) doğrulamadan sonra | Mimari onaylandı |
-| MH-KML | Harita oluştururken KML/KMZ yükleme ([plan](mh-kml-plan.md)) | Plan — yerleşim onay bekliyor |
+| — | MH-WEB-2 (PR #10) | Tamamlandı — birleştirildi, canlı sitede yayında |
+| 1 | PR #8 — MH-AKIL-2 Android kabul testi ve birleştirme kararı | Telefon testi bekliyor |
+| 2 | MH-MANUEL-1A — proje, revizyon ve yedekleme güvenliği | Plan onaylı |
+| 3 | MH-KML — KML/KMZ ile gerçek arazi yükleme ([plan](mh-kml-plan.md)) | Plan onaylı |
+| 4 | MH-MANUEL-1B — manuel düzenleme ve taslak sistemi | Plan onaylı |
+| 5 | MH-SHIFT-1 — harita etiketleri ve shift analiz ekranı ([plan](mh-shift-plan.md)) | Plan onaylı |
+| 6 | MH-MANUEL-2 — gerçek yeniden hesaplama | Plan onaylı |
+| 7 | MH-SHIFT-2 — manuel shift sayısı (A varsayılan, B deneysel) | Plan onaylı |
+| 8 | MH-MANUEL-3 — karşılaştırma ve revizyon | Plan onaylı |
+| 9 | MH-SHIFT-3 — haritadan manuel shift düzenleme | Plan onaylı |
+| 10 | MH-MANUEL-4 — harita ve rapor entegrasyonu | Plan onaylı |
+| sonra | MH-AKIL-5 (su darbesi), MH-MANUEL-5 | Yol haritasında |
 | ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
@@ -138,7 +138,7 @@ geometri, boş dosya) ve geometri doğrulama (kapanmamış halka, kendini kesen 
 nokta, boşluk, çoklu parsel, bilinen alan ve çevreli örnek dosyalar). Google Earth ve QGIS
 çıktısı örnek dosyalarla sınanır.
 
-**Teknik plan:** [docs/mh-kml-plan.md](mh-kml-plan.md) — harita oluştururken KML/KMZ yükleme (Android dosya seçici, masaüstü sürükle-bırak), içe aktarma önizlemesi, doğrulama kuralları ve testler. Onay bekliyor. Yerleşim önerisi: MH-MANUEL-1A'dan hemen sonra (gerekçe planda).
+**Teknik plan:** [docs/mh-kml-plan.md](mh-kml-plan.md) — harita oluştururken KML/KMZ yükleme (Android dosya seçici, masaüstü sürükle-bırak), içe aktarma önizlemesi, doğrulama kuralları ve testler. Plan onaylandı (18.11.2026); sıra: MH-MANUEL-1A'dan hemen sonra.
 
 **Bu aşamada yapılmayacaklar:** GeoJSON, SHP ve diğer formatlar. Her biri ileride ayrı
 aşama olarak planlanacak:
@@ -148,10 +148,10 @@ aşama olarak planlanacak:
 ## Ayrıntılı planlar
 
 - MH-AKIL-1: [docs/mh-akil-1-plan.md](mh-akil-1-plan.md)
-- MH-MANUEL: [docs/mh-manuel-plan.md](mh-manuel-plan.md) (konsept onaylandı; revizyon onay bekliyor)
+- MH-MANUEL: [docs/mh-manuel-plan.md](mh-manuel-plan.md) (onaylandı)
 - WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - MH-AKIL-2 telefon testi: [docs/akil-2-telefon-testi.md](akil-2-telefon-testi.md)
 - Teknik inceleme listesi: [docs/teknik-inceleme.md](teknik-inceleme.md)
 - MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (mimari onaylandı)
-- MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onay bekliyor)
+- MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onaylandı)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.
