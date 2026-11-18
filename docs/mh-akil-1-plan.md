@@ -1,7 +1,7 @@
 # MH-AKIL-1 — Yapılandırılmış Mühendislik Uyarıları ve Çözüm Önerileri
 
-Durum: **plan — şartlı olarak onaylandı (18.11.2026).** Kodlama, PR #4 (MH-1) gerçek cihazda test edilip
-birleştirme onayı verildikten sonra `main` üzerinden açılacak ayrı bir dalda başlar.
+Durum: **plan onaylandı, kodlama onaylandı (18.11.2026).** MH-1 (PR #4) gerçek cihazda test
+edilip `main`'e birleştirildi. Kodlama `main` üzerinden açılan ayrı bir dalda yapılır.
 
 ## 1. Amaç
 

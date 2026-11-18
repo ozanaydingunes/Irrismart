@@ -13,13 +13,13 @@ olmadan `main` dalına birleştirilmez.
 | Faz 0 | Depo düzeni, CI, APK doğrulama | `main` (PR #1) |
 | PR-A | Capacitor 8, Android API 36, Node 22, veri koruma | `main` (PR #2) |
 | MH-0 | Altın referans kayıtları, EPANET ile bağımsız doğrulama | `main` (PR #3) |
-| MH-1 | Profesyonel hidrolik hesaplama paneli | PR #4 — **gerçek cihaz testi bekleniyor**, birleştirilmedi |
+| MH-1 | Profesyonel hidrolik hesaplama paneli | `main` (PR #4) — gerçek Android cihaz testi 9/9 başarılı |
 
 ## Onaylanmış sıra
 
 | # | Aşama | Kapsam | Bağımlılık |
 |---|---|---|---|
-| 1 | **MH-AKIL-1** | Yapılandırılmış mühendislik uyarıları ve çözüm önerileri | MH-1 birleşmesi |
+| 1 | **MH-AKIL-1** | Yapılandırılmış mühendislik uyarıları ve çözüm önerileri | MH-1 (tamamlandı) — kodlama onaylandı |
 | 2 | **MH-AKIL-2** | Otomatik shift ve kaynak kapasitesi alternatifleri | MH-AKIL-1 |
 | 3 | **MH-AKIL-5** | Su darbesi ön değerlendirmesi | MH-AKIL-1 |
 | 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma | — (veri modeli MH-AKIL-1 ile uyumlu) |
@@ -29,6 +29,8 @@ olmadan `main` dalına birleştirilmez.
 | 8 | **MH-3** | Arazi kotlarının hidrolik motorla entegrasyonu | MH-2 |
 
 Bir aşamaya, önceki aşamanın PR'ı onaylanmadan kodlama olarak başlanmaz.
+MH-KML, kendi aşaması gelmeden başka bir geliştirmenin içinde yarım ya da geçici olarak
+kodlanmaz; ayrı teknik planı ve ayrı PR'ı olur.
 
 ## Bütün aşamalar için kurallar
 
