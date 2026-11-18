@@ -26,7 +26,7 @@ olmadan `main` dalına birleştirilmez.
 | 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma (sıra: MH-MANUEL-1A'dan hemen sonra) | MH-MANUEL-1A |
 | 5 | **MH-AKIL-3** | Akıllı arazi bölme ve alternatif proje oluşturma | MH-AKIL-2, MH-KML |
 | 6 | **MH-AKIL-4** | Teknik ve ekonomik alternatif karşılaştırması | MH-AKIL-2, MH-AKIL-3 |
-| 7 | **MH-2** | Eğim ve kot analizi | MH-KML |
+| 7 | **MH-2** | Eğim ve kot analizi — **MH-2A**: görselleştirme, eğim analizi, kot profili ([plan](mh-2a-plan.md), onay bekliyor); sonraki alt aşamalar ve hidrolik etkisi MH-3'te | MH-KML |
 | 8 | **MH-3** | Arazi kotlarının hidrolik motorla entegrasyonu | MH-2 |
 
 ### Paralel iz: MH-WEB — masaüstü web sürümü (onaylandı)
@@ -152,6 +152,8 @@ aşama olarak planlanacak:
 - WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - MH-AKIL-2 telefon testi: [docs/akil-2-telefon-testi.md](akil-2-telefon-testi.md)
 - Teknik inceleme listesi: [docs/teknik-inceleme.md](teknik-inceleme.md)
+- MH-2A (kot ve eğim analizi): [docs/mh-2a-plan.md](mh-2a-plan.md) (onay bekliyor)
+- MH-MANUEL-1A uygulama planı: [docs/mh-manuel-1a-uygulama.md](mh-manuel-1a-uygulama.md)
 - MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (mimari onaylandı)
 - MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onaylandı)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.
