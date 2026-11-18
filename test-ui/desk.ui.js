@@ -72,6 +72,8 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - 
       const ov = await pg.evaluate(() => document.documentElement.scrollWidth - innerWidth); check(ov <= 0, `${w} ${v}: yatay taşma ${ov}px`);
       if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await pg.screenshot({ path: `${SHOTS}/${w}-${v}.png` }); }
     }
+    const fit = await pg.evaluate(() => { const t = document.querySelector('#deskTools'), sb = document.querySelector('#btnSettings').getBoundingClientRect(); const last = Math.max(...[...t.children].map(e => e.getBoundingClientRect().right)); return { over: t.scrollWidth - t.clientWidth, gap: sb.left - last }; });
+    check(fit.over <= 1 && fit.gap >= 0, `${w}: üst araç çubuğu taşıyor (${fit.over}px) veya Ayarlar düğmesinin üstüne biniyor (${fit.gap}px)`);
     await pg.click('#btnSettings'); await pg.waitForTimeout(400);
     check(await pg.$eval('#v-ayarlar', e => e.classList.contains('on')), `${w}: Ayarlar açılmadı`);
     check(await pg.$$eval('#v-hidrolik [data-ptab]', x => x.length) === 8, `${w}: hidrolik 8 bölüm yok`);

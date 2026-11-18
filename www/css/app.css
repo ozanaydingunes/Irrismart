@@ -337,7 +337,10 @@ html.desk{--top:56px;--tab:0px}
 html.desk header.top{height:var(--top);gap:10px;padding:0 12px}
 html.desk header .logo{height:40px}
 html.desk #btnBack{display:none}
-html.desk #deskTools{flex:1;min-width:0;align-items:center;gap:8px;flex-wrap:nowrap;overflow:visible}
+html.desk header .ttl{flex:0 1 auto;min-width:0;max-width:320px;overflow:hidden}
+html.desk header .ttl span{overflow:hidden;text-overflow:ellipsis}
+html.desk #deskTools{flex:1 0 auto;min-width:0;align-items:center;gap:8px;flex-wrap:nowrap;overflow:visible}
+@media (max-width:1439px){html.desk #deskTools{gap:6px}html.desk .dt-btn{padding:0 8px}}
 html.desk .dt-gap{flex:1}
 html.desk .dt-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer;list-style:none}
 html.desk .dt-btn::-webkit-details-marker{display:none}
