@@ -94,7 +94,7 @@ Yeni `www/js/terrain.js` (DOM'a dokunmaz; Node'da test edilir):
 | Örnekleme | Parsel sınır kutusunda 90 m ızgara (parsel içi + 1 hücre tampon); 100'lük istek parçaları; sonuç `kot.ornekler`'e |
 | İstatistik | Parsel içi min / maks / ortalama kot; düzlem eğimi (mevcut `planeFit`) ve belirsizliği; hücre eğimlerinin ortalaması ve en büyüğü (sınıflı) |
 | Eğim ve yön | Merkezî fark (Horn) — hücre eğimi %, °; yön 8 sınıf (K, KD, D, …) |
-| Eşyükselti | Kare yürütme (marching squares), aralık ≥ 5 m; etiketler çizgi üzerinde, kalabalıkta seyreltme |
+| İzohips (eşyükselti) | Kare yürütme (marching squares), aralık ≥ 5 m; ana/ara eğri ayrımı; etiketler çizgi üzerinde, kalabalıkta seyreltme; ölçüm ve profil ekranında da gösterilebilir |
 | İki nokta | Geodezik mesafe; ızgaradan ara değer; kot farkı ve eğim + belirsizlik |
 | Profil | Ana hat güzergâhı (`cur.route`) ve temsilî lateral(ler) boyunca 90 m aralıkla kot; en düşük/en yüksek nokta, toplam iniş/çıkış |
 
@@ -103,8 +103,8 @@ yolu aynen kalır.
 
 ## 7. Ekranlar
 
-- **Harita katmanları** (Arazi ekranı, katman menüsü): `Eğim haritası`, `Eşyükselti eğrileri`,
-  `Eğim yönü` — her biri bağımsız aç/kapa; birim `%` / `°`; lejant ve renk skalası (renk + desen;
+- **Harita katmanları** (Arazi ekranı, katman menüsü): `Eğim haritası`, `İzohips` (eşyükselti
+  eğrileri; 5 m aralık, ana eğriler kalın, ara eğriler kesikli, tam metre etiketli), `Eğim yönü` — her biri bağımsız aç/kapa; birim `%` / `°`; lejant ve renk skalası (renk + desen;
   yalnız renge dayanmaz).
 - **Arazi kot özeti** kartı: min / maks / ortalama kot, düzlem eğimi ± belirsizlik, hücre eğimi
   ortalama/en büyük (sınıflı), baskın yön, kaynak + çözünürlük + düşey referans + DSM notu + atıf.
