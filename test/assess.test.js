@@ -258,3 +258,13 @@ test('Hacim tanımları: tur ve kapasite Σ damlatıcı debisi × süre ile; br�
   near(B, r.schedule.gross * r.field.A / 1000, 1e-9, 'brüt × alan');
   ok(B > V && (B - V) / B < 0.02, `fark beklenen aralıkta değil (${B} / ${V})`);
 });
+
+test('Yedek: her proje sürüm bilgisiyle yazılır; kayıtlı liste değişmez (Android ve web ortak)', () => {
+  const fresh = { id: 'yeni', name: 'Yeni', inp: { crop: 'domates', area_da: 10, Q: 10 }, poly: [], src: null, updated: 5 };   // newProject gibi: schema yok
+  const list = [fresh], before = JSON.stringify(list);
+  const b = St.backupPayload(list, {}, null, new Date(0));
+  ok(b.sema === St.SCHEMA && b.yedekSurum === 1 && b.projects.every(p => p.schema === St.SCHEMA), 'yedekte sürüm bilgisi eksik');
+  ok(JSON.stringify(list) === before, 'yedek alma kayıtlı projeyi değiştirdi');
+  const back = St.readBackup(JSON.stringify(b)).valid[0];
+  ok(JSON.stringify(back.inp) === JSON.stringify(fresh.inp) && back.updated === 5, 'yedekten dönen proje farklı');
+});

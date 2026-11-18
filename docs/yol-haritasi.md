@@ -29,14 +29,14 @@ olmadan `main` dalına birleştirilmez.
 | 7 | **MH-2** | Eğim ve kot analizi | MH-KML |
 | 8 | **MH-3** | Arazi kotlarının hidrolik motorla entegrasyonu | MH-2 |
 
-### Paralel iz: MH-WEB — masaüstü web sürümü (onay bekliyor)
+### Paralel iz: MH-WEB — masaüstü web sürümü (onaylandı)
 
-Plan: [docs/mh-web-plan.md](mh-web-plan.md). Android ve web aynı `www/` kodunu ve aynı hesap motorunu kullanır.
+Plan: [docs/mh-web-plan.md](mh-web-plan.md). Özellik eşitliği: [docs/ozellik-esitligi.md](ozellik-esitligi.md). Android ve web aynı `www/` kodunu ve aynı hesap motorunu kullanır; masaüstü sürümü sınırlı bir sürüm değil, aynı uygulamanın büyük ekran düzenidir.
 
 | Aşama | Kapsam | Durum |
 |---|---|---|
-| **MH-WEB-1** | GitHub Pages test ortamı (`https://ozanaydingunes.github.io/Irrismart/`), web bilgilendirme notu, dağıtım iş akışı | Plan — onay bekliyor |
-| **MH-WEB-2** | Masaüstü düzeni: geniş harita + yan mühendislik paneli | Plan — tasarım önizlemesi sonra |
+| **MH-WEB-1** | GitHub Pages test ortamı (`https://ozanaydingunes.github.io/Irrismart/`), web bilgilendirme notu, dağıtım iş akışı, özellik eşitliği matrisi ve testleri | Onaylandı — PR hazırlandı, birleştirme onay bekliyor |
+| **MH-WEB-2** | Profesyonel masaüstü düzeni: üst araç çubuğu, sol modül çubuğu, geniş harita/çalışma alanı, sağ ayrıntı paneli, açılır alt panel; panel boyutlandırma, nesne seçimi, klavye kısayolları, geri al/yinele, hassas koordinat girişi, sağ tık menüsü | Tasarım önizlemesi hazırlanıyor; kodlama onaydan sonra |
 | **MH-WEB-3** | Harita üzerinden lateral ve manifold düzenleme (shift ve ana hat düzenleme bugün de var) | Ayrı teknik plan ve onay gerekli (motor girdisi) |
 | **MH-WEB-4** | KML/KMZ yükleme web'de (MH-KML tamamlanınca) | MH-KML'e bağlı |
 
@@ -69,7 +69,13 @@ kodlanmaz; ayrı teknik planı ve ayrı PR'ı olur.
 10. Sulama aralığı seçenekleri; brüt ihtiyaç, toprak su kapasitesi, kök derinliği, RAW,
     kaynak kapasitesi, uygulama süresi, en büyük aralık ve su stresi riski açıklanmadan
     toplu olarak "uygunsuz" ilan edilmez. Veri eksikse "Veri gerekli" kullanılır.
-11. Öneriler ve alternatifler ayrı taslak/revizyon olarak kaydedilir. Orijinal proje yalnız
+12. **Platform eşitliği (kalıcı ilke):** IrriGrow Android uygulaması ve masaüstü web sürümü aynı
+    `www/` kodunu ve aynı hesap motorunu kullanır. Her yeni özellik **iki platformda birlikte**
+    geliştirilir ve test edilir; bir özelliğin Android'de bulunup web'de eksik kalmasına (ya da tersine)
+    izin verilmez. Platforma özgü kod yalnız dosya erişimi, izinler ve cihaz entegrasyonundadır; gerçek
+    teknik sınırlamalar açıkça yazılır. Her aşamada `docs/ozellik-esitligi.md` matrisi güncellenir.
+    Bu ilke MH-AKIL-2, MH-AKIL-5, MH-KML, MH-AKIL-3, MH-AKIL-4, MH-2 ve MH-3'ü kapsar.
+13. Öneriler ve alternatifler ayrı taslak/revizyon olarak kaydedilir. Orijinal proje yalnız
    kullanıcının açık "Uygula" onayıyla değişir ve her zaman geri dönülebilir.
 
 ## MH-KML — KML/KMZ ile arazi sınırı içe aktarma (onaylanmış gereksinim)
