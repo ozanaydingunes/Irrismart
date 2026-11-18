@@ -13,7 +13,7 @@ girişi) üzerinden. Kodlamaya henüz başlanmadı; aşamalar sırası geldiğin
 | 4 | Etiketler: yakınlaştırmaya göre yoğunluk (uzak: numara; orta: numara + debi; yakın: ayrıntı), tamamen gizle/göster, seçili shift belirgin vurgu, "FIELD 1" gibi metinler seçili dile uygun, boru hatlarını ve önemli elemanları mümkün olduğunca kapatmaz. |
 | 5 | Elle atamalar girdi değişince veya "Otomatiğe dön" ile **uyarısız silinmez** (MH-MANUEL-1A). Seçenekler: koru, uyarla, ayrı taslak olarak sakla, açık onayla sıfırla. Yerleşim değişince eski atama fiziksel olarak geçersizse gizlenmez; güvenli yeniden eşleme veya yeniden düzenleme istenir. |
 | 6 | Hesap doğruluğu kuralları §9'da test olarak; motor ↔ DXF uzunluk farkı ayrı teknik inceleme maddesi (T-01) olarak korunur. |
-| 7 | Sıra: PR #8 → MH-MANUEL-1A → MH-MANUEL-1B → MH-SHIFT-1 → MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3. MH-KML, akıllı arazi bölme, kot/eğim ve ileri hidrolik yol haritasında kalır. Harita oluştururken KML/KMZ yükleme eklenir (`docs/mh-kml-plan.md`). |
+| 7 | Sıra (son hâli): PR #8 → MH-MANUEL-1A → **MH-KML** → MH-MANUEL-1B → MH-SHIFT-1 → MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3 → MH-MANUEL-4. Akıllı arazi bölme, su darbesi, kot/eğim ve kot–hidrolik yol haritasında kalır. Etiketlerin seyreltilmesi ve Türkçeleştirilmesi MH-SHIFT-1'in öncelikli kısmıdır. |
 Hesap motoru değiştirilmedi; aşağıdaki bütün sayılar bugünkü `IrriEngine.design` +
 `IrriAssess.evaluate` ile hesaplandı (**Motor**). MH-SHIFT, MH-MANUEL'in (taslak, yeniden hesaplama,
 karşılaştırma, revizyon) ilk somut "kaldıracı"dır ve MH-AKIL-3 (akıllı arazi bölme) ile ortak veri
@@ -281,26 +281,20 @@ dile uyar (Türkçe: "Arazi 1 — Shift n").
 
 ## 12. Yol haritası yerleşimi
 
-Onaylanan sıra (proje sahibi, 18.11.2026):
+Onaylanan sıra (proje sahibi, 18.11.2026 — son hâli):
 
 | Sıra | Aşama | Kapsam |
 |---|---|---|
-| 1 | PR #8 | MH-AKIL-2 Android kabul testi |
-| 2 | MH-MANUEL-1A | Veri koruma (elle shift atamalarının sessiz silinmesinin kaldırılması dahil) |
-| 3 | MH-MANUEL-1B | Manuel taslak altyapısı |
-| 4 | **MH-SHIFT-1** | Etiket düzeni (yoğunluk, aç/kapa, vurgu, çeviri, boru kaçınma) ve salt okunur shift analizi (mümkün aralık, fiziksel/motor sınırları, tur sınırı, "neden bu sayı?") |
-| 5 | MH-MANUEL-2 | Gerçek yeniden hesaplama |
-| 6 | **MH-SHIFT-2** | Manuel shift sayısı: A (varsayılan), B (deneysel); uyarı ekranında analiz; taslak, karşılaştırma, onaylı uygulama |
-| 7 | MH-MANUEL-3 | Proje karşılaştırma ve revizyon |
-| 8 | **MH-SHIFT-3** | Haritadan düzenleme (Android + masaüstü), yeniden eşleme |
-| sonra | C yöntemi varsayılan | D-1…D-6 ve saha doğrulamasından sonra, ayrı onayla |
-| ayrı | MH-MOTOR-1 (M-0, M-1), MH-MOTOR-x (M-2, M-3) | Ayrı plan, PR, doğrulama ve onay |
-| korunur | MH-KML, MH-AKIL-3 (arazi bölme), MH-2/MH-3 (kot/eğim), ileri hidrolik (MH-AKIL-5, MH-MOTOR) | Yol haritasında |
+| 1 | **PR #8 — MH-AKIL-2** | Android kabul testi ve birleştirme kararı |
+| 2 | **MH-MANUEL-1A** | Proje, revizyon ve yedekleme güvenliği (V-01…V-19); KML için `geoKaynak` alanı ve güvenli geometri değişimi |
+| 3 | **MH-KML** | KML/KMZ ile gerçek arazi yükleme (`docs/mh-kml-plan.md`) |
+| 4 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
+| 5 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
+| 6 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
+| 7 | **MH-SHIFT-2** | Manuel shift sayısı |
+| 8 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
+| 9 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
+| 10 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
+| korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-AKIL-5 (su darbesi), MH-MANUEL-5, MH-2 (kot/eğim), MH-3 (kot–hidrolik), MH-MOTOR-1/2/3 | Yol haritasında; her biri ayrı plan ve onay |
 
-**MH-KML yerleşimi önerisi (onay bekliyor).** KML/KMZ yükleme bir geometri **girdisi**dir;
-MH-MANUEL ve MH-SHIFT'e bağımlı değildir, ama geometri değişikliğinin güvenli yapılması
-(revizyon, elle shift atamalarının yeniden eşlenmesi) MH-MANUEL-1A'ya bağlıdır. Öneri: MH-KML'i
-**MH-MANUEL-1A'dan hemen sonra** almak. Gerekçe: (1) geometri değişiminin veri güvenliği 1A ile
-hazır olur; (2) MH-SHIFT ve MH-AKIL-3 gerçek parsellerle (KML) test edilebilir; (3) diğer
-aşamaların koduna dokunmaz. Proje sahibi mevcut sırayı korumak isterse MH-KML, MH-SHIFT-3'ten sonra
-gelir. Ayrıntı: `docs/mh-kml-plan.md`.
+**MH-KML yerleşimi:** proje sahibi onayladı — MH-MANUEL-1A'dan hemen sonra (3. sıra). MH-SHIFT ve MH-AKIL-3 böylece gerçek parsellerle test edilebilir.

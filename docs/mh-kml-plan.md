@@ -1,6 +1,6 @@
 # MH-KML — Harita oluştururken KML/KMZ yükleme
 
-Durum: **teknik plan — onay bekliyor (18.11.2026). Kodlama yok.** Onaylanmış gereksinim:
+Durum: **mimari ve teknik yaklaşım onaylandı (18.11.2026); sıra: MH-MANUEL-1A'dan hemen sonra. Kodlama henüz başlamadı.** Onaylanmış gereksinim:
 `docs/yol-haritasi.md` → "MH-KML". Ayrı dal, ayrı PR; proje sahibinin onayı olmadan `main`'e
 birleştirilmez. Hesap motoru değişmez.
 
@@ -34,8 +34,10 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 2. **İçe aktarma önizlemesi** (projeye henüz yazılmaz):
    - dosyadaki parseller listesi: ad, köşe sayısı, alan (da), çevre (m), uyarılar;
    - haritada bütün parseller soluk, seçili olan vurgulu; harita parsellere yaklaşır;
-   - her parselde: iç boşluk sayısı, kendini kesme, kapanmamış halka (otomatik kapatıldı),
-     yinelenen nokta (temizlendi), yükseklik bilgisi (okundu ama **kullanılmadı**).
+   - her parselde: alan, çevre, sınır (haritada), iç boşluk sayısı ve alanı, kendini kesme,
+     kapanmamış halka (otomatik kapatıldı), yinelenen nokta (temizlendi), yükseklik bilgisi
+     (saklanacak, hesapta **kullanılmayacak**);
+   - boşluklu veya geçersiz parsel listede kalır ama "hesaplanamaz" işaretlidir ve seçilemez.
 3. Kullanıcı parsel(ler)i seçer:
    - **tek parsel** → yeni proje (varsayılan) **veya** mevcut projenin sınırını değiştir
      (yalnız açık onayla; önce revizyon; elle shift atamaları MH-SHIFT'teki koru/uyarla/ayrı
@@ -52,9 +54,9 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 | `Placemark` + `Polygon` (`outerBoundaryIs`) | Parsel |
 | `MultiGeometry` içinde birden çok `Polygon` | Her biri ayrı parsel olarak listelenir |
 | `Folder` / `Document` iç içe | Hepsi taranır; klasör adı listede gösterilir |
-| `innerBoundaryIs` (boşluk) | Motor desteklemediği için **yok sayılmaz**: parsel "boşluklu" işaretlenir, boşluk alanı ayrıca gösterilir ve "Boşluk hesapta dikkate alınmıyor — sulanan alan X da fazla görünür" uyarısı çıkar. Kullanıcı ya boşluksuz parseli onaylayarak alır ya da almaz. Motor desteği ayrı motor işidir (MH-MOTOR, E-7). |
+| `innerBoundaryIs` (boşluk) | Önizlemede boşluklar haritada gösterilir; dış alan, boşluk alanı ve net alan ayrı yazılır. Motor boşluk desteklemediği için **bu parsel hesaplamaya gönderilmez**: "Hesaplanamaz — parsel içinde N boşluk var; motor henüz desteklemiyor" yazar ve proje oluşturma düğmesi bu parsel için kapalıdır. Yalnız dış sınırla proje oluşturma seçeneği **yoktur** (yanlış alan ve yanlış sulama projesi üretilmez). Motor desteği ayrı motor işidir (MH-MOTOR, E-7; teknik inceleme T-07). |
 | `LineString`, `Point` | Parsel olarak alınmaz; "yol çizgisi / nokta, alınmadı" notu (ileride ana hat güzergâhı veya kaynak noktası önerisi olabilir — ayrı karar) |
-| Yükseklik (3. bileşen) | Ayrıştırılır, saklanmaz ve hesapta **kullanılmaz** (MH-2'ye kadar) |
+| Yükseklik (3. bileşen) | Ayrıştırılır ve **saklanır** (`geoKaynak.yukseklikler`, köşe başına; JSON yedekte taşınır; mevcut `elev` alanındaki DEM özetinden ayrı tutulur). MH-2 tamamlanana kadar hesapta **kullanılmaz** ve ekranda "Yükseklik bilgisi saklandı — hidrolik hesapta kullanılmıyor (MH-2)" yazar |
 | `NetworkLink`, uzak görseller, `<Style>` | Yok sayılır; ağa hiçbir istek yapılmaz |
 | KMZ | Zip içindeki `doc.kml`; yoksa ilk `.kml` dosyası (adı gösterilir) |
 | GeoJSON, SHP | Bu aşamada yok (MH-KML-2, MH-KML-3) |
@@ -69,7 +71,8 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 | G-4 | Kendini kesen sınır alınmaz (motorla aynı denetim); hangi kenarların kesiştiği haritada gösterilir |
 | G-5 | Alan: yerel düzlem (motorun kullandığı) **ve** elipsoit üzerinde; farkı gösterilir (T-01) |
 | G-6 | Dosyadaki ad/açıklamada alan varsa (ör. "12,5 da") hesaplanan alanla karşılaştırılır; %2'den büyük farkta uyarı |
-| G-7 | Proje kaydına kaynak bilgisi: `geoKaynak: { tur: 'kml'|'kmz', dosya, parsel, iceAktarma: tarih, boşluk: n, yükseklik: true/false }` |
+| G-7 | Proje kaydına kaynak bilgisi: `geoKaynak: { tur: 'kml'|'kmz', dosya, parsel, iceAktarma: tarih, yukseklikler: [m…] | null }`; köşe yükseklikleri yalnız burada (MH-MANUEL-1A §14.0) |
+| G-7b | Boşluklu parsel hesaplamaya gönderilmez; yalnız dış sınırla proje oluşturma yolu bulunmaz (test K-03) |
 | G-8 | İçe aktarma projeye yazılmadan önce önizlenir; iptal hiçbir şeyi değiştirmez |
 | G-9 | Mevcut sınırın değiştirilmesi onay ister; önce tam revizyon (MH-MANUEL-1A); elle shift atamaları sessizce silinmez |
 | G-10 | JSON yedek kaynak bilgisini taşır; Android ↔ web aynı sonuç |
@@ -92,10 +95,10 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 |---|---|
 | K-01 | Google Earth KML (tek parsel), QGIS KML, KMZ: alan ve çevre bilinen değerlerle (±%0,1) |
 | K-02 | Çoklu parsel (`MultiGeometry`, iç içe klasörler): doğru sayı ve adlar |
-| K-03 | Boşluklu parsel: boşluk sayısı ve alanı; uyarı; onaysız alınmaz |
+| K-03 | Boşluklu parsel: önizlemede boşluk sayısı, dış/boşluk/net alan; proje oluşturulamaz; hiçbir yoldan yalnız dış sınırla hesaplanamaz |
 | K-04 | Bozuk zip, `doc.kml` olmayan KMZ, geçersiz XML, boş dosya, yalnız `LineString` |
 | K-05 | Kendini kesen, kapanmamış, yinelenen noktalı, 3'ten az köşeli halka |
-| K-06 | Yükseklikli koordinatlar: yükseklik saklanmaz/kullanılmaz; hesap yüksekliksiz dosyayla aynı |
+| K-06 | Yükseklikli koordinatlar: yükseklik `geoKaynak.yukseklikler`'de saklanır ve yedekte taşınır; hesap yüksekliksiz dosyayla bit bit aynı; ekranda "hesapta kullanılmıyor" notu |
 | K-07 | Koordinat sırası: enlem/boylam ters yazılmış dosya yakalanır |
 | K-08 | Türkçe karakterli adlar (UTF-8) ve büyük dosya sınırı |
 | K-09 | Ağ isteği yok (`NetworkLink` içeren dosya); dış varlık yok |
@@ -107,8 +110,9 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 
 ## 8. Yol haritası
 
-KML/KMZ yükleme MH-MANUEL ve MH-SHIFT'ten bağımsızdır; yalnız mevcut sınırı **değiştirme**
-seçeneği veri güvenliği için MH-MANUEL-1A'ya bağlıdır. Öneri (onay bekliyor): **MH-MANUEL-1A'dan
-hemen sonra**. Mevcut sıra korunursa MH-SHIFT-3'ten sonra. Yalnız "yeni proje olarak içe aktar"
-seçeneğiyle sınırlı bir ilk sürüm 1A'dan önce de yapılabilir; mevcut sınırı değiştirme 1A sonrasına
-kalır.
+Onaylanan sıra (18.11.2026): PR #8 → MH-MANUEL-1A → **MH-KML** → MH-MANUEL-1B → MH-SHIFT-1 →
+MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3 → MH-MANUEL-4.
+
+MH-KML, 1A'nın sağladığı `geoKaynak` alanını (köşe yükseklikleri dahil), güvenli geometri değişimini ve "yeni proje"
+yolunu kullanır (MH-MANUEL §14.0). MH-KML'de ayrıca motor değişikliği yoktur. MH-AKIL-3 (arazi
+bölme) ve MH-2 (kot/eğim) içe aktarılan parselleri ve saklanan yükseklikleri ileride kullanır.
