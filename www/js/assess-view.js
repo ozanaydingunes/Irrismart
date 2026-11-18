@@ -38,7 +38,7 @@
     }
     function detailBlock(x) {
       const a = x.ayrinti; if (!a) return '';
-      const un = a.unsurlar && a.unsurlar.length ? `<h4>${esc(t('Sulama aralığı değerlendirmesinde kullanılan unsurlar'))}</h4><div class="ak-tiles">${a.unsurlar.map(q => tile(q)).join('')}</div>` : '';
+      const un = a.unsurlar && a.unsurlar.length ? `<h4>${esc(t('Sulama aralığı değerlendirmesinde kullanılan unsurlar'))}</h4><div class="ak-tiles">${a.unsurlar.map(q => tile(q)).join('')}</div><p class="ak-asm">${esc(t('Tur süresi ve kapasite denetimi, damlatıcıların gerçekten uyguladığı hacimle (Σ damlatıcı debisi × shift süresi) yapılır. “Brüt ihtiyaç × toplam alan” bundan biraz büyüktür, çünkü parsel kenarlarında tam sıra aralığı kalmaz ve bu şeritlerde damlatıcı yoktur.'))}</p>` : '';
       const ar = a.aralik && a.aralik.length ? `<div class="scroll"><table class="ak-tbl"><tr><th>${esc(t('Aralık'))} (${esc(t('gün'))})</th><th>${esc(t('Gereken'))} m³</th><th>${esc(t('Verilebilen'))} m³</th><th>${esc(t('Açık'))} m³</th><th>${esc(t('Durum'))}</th></tr>${a.aralik.map(r => `<tr><td>${r.I}</td><td>${N(r.need, 0)}</td><td>${N(r.can, 0)}</td><td>${N(r.acik != null ? Math.max(0, r.acik) : null, 0)}</td><td>${dz(r.durum)}</td></tr>`).join('')}</table></div>` : '';
       const k = a.kapasite;
       const kp = k ? `<h4>${esc(t('Kapasite denetimi (gerekli koşul)'))}</h4><p class="ak-asm">${esc(t('Günlük ihtiyaç = toplam debi × shift süresi ÷ aralık = {a} m³/h × {b} h ÷ {c} = {d} m³/gün. Kaynak kapasitesi = {e} m³/h × {f} h = {g} m³/gün. Bu koşul gereklidir ama yeterli değildir; sağlanması sistemin uygun olduğunu göstermez.', { a: fmt(k.Qf, 1), b: fmt(k.t, 2), c: k.I, d: fmt(k.Vd, 0), e: fmt(k.Qs, 1), f: fmt(k.H, 0), g: fmt(k.cap, 0) }))}</p>` : '';
@@ -59,6 +59,7 @@
           ${sols.length ? `<details class="ak-sub ak-sols" ${open ? 'open' : ''}><summary>${esc(t('Çözüm seçenekleri'))} (${sols.length})</summary><ul class="ak-solist">${sols.map(solution).join('')}</ul></details>` : ''}
           ${uniq.length ? `<details class="ak-sub"><summary>${esc(t('Gereken veriler'))} (${uniq.length})</summary>${list(uniq)}</details>` : ''}
           ${detailBlock(x)}
+          ${onay ? `<p class="ak-asm ak-onay-not">${esc(t('Kullanıcı kararı uyarının seviyesini ve teknik uygunluğu değiştirmez; “Bilinerek kabul edildi” işaretli bir uygunsuzluk uygunsuz olarak kalır ve raporlarda öyle yazılır.'))}</p>` : ''}
           ${onay ? `<label class="ak-onay">${esc(t('Kullanıcı kararı'))}<select data-onay="${esc(x.kod)}">${ONAY.map(([v, l]) => `<option value="${v}" ${x.onay === v ? 'selected' : ''}>${esc(t(l))}</option>`).join('')}</select></label>` : ''}
         </div>
       </details>`;

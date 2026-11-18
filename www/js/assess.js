@@ -169,7 +169,7 @@
         baslik: T('Sulama turu kullanılabilir süreye sığmıyor'),
         neden: T('Seçili düzende tur {a} h; {i} günlük aralıkta kullanılabilir süre {b} h. Günlük ihtiyaç {v} m³, kaynak kapasitesi {c} m³/gün.', { a: n(sel.cycleHours, 1), i: String(I), b: n(sel.avail, 0), v: n(Vd, 0), c: n(cap, 0) }),
         onem: T('Tur süreye sığmazsa tepe dönemde bitkilere gereken su verilemez.'),
-        durum: [qty('Tur süresi', sel.cycleHours, 'h', 1), qty('Günlük ihtiyaç', Vd, 'm³', 0), qty('Kaynak debisi', Qs, 'm³/h', 1, given(ctx.inp, 'Q') ? 'girdi' : 'varsayilan', 'kaynak'), qty('Shift sayısı', Ns, '', 0, sel.manual ? 'elle' : 'otomatik')],
+        durum: [qty('Tur süresi', sel.cycleHours, 'h', 1), qty('Günlük sulama hacmi', Vd, 'm³', 0), qty('Kaynak debisi', Qs, 'm³/h', 1, given(ctx.inp, 'Q') ? 'girdi' : 'varsayilan', 'kaynak'), qty('Shift sayısı', Ns, '', 0, sel.manual ? 'elle' : 'otomatik')],
         sinir: qty('Kullanılabilir süre', sel.avail, 'h', 0, given(ctx.inp, 'hours') ? 'girdi' : 'varsayilan'),
         kisaGerekce: Qs ? T('Yalnız shift sayısını değiştirmek çözmüyor: {v} m³ ÷ {q} m³/h = {h} h > {b} h.', { v: n(Vd, 0), q: n(Qs, 1), h: n(kap.Hreq, 1), b: n(H, 0) }) : null,
         cozumler: cz, ayrinti: { kapasite: kap, aralik: ar.tablo, unsurlar: ar.unsurlar }, ekran: { sekme: 'shift' },
@@ -385,7 +385,9 @@
     });
     const count = { uygunsuz: 0, 'on-degerlendirme': 0, uyari: 0, bilgi: 0 };
     findings.forEach(x => { count[x.seviye]++; });
-    return { surum: VER, ok: true, planOrani: k, findings, checks, other, matched, count, kapasite: kap };
+    // Teknik uygunluk yalnız uyarı seviyelerinden çıkar; kullanıcı kararı (onay) bunu DEĞİŞTİRMEZ.
+    const teknikUygun = count.uygunsuz === 0;
+    return { surum: VER, ok: true, planOrani: k, teknikUygun, findings, checks, other, matched, count, kapasite: kap };
   }
 
   // §6.3 Sulama aralığı değerlendirmesi: her aralık seçeneği için ayrı satır; toplu "uygunsuz" yok.
@@ -394,7 +396,10 @@
     const soilGiven = !!(inp && inp.soil && D && D.SOILS && D.SOILS[inp.soil]);
     const soil = D && D.SOILS ? (D.SOILS[inp.soil] || D.SOILS.tinli) : null;
     const unsurlar = [
-      qty('Günlük brüt ihtiyaç', s.gross, 'mm/gün', 2), qty('Günlük brüt ihtiyaç (hacim)', kap.Vd, 'm³/gün', 0),
+      qty('Günlük brüt ihtiyaç', s.gross, 'mm/gün', 2),
+      qty('Brüt ihtiyaç × toplam alan', s.gross * r.field.A / 1000, 'm³/gün', 0),
+      qty('Günlük sulama hacmi (Σ damlatıcı debisi × shift süresi ÷ aralık)', kap.Vd, 'm³/gün', 0),
+      qty('Damlatıcıların kapladığı alan oranı', 100 * kap.Vd / (s.gross * r.field.A / 1000), '%', 2),
       qty('Dönemlik brüt ihtiyaç', s.seasonM3, 'm³', 0),
       soil ? qty('Toprak kullanılabilir su', soil.aw, 'mm/m', 0, soilGiven ? 'girdi' : 'varsayilan') : null,
       crop ? qty('Kök derinliği', crop.Zr, 'm', 2, 'varsayilan') : null,

@@ -235,3 +235,26 @@ test('Uyarı katmanı motor sonucunu değiştirmez ve hesap yapmaz', () => {
   const src = fs.readFileSync(W('assess.js'), 'utf8');
   ok(!/IrriEngine|\.design\(|Math\.pow|hazen|colebrook/i.test(src), 'assess.js motoru çağırıyor veya hidrolik bağıntı içeriyor');
 });
+
+test('T-15 "Bilinerek kabul edildi" teknik uygunsuzluğu kaldırmaz ve projeyi uygun yapmaz', () => {
+  const r = E.design(T2), A0 = AS.forProject(proj(T2), r);
+  const onay = {}; A0.findings.forEach(x => { onay[x.kod] = 'kabul'; });
+  const p = proj(T2, { akil: { onay } }), A1 = AS.forProject(p, r);
+  ok(A0.teknikUygun === false && A1.teknikUygun === false, 'kabul edilen uygunsuzluk projeyi uygun yaptı');
+  ok(JSON.stringify(A1.count) === JSON.stringify(A0.count), 'sayımlar değişti');
+  A1.findings.forEach((x, i) => { ok(x.seviye === A0.findings[i].seviye && x.onay === 'kabul', `${x.kod}: seviye değişti`); ok(JSON.stringify(x.cozumler) === JSON.stringify(A0.findings[i].cozumler), `${x.kod}: çözümler değişti`); });
+  const TB = RD.build(p, r), f = TB.akil.findings.find(x => x.kod === 'W-KAP-01');
+  ok(/Uygunsuz/.test(f.head) && f.kv.some(k => k[1] === 'Bilinerek kabul edildi'), 'PDF kararla birlikte uygunsuz yazmıyor');
+  const html = AV.make({}).render(A1);
+  ok(/data-seviye="uygunsuz"/.test(html) && /teknik uygunluğu değiştirmez/.test(html), 'ekran kararın etkisini açıklamıyor');
+  const ok1 = cases.find(c => c.A && c.A.teknikUygun); if (ok1) ok(ok1.A.count.uygunsuz === 0, 'teknik uygunluk tanımı');
+});
+
+test('Hacim tanımları: tur ve kapasite Σ damlatıcı debisi × süre ile; brüt × alan ayrıca gösterilir', () => {
+  const r = E.design(T2), f = AS.forProject(proj(T2), r).findings.find(x => x.kod === 'W-KAP-01'), u = f.ayrinti.unsurlar;
+  const V = u.find(q => /Σ damlatıcı/.test(q.ad.t)).deger, B = u.find(q => q.ad.t === 'Brüt ihtiyaç × toplam alan').deger;
+  near(V * r.schedule.interval / r.schedule.t, r.sectors.Qfield, 1e-9, 'sulama hacmi motorun toplam debisinden');
+  near(r.sel.groups.length * r.schedule.t, r.sel.cycleHours, 1e-9, 'tur = Ns × t');
+  near(B, r.schedule.gross * r.field.A / 1000, 1e-9, 'brüt × alan');
+  ok(B > V && (B - V) / B < 0.02, `fark beklenen aralıkta değil (${B} / ${V})`);
+});
