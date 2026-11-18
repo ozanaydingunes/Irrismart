@@ -1,6 +1,8 @@
 # IrriGrow — Geliştirme Yol Haritası
 
-Son güncelleme: 18.11.2026. Bu belge onaylanmış geliştirme sırasını kayıt altına alır.
+Son güncelleme: 18.11.2026. Bu belge proje sahibinin onayladığı geliştirme sırasını kayıt altına alır.
+KML/KMZ içe aktarma, akıllı arazi bölme ve eğim analizi onaylanmış gereksinimlerdir; yol
+haritasından çıkarılmaz.
 Her madde **ayrı dal ve ayrı PR** olarak hazırlanır. Hiçbir PR, proje sahibinin açık onayı
 olmadan `main` dalına birleştirilmez.
 
@@ -44,7 +46,14 @@ Bir aşamaya, önceki aşamanın PR'ı onaylanmadan kodlama olarak başlanmaz.
    geçici rejim) yapılmış gibi gösterilmez.
 7. Her yeni modülün otomatik testi olur. Gerçek cihazda doğrulanmamış davranış "başarılı"
    diye raporlanmaz.
-8. Öneriler ve alternatifler ayrı taslak/revizyon olarak kaydedilir. Orijinal proje yalnız
+8. Veri koruma testleri uygulamanın gerçek JSON proje yedeği ("Yedekle" / "Yedekten yükle")
+   ile yapılır. Excel ve PDF raporları yedek değildir ve yedek yerine kullanılmaz.
+9. İşletme güvenlik payı (W-KAP-02, proje ayarı, varsayılan %90) ile kritik kapasite kontrolü
+   (W-KAP-01) ayrı değerlendirilir. Pay ayarı teknik uygunluğu değiştirmez.
+10. Sulama aralığı seçenekleri; brüt ihtiyaç, toprak su kapasitesi, kök derinliği, RAW,
+    kaynak kapasitesi, uygulama süresi, en büyük aralık ve su stresi riski açıklanmadan
+    toplu olarak "uygunsuz" ilan edilmez. Veri eksikse "Veri gerekli" kullanılır.
+11. Öneriler ve alternatifler ayrı taslak/revizyon olarak kaydedilir. Orijinal proje yalnız
    kullanıcının açık "Uygula" onayıyla değişir ve her zaman geri dönülebilir.
 
 ## MH-KML — KML/KMZ ile arazi sınırı içe aktarma (onaylanmış gereksinim)

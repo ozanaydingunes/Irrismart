@@ -1,6 +1,6 @@
 # MH-AKIL-1 — Yapılandırılmış Mühendislik Uyarıları ve Çözüm Önerileri
 
-Durum: **plan — onay bekliyor.** Kodlama, PR #4 (MH-1) gerçek cihazda test edilip
+Durum: **plan — şartlı olarak onaylandı (18.11.2026).** Kodlama, PR #4 (MH-1) gerçek cihazda test edilip
 birleştirme onayı verildikten sonra `main` üzerinden açılacak ayrı bir dalda başlar.
 
 ## 1. Amaç
@@ -96,8 +96,8 @@ alternatifleridir (`r.sectorAlts`, NsMin…NsMin+7).
 
 | Kod | Seviye | Koşul (motor alanı) | Çözüm türleri ve bu aşamadaki durumları |
 |---|---|---|---|
-| **W-KAP-01** | uygunsuz | Seçili düzende `sel.cycleHours > sel.avail` | **shift:** `r.sectorAlts` her Ns için gerçek değer (hesaplandı). **kaynak, süre, aralık:** kapasite koşuluyla kanıtla-uygunsuz ya da değerlendirilmedi (MH-AKIL-2). **bölme:** aynı kaynakla kanıtla-uygunsuz; ek kaynakla veri gerekli (MH-AKIL-3) |
-| **W-KAP-02** | uyarı | Seçili düzen uygun ama süre payı %10'dan küçük (`cycleHours > 0,9·avail`) | bilgi amaçlı; işletmede kesinti payı yok |
+| **W-KAP-01** | uygunsuz | Seçili düzende `sel.cycleHours > sel.avail` | **shift:** `r.sectorAlts` her Ns için gerçek değer (hesaplandı). **kaynak, süre:** kapasite koşuluyla kanıtla-uygunsuz ya da değerlendirilmedi (MH-AKIL-2). **aralık:** §6.3'teki ayrıntılı değerlendirme. **bölme:** aynı kaynakla kanıtla-uygunsuz; ek kaynakla veri gerekli (MH-AKIL-3) |
+| **W-KAP-02** | işletme uyarısı | Seçili düzen uygun ama `cycleHours > k·avail` (k: proje ayarı, varsayılan %90) | İşletme esnekliği; teknik uygunluğu değiştirmez (§6.1) |
 | **W-SHF-01** | uyarı | Shift debileri dengesiz (`Qmin < 0,7·Qmax`) — motor eşiği | shift: elle düzenleme ekranına yönlendirme |
 | **W-SHF-02** | uyarı | Kaynak debisi kullanılmıyor (`Qs > 1,6·Qmax`) — motor eşiği | shift sayısını azaltma (`sectorAlts`'tan) |
 | **W-HIZ-01** | uyarı/uygunsuz | Ana hat hızı > V_OK / > V_MAX (`hydro-view` eşikleri) | boru: bir üst çap (motorun `main.alts` listesinden) |
@@ -110,11 +110,29 @@ alternatifleridir (`r.sectorAlts`, NsMin…NsMin+7).
 | **W-SD-01** | ön değerlendirme | Joukowsky tepe basıncı > PN (`surge.exceeds`) veya her zaman bilgi | Bu aşamada mevcut mesaj yapılandırılır. Ayrıntı MH-AKIL-5'te. "Ayrıntılı geçici rejim analizi gerekli" ibaresi zorunlu. |
 | **W-VERI-01…** | bilgi | Fiyatı eksik kalemler, katalogda olmayan filtre/vana, şebeke basıncı bilinmiyor | veri: eksik girdi listesi |
 
-Eşikler `engine.js` ve `hydro-view.js` içindeki mevcut değerlerdir; yeni eşik eklenmez.
-W-KAP-02'deki %10 pay yeni bir **bilgi** eşiğidir; uygunluğu etkilemez. Onay vermezseniz
-çıkarılır.
+Eşikler `engine.js` ve `hydro-view.js` içindeki mevcut değerlerdir. Tek yeni eşik, W-KAP-02'nin
+kullanıcı tarafından ayarlanabilen planlama oranıdır (§6.1).
 
-## 6. Kapasite koşulu (W-KAP-01 çözümleri)
+## 6. Kapasite koşulu ve işletme payı
+
+### 6.1 W-KAP-02 — Planlama oranı (onaylandı)
+
+- **Proje ayarı:** "Kullanılabilir çalışma süresinin planlamada kullanılacak oranı" (`k`).
+  - Varsayılan %90.
+  - Aralık %50–%100.
+  - Proje ile saklanır. Eski projelerde alan yoksa %90 kabul edilir; mevcut veri değişmez.
+- **İki kontrol birbirinden ayrıdır:**
+  1. **Kritik kapasite kontrolü (W-KAP-01):** `cycleHours ≤ avail`. Motorun kendi
+     kontrolüdür (`sel.feasible`). `k` ayarından etkilenmez.
+  2. **İşletme güvenlik payı (W-KAP-02):** `cycleHours ≤ k · avail`. Yalnız işletme
+     esnekliği hakkında uyarı verir. Seviyesi "uyarı"dır, hiçbir zaman "uygunsuz" olmaz.
+- `k`, motorun girdilerine **gitmez**. Shift seçimini, `feasible` sonucunu, pompa ve boru
+  seçimini, raporlardaki uygunluk durumunu değiştirmez. Bu, bir değişmezlik testiyle
+  denetlenir (T-13).
+- Mesaj örneği (sayılar temsilidir): "Tur 18,6 h; planlama sınırı 18,0 h (20 h'nin %90'ı). Sistem uygun, ancak
+  arıza, bakım veya yağış sonrası telafi için 1,4 h pay kalıyor."
+
+### 6.2 W-KAP-01 çözümleri
 
 Kullanılan büyüklükler:
 - V: bir sulama aralığında verilmesi gereken brüt hacim = `Qfield · t`.
@@ -131,15 +149,55 @@ Ns · t ≥ V / Qs     ⇒     uygunluk için gerekli koşul:  V / Qs ≤ H · I
 Bu koşul **yalnız gereklidir, yeterli değildir**. Bu nedenle:
 - Koşul sağlanmıyorsa ilgili çözüm **kanıtla uygunsuz** olur. Gerekçe ekranda sayılarla
   yazılır, ör. test2: 2 401 m³ ÷ 86,3 m³/h = 27,8 h > 20 h.
-- Aralık değiştirmek V'yi ve H·I'yı aynı oranda değiştirdiği için oranı değiştirmez.
-  Bu yüzden "aralık" çözümü kanıtla uygunsuzdur.
-- Günlük süre için gereken H = V / (Qs · I) ≥ 27,8 h > 24 h. Bu yüzden "süre" çözümü
-  kanıtla uygunsuzdur.
+- Günlük süre için gereken H = V / (Qs · I) ≥ 27,8 h > 24 h. Bu yüzden "günde 24 saate
+  kadar çalışma" çözümü, diğer girdiler aynı kaldıkça kanıtla uygunsuzdur. Gerekçe sayısal
+  olarak yazılır.
+- Sulama aralığı ayrıca değerlendirilir (§6.3); otomatik olarak uygunsuz ilan edilmez.
 - Koşul sağlansa bile çözüm **"değerlendirilmedi — MH-AKIL-2"** olarak kalır. Uygunluk
   ancak motor yeniden çalıştırılınca söylenir.
 - Kaynak için gösterilen değer yalnızca **alt sınırdır**: "en az V/(H·I) ≈ 120 m³/h gerekir;
   gerçek değer ünite debilerine ve shift yerleşimine bağlıdır, MH-AKIL-2'de hesaplanır."
   Oran yöntemiyle bulunan değer (30,7/20 × 86,3) hiçbir yerde üretilmez.
+
+### 6.3 Sulama aralığı değerlendirmesi
+
+Aralık seçenekleri tek kalemde "uygunsuz" sayılmaz. Her aralık seçeneği I için şunlar
+ayrı satırlarda gösterilir; değerler motorun `schedule()` sonucundan gelir:
+
+| Unsur | Kaynak | Not |
+|---|---|---|
+| Günlük brüt su ihtiyacı (mm/gün, m³/gün) | `schedule.gross`, A | Tepe ay |
+| Dönemlik toplam brüt ihtiyaç | `schedule.seasonM3`, `monthly[]` | Aylık tablo |
+| Toprak kullanılabilir su kapasitesi | `soil.aw` (toprak sınıfı) | Girdi ya da varsayılan; kaynağı yazılır |
+| Kök derinliği | `crop.Zr` | Bitki kaydı; kaynağı yazılır |
+| İzin verilen tüketim oranı, RAW | `crop.p`, `schedule.RAW` | — |
+| En büyük aralık | `schedule.Imax = ⌊RAW / net⌋` | Motorun mevcut sınırı |
+| Bir uygulamadaki sulama süresi | `t = gross · I / AR` | Shift başına |
+| Günlük kaynak kapasitesi | `Qs · H` | — |
+| Günlük ortalama hacim açığı | `V/I − Qs · H` | — |
+| Bitki su stresi riski | I > Imax ise var | Motor aralığı zaten Imax'e düşürür |
+
+Karar kuralları:
+
+1. **I > Imax:** Seçenek "uygunsuz — bitki su stresi riski" olur. Gerekçe RAW, günlük
+   tüketim ve Imax sayılarıyla yazılır.
+2. **I ≤ Imax:** Sabit ortalama ihtiyaç ve sabit kaynak kapasitesi altında günlük ortalama
+   hacim açığı aralıktan bağımsızdır. Bu durumda seçenek şöyle gösterilir:
+   - Etiket: "**bu varsayımlar altında açığı kapatmaz**".
+   - Varsayımlar açıkça listelenir: aynı tepe ET0, aynı Kc, aynı günlük çalışma süresi,
+     aynı kaynak debisi, depolama yok.
+   - Gerekçe sayısal olarak yazılır. Örnek: "I = 2 gün: gereken 4 802 m³, verilebilen
+     2 × 20 h × 86,3 m³/h = 3 452 m³; açık 1 350 m³ (günde 675 m³)."
+3. Farklı bir işletme senaryosu açığı değiştirebilir; bunlar **"değerlendirilmedi"**
+   olarak listelenir ve hangi verinin gerektiği yazılır:
+   - depolama havuzu,
+   - tepe dışı aylarda farklı aralık (motorun aylık `interval` değerleri),
+   - açık süresi boyunca kısmi (deficit) sulama kabulü,
+   - farklı günlük çalışma süresi.
+4. **Veri gerekli:** Toprak sınıfı ya da kök derinliği kullanıcı tarafından girilmemiş ve
+   varsayılan kullanılıyorsa aralık değerlendirmesi "Veri gerekli — toprak/kök derinliği
+   varsayılan" notuyla gösterilir. Toprak sınıfı bilinmiyorsa uygunluk hakkında kesin ifade
+   kullanılmaz.
 
 ## 7. Ekranlar
 
@@ -196,16 +254,21 @@ verilir ve yerel biçimde gösterilir.
 | T-7 | Tutarlılık: aynı proje için Sonuç ekranı, Hidrolik panel, PDF metni ve Excel "Uyarılar" sayfası aynı kodları, seviyeleri ve sayısal değerleri içerir. |
 | T-8 | `hesaplandi-uygun` durumu yalnız motor sonucu olan çözümlerde bulunur (değişmezlik testi; bütün senaryolar). |
 | T-9 | W-SD-01 metninde "Ön değerlendirme – mühendislik doğrulaması gerekli" ve "Ayrıntılı geçici rejim analizi gerekli" bulunur. "güvenli", "onaylı", "garanti" sözcükleri bulunmaz. |
-| T-10 | Proje saklama: `onay` alanı kaydedilip geri okunur. v0.6.0 ve MH-1 dönemi projeleri hatasız açılır, veri silinmez (`upgrade.test.js` genişletilir). |
+| T-10 | Proje saklama: `onay` ve `k` alanları kaydedilip geri okunur. v0.6.0 ve MH-1 dönemi projeleri hatasız açılır, veri silinmez (`upgrade.test.js` genişletilir). |
+| T-10b | **Gerçek JSON yedek → geri yükleme:** Uygulamanın "Yedekle" ve "Yedekten yükle" mekanizması (`www/js/app.js:75-92`, `IrriGrow_yedek` biçimi) kullanılır. Yeni alanlarla yedeklenen proje, geri yüklendikten sonra hesap sonucu ve uyarı kodlarıyla birebir aynı olur. Eski sürüm yedeği yeni sürümde açılır. Excel raporu yedek olarak **kullanılmaz** ve testlerde yedek yerine geçmez. |
+| T-13 | İşletme payı ayrımı: `k` %50, %90 ve %100 iken motor sonucu (`sel`, `feasible`, pompa, boru, altın parmak izi) ve W-KAP-01 birebir aynı kalır; yalnız W-KAP-02 değişir. |
+| T-14 | Sulama aralığı: I > Imax için "uygunsuz — su stresi"; I ≤ Imax için "bu varsayımlar altında açığı kapatmaz" etiketi, varsayım listesi ve sayısal açık gösterilir. Varsayılan toprak/kök derinliğinde "Veri gerekli" notu bulunur. |
 | T-11 | i18n: yeni anahtarlar 8 dilde eksiksiz (`i18n.test.js`). |
 | T-12 | Arayüz (Playwright, masaüstü 1440 ve mobil 390): kritik uyarı ilk sırada; açılır paneller çalışır; taşma yok; dokunma hedefleri ≥ 44 px; açık/koyu tema karşıtlığı. Hazır olmayan modüllere düğme gösterilmez. |
 
 ## 9. Kabul ölçütleri
 
-1. `npm test`: mevcut 130 test ve yeni testlerin tamamı geçer.
+1. `npm test`: mevcut 130 test (MH-1 birleştikten sonraki sayı) ve yeni testlerin tamamı geçer.
 2. `tools/audit.js`: 38/38.
 3. MH-0 altın kayıt parmak izi **değişmez**. `engine.js` formülleri ve `r.warn` metinleri
-   değişmez.
+   değişmez. Mevcut projelerin hidrolik sonuçları değişmez.
+3a. Planlama oranı `k` hiçbir teknik uygunluk sonucunu değiştirmez (T-13).
+3b. JSON yedek → geri yükleme testi (T-10b) geçer.
 4. Bütün Playwright arayüz testleri geçer (MH-1'deki 226 kontrol dahil).
 5. T-7 tutarlılık testi yeşildir: Sonuç, Hidrolik, PDF ve Excel aynı veriyi gösterir.
 6. test2 için ekranda "uygun" diye gösterilen hiçbir hesaplanmamış çözüm yoktur.
@@ -222,8 +285,21 @@ verilir ve yerel biçimde gösterilir.
 - Su darbesinin ayrı ayrı değerlendirilmesi: vana kapanma süresi, PN, pompa duruşu, vakum
   riski, koruma ekipmanları (MH-AKIL-5).
 - Harita üzerinde bölme: MH-AKIL-3.
+- KML/KMZ içe aktarma: MH-KML.
 - Alternatif karşılaştırma: MH-AKIL-4.
 - Kot ve eğim verisine dayanan bütün öneriler: MH-2 ve MH-3.
+
+## 10.1 Sonraki modüllerle veri uyumu
+
+- Uyarı ve çözüm nesneleri proje kimliğine ve **revizyon kimliğine** bağlıdır
+  (`projeId`, `revId`, ana proje için `revId: null`). MH-AKIL-3'te her alt proje ve her taslak
+  kendi uyarı listesine sahip olur.
+- `durum[]` öğelerinde `kapsam` alanı bulunur: `'proje' | 'bolum' | 'kaynak'`. Aynı kaynağı
+  paylaşan bölümlerin toplam kapasite kontrolü (MH-AKIL-3) bu alanla yapılır.
+- Geometri ile ilgili uyarılar `geoKaynak` alanını taşır: `'cizim' | 'kml' | 'kmz'`.
+  MH-KML'de içe aktarılan parsellerdeki boşluk ve geometri uyarıları aynı modelle üretilir.
+- `cozumler[].hedef` alanı, ilgili modül etkinleştiğinde dolar. Bunlar: `'karsilastir'`
+  (MH-AKIL-4) ve `'harita'` (MH-AKIL-3 ve MH-KML). O zamana kadar düğme gösterilmez.
 
 ## 11. Tahmini değişecek dosyalar
 
@@ -234,7 +310,7 @@ verilir ve yerel biçimde gösterilir.
 | `www/js/hydro-panel.js` | kod rozeti, "Çözümleri gör" bağlantısı |
 | `www/js/app.js` | Sonuç ekranı uyarı kartları |
 | `www/js/report.js`, `www/js/report-data.js` | PDF bölümü ve Excel sayfası |
-| `www/js/store.js` | uyarı onay durumu (geriye dönük uyumlu) |
+| `www/js/store.js` | uyarı onay durumu, planlama oranı `k` (geriye dönük uyumlu) |
 | `www/js/i18n-dict.js`, `www/css/app.css` | çeviriler ve kart stilleri |
 | `www/index.html` | betik sırası |
 | `test/assess.test.js`, `test-ui/uyari.ui.js` | yeni testler |
