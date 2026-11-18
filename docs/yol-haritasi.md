@@ -1,6 +1,6 @@
 # IrriGrow — Geliştirme Yol Haritası
 
-Son güncelleme: 18.11.2026. Bu belge proje sahibinin onayladığı geliştirme sırasını kayıt altına alır.
+Son güncelleme: 18.11.2026 (MH-AKIL-1 tamamlandı). Bu belge proje sahibinin onayladığı geliştirme sırasını kayıt altına alır.
 KML/KMZ içe aktarma, akıllı arazi bölme ve eğim analizi onaylanmış gereksinimlerdir; yol
 haritasından çıkarılmaz.
 Her madde **ayrı dal ve ayrı PR** olarak hazırlanır. Hiçbir PR, proje sahibinin açık onayı
@@ -14,13 +14,14 @@ olmadan `main` dalına birleştirilmez.
 | PR-A | Capacitor 8, Android API 36, Node 22, veri koruma | `main` (PR #2) |
 | MH-0 | Altın referans kayıtları, EPANET ile bağımsız doğrulama | `main` (PR #3) |
 | MH-1 | Profesyonel hidrolik hesaplama paneli | `main` (PR #4) — gerçek Android cihaz testi 9/9 başarılı |
+| MH-AKIL-1 | Yapılandırılmış mühendislik uyarıları ve çözüm önerileri | `main` (PR #6) — gerçek Android cihaz testi 11/11 başarılı |
 
 ## Onaylanmış sıra
 
 | # | Aşama | Kapsam | Bağımlılık |
 |---|---|---|---|
-| 1 | **MH-AKIL-1** | Yapılandırılmış mühendislik uyarıları ve çözüm önerileri | MH-1 (tamamlandı) — kodlama onaylandı |
-| 2 | **MH-AKIL-2** | Otomatik shift ve kaynak kapasitesi alternatifleri | MH-AKIL-1 |
+| 1 | ~~MH-AKIL-1~~ | **Tamamlandı** (PR #6) | — |
+| 2 | **MH-AKIL-2** | Otomatik shift ve kaynak kapasitesi alternatifleri | MH-AKIL-1 (tamamlandı) — kodlama onaylandı |
 | 3 | **MH-AKIL-5** | Su darbesi ön değerlendirmesi | MH-AKIL-1 |
 | 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma | — (veri modeli MH-AKIL-1 ile uyumlu) |
 | 5 | **MH-AKIL-3** | Akıllı arazi bölme ve alternatif proje oluşturma | MH-AKIL-2, MH-KML |
