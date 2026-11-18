@@ -1982,6 +1982,188 @@
      ""
     ]
    ],
+   "Uyarılar": [
+    [
+     "Kod",
+     "Seviye",
+     "Başlık",
+     "Mevcut değer",
+     "Sınır",
+     "Birim",
+     "Çözüm türü",
+     "Çözüm durumu",
+     "Açıklama / gerekçe",
+     "Gereken veri"
+    ],
+    [
+     "W-SD-01",
+     "Uygunsuz",
+     "Su darbesi üst sınırı PN sınıfını aşabilir",
+     61.53226565372956,
+     102,
+     "m",
+     "",
+     "",
+     "Ani kapanma için Joukowsky üst sınırı ΔH ≈ 62 m (dalga hızı 386 m/s); işletme 57,2 m + ΔH = 119 m, PN10 sınırı 102,0 m. Ayrıntılı geçici rejim analizi yapılmadı.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Vana kapanma süresi: Kapanma süresinin 2L/a = 2,6 s’den uzun olması ani-kapanma sınırını aşmamak için gereklidir, yeterli değildir. 5 × 2L/a = 13 s yalnız pratik bir kuraldır.",
+     "Vana kapanma eğrisi"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "PN sınıfı",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Daha yüksek PN sınıfı: Üst sınır karşılaştırması MH-AKIL-5’te; negatif basınç ve kolon ayrılması bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Pompa duruşu (elektrik kesintisi): Çoğu sistemde en kritik senaryodur; bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Veri gerekli (MH-2)",
+     "Vakum riski ve hava/vakum vanaları: Yüksek noktalar için arazi kotları gerekir (MH-2).",
+     "Ana hat boyunca arazi kotları"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Veri",
+     "Veri gerekli",
+     "Ayrıntılı geçici rejim analizi gerekli: Karakteristikler yöntemiyle; IrriGrow bu sürümde yapmaz.",
+     "Pompa atalet momenti; Vana karakteristiği; Hat profili"
+    ],
+    [
+     "W-HIZ-01",
+     "Uyarı",
+     "Ana hat hızı yüksek",
+     1.5618523294890236,
+     1.5,
+     "m/s",
+     "",
+     "",
+     "En büyük hız 1,56 m/s; öneri ≤ 1,5 m/s, üst sınır 2,0 m/s.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø125 PN10: Motorla hesaplandı: hız 1,21 m/s, gerekli H 93,1 m, enerji 58.624 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø140 PN10: Motorla hesaplandı: hız 0,96 m/s, gerekli H 90,8 m, enerji 57.763 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø160 PN10: Motorla hesaplandı: hız 0,74 m/s, gerekli H 89,5 m, enerji 57.253 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-POM-01",
+     "Uyarı",
+     "Pompa bazı shift’lerde fazla basınç üretiyor",
+     37.451928149907744,
+     30,
+     "%",
+     "",
+     "",
+     "Gerekenden %37 fazla basınç.",
+     ""
+    ],
+    [
+     "W-POM-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi",
+     "Basınç regülatörü veya frekans konvertörü: Enerji kazancı bu sürümde hesaplanmıyor.",
+     ""
+    ],
+    [
+     "W-POM-02",
+     "Uyarı",
+     "Pompa temsili (doğrulanmamış) kayıt",
+     null,
+     null,
+     "",
+     "",
+     "",
+     "Pompa doğrulanmış bir üretici kaydı değil; gerçek katalogla kontrol edin",
+     "Üretici pompa eğrisi (Q–H, verim, güç)"
+    ],
+    [
+     "W-POM-02",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Veri",
+     "Veri gerekli",
+     "Gerçek üretici kataloğunu yüklemek: Ayarlar → Katalog yükle (JSON).",
+     "Üretici pompa eğrisi (Q–H, verim, güç)"
+    ]
+   ],
    "Hidrolik": [
     [
      "Kalem",

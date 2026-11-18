@@ -128,6 +128,16 @@
     doc.setFont('DV', 'bold'); doc.setFontSize(17); doc.setTextColor(15, 81, 50); doc.text(tr('Damla Sulama Ön Projesi'), M, y); y += 7;
     doc.setFont('DV', 'normal'); doc.setFontSize(10); doc.setTextColor(95, 111, 102); doc.text(`${p.name} · IrriGrow · ${new Date().toLocaleDateString(loc)}`, M, y); y += 8;
     h1(tr('Proje özeti')); kv(T.ozet);
+    // MH-AKIL-1: mühendislik değerlendirmesi (Sonuç ekranıyla aynı nesne); kritik uyarılar önce
+    h1(tr('Mühendislik değerlendirmesi'));
+    if (!T.akil.findings.length) kv([[tr('Durum'), tr('Yapılandırılmış uyarı yok.'), '', null]]);
+    for (const x of T.akil.findings) {
+      need(12); doc.setFont('DV', 'bold'); doc.setFontSize(10);
+      const col = x.seviye === 'uygunsuz' ? [163, 32, 26] : x.seviye === 'uyari' ? [122, 74, 0] : x.seviye === 'on-degerlendirme' ? [122, 74, 0] : [29, 78, 137];
+      doc.setTextColor(...col); const hl = doc.splitTextToSize(x.head, Wd - 2 * M); doc.text(hl, M, y); y += hl.length * 4.6 + 1; doc.setTextColor(20, 30, 25);
+      kv(x.kv);
+      if (x.sols.length > 1) table(x.sols, [40, 30, 78, 34], [], []);
+    }
     if (svg) { try { const img = await svgToPng(svg, 1400); const iw = Wd - 2 * M, ih = Math.min(iw * img.ratio, 200); const iw2 = ih / img.ratio; need(ih + 14); h1(tr('Yerleşim planı')); doc.addImage(img.data, 'PNG', M + (iw - iw2) / 2, y, iw2, ih); y += ih + 6; } catch (e) { /* plan çizilemezse rapor yine üretilir */ } }
     h1(tr('Hidrolik hesaplar')); kv(T.hidrolik);
     h1(tr('Shift’ler')); table(T.sektor, [30, 30, 40, 40], T.sektorDec, [1, 2, 3]);
@@ -156,7 +166,7 @@
       }
     }
     h1(tr('Maliyet')); kv(T.toplam);
-    if (r.warn.length) { h1(tr('Uyarılar')); kv(r.warn.map((w, i) => [String(i + 1), w, '', null])); }
+    if (T.akil.other.length) { h1(tr('Diğer hesap notları')); kv(T.akil.other.map((w, i) => [String(i + 1), w, '', null])); }
     h1(tr('Varsayımlar')); kv(r.asm.map((a, i) => [String(i + 1), a, '', null]));
     need(18); doc.setFont('DV', 'normal'); doc.setFontSize(8); doc.setTextColor(95, 111, 102);
     doc.text(doc.splitTextToSize(tr('Bu rapor ön projelendirme amaçlıdır. Hesaplar FAO-56, Keller & Bliesner, Watters-Keller ve Hazen-Williams (C=150) bağıntılarıyla yapılmıştır. "Jenerik" veya "örnek" olarak işaretli ekipman ve fiyatlar gerçek ürün verisi değildir; uygulama öncesi saha ölçümü, su analizi ve üretici kataloğu değerleriyle kontrol edilmelidir.'), Wd - 2 * M), M, y);

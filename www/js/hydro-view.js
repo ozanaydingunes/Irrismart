@@ -29,32 +29,11 @@
     const crit = ms.crit || [];
     const shiftA = j => sel.Qj[j] / r.sectors.Qfield * f.da;          // alan payı debi oranından (mevcut uygulamayla aynı)
     const pumpTemsili = p.need && (!p.fromCatalog || !p.verified);
-    const checks = [];
-    const chk = (level, tab, title, text, params) => checks.push({ level, tab, title, text, params: params || {} });
-
-    // ---------- Mühendislik kontrolleri (eşikler motorun kendi uyarı ve seçim kurallarıdır) ----------
-    chk(lvl(lat.maxDH <= e.allowLat + 1e-9), 'lateral', 'Lateral basınç farkı', 'En büyük ΔH {a} m, izin verilen {b} m', { a: [lat.maxDH, 2], b: [e.allowLat, 2] });
-    const manVar = Math.max(...units.map(u => u.varH));
-    chk(lvl(manVar <= e.allowMan + 1e-9), 'manifold', 'Manifold basınç değişimi', 'En büyük {a} m, izin verilen {b} m', { a: [manVar, 2], b: [e.allowMan, 2] });
-    const manPN = units.filter(u => u.hInMax * 1.25 > u.pipe.pn * BAR);
-    if (manPN.length) chk('bad', 'manifold', 'Manifold PN sınıfı', '{n} manifoldun giriş basıncı PN sınıfı için yüksek', { n: [manPN.length, 0] });
+    // ---------- Mühendislik kontrolleri: MH-AKIL-1 uyarı katmanından (Sonuç, PDF ve Excel ile aynı kaynak) ----------
+    const AS = g.IrriAssess || (typeof require !== 'undefined' ? require('./assess.js') : null);
+    const assess = ctx.assess || AS.evaluate(r, { inp, Qsource: Qsrc, k: ctx.k });
+    const checks = assess.checks.slice();
     const vMain = Math.max(...net.map(x => x.v), 0), vMainSt = vStatus(vMain);
-    if (net.length) chk(vMainSt, 'anahat', 'Ana hat hızı', 'En büyük hız {a} m/s (öneri ≤ {b} m/s)', { a: [vMain, 2], b: [V_OK, 1] });
-    chk(lvl(1.25 * ms.Pop <= ms.pn * BAR + 1e-9), 'basinc', 'Ana hat PN (işletme)', '1,25 × {a} m ≤ PN{p} ({b} m)', { a: [ms.Pop, 1], p: [ms.pn, 0], b: [ms.pn * BAR, 1] });
-    if (p.need && p.Pshut != null) chk(lvl(p.Pshut <= ms.pn * BAR + 1e-9), 'basinc', 'Pompa kapama basıncı', '{a} m, PN{p} sınırı {b} m', { a: [p.Pshut, 1], p: [ms.pn, 0], b: [ms.pn * BAR, 1] });
-    chk(r.surge.exceeds ? 'bad' : 'warn', 'basinc', 'Su darbesi (Joukowsky üst sınırı)', 'ΔH ≈ {a} m, tepe {b} m; vanalar en az {c} s’de kapanmalı', { a: [r.surge.dH, 0], b: [r.surge.peak, 0], c: [r.surge.tClose, 0] });
-    chk(lvl(sel.feasible), 'shift', 'Sulama turu süresi', 'Tur {a} h, kullanılabilir {b} h', { a: [sel.cycleHours, 1], b: [sel.avail, 0] });
-    if (Qsrc) chk(lvl(sel.Qmax <= Qsrc + 1e-9), 'shift', 'Kaynak debisi', 'En büyük shift {a} m³/h, kaynak {b} m³/h', { a: [sel.Qmax, 2], b: [Qsrc, 2] });
-    if (Ns > 1) chk(lvl(sel.Qmin >= 0.7 * sel.Qmax, true), 'shift', 'Shift debi dengesi', 'En küçük / en büyük = {a} / {b} m³/h', { a: [sel.Qmin, 2], b: [sel.Qmax, 2] });
-    const sur = Math.max(...ms.surplus);
-    if (sur > 5) chk('warn', 'basinc', 'Fazla basınç', 'Bazı shift’lerde {a} m fazla basınç: shift vanasında regülatör', { a: [sur, 1] });
-    if (p.need && p.fromCatalog && p.over > 1.3) chk('warn', 'pompa', 'Pompa fazla basınç', 'Gerekenden %{a} fazla basınç: regülatör veya frekans konvertörü', { a: [(p.over - 1) * 100, 0] });
-    if (pumpTemsili) chk('warn', 'pompa', 'Temsili pompa', 'Pompa doğrulanmış bir üretici kaydı değil; gerçek katalogla kontrol edin', {});
-    if (sel.filter.missing.length) chk('warn', 'pompa', 'Filtre kataloğu eksik', '{x} filtresi katalogda yok; 5 m kayıp kabul edildi', { x: sel.filter.missing.join(', ') });
-    if (sel.valve.over) chk('warn', 'pompa', 'Shift vanası kapasitesi', 'Katalogdaki en büyük vana yetersiz; paralel bağlantı gerekir', {});
-    if (lat.cat && lat.cat.maxH && Math.max(...units.map(u => u.hInMax)) > lat.cat.maxH) chk('warn', 'lateral', 'Lateral boru basıncı', 'Lateral girişi boru sınırını ({a} m) aşabilir', { a: [lat.cat.maxH, 0] });
-    const order = { bad: 0, warn: 1, ok: 2 };
-    checks.sort((a, b) => order[a.level] - order[b.level]);
     const count = { bad: checks.filter(c => c.level === 'bad').length, warn: checks.filter(c => c.level === 'warn').length, ok: checks.filter(c => c.level === 'ok').length };
 
     // ---------- Kritik güzergâh (seçili düzende en yüksek H'li shift) ----------
@@ -94,7 +73,7 @@
       ],
       shiftBars: ms.H.map((H, j) => ({ j, H, Hd: ms.Hd[j], Q: sel.Qj[j], pumpH: p.need && p.fromCatalog ? p.pts[j].H : null })),
       critPath,
-      engineWarn: r.warn,
+      engineWarn: r.warn, otherWarn: assess.other,
     };
 
     // ---------- 2. Lateral ----------
@@ -232,7 +211,7 @@
       ],
       surge: [
         row('Dalga hızı a', r.surge.a, 0, 'm/s'), row('Joukowsky ΔH', r.surge.dH, 1, 'm'),
-        row('Kritik kapanma süresi 2L/a', r.surge.Tc, 1, 's'), row('Önerilen en kısa kapanma', r.surge.tClose, 0, 's'),
+        row('Kritik kapanma süresi 2L/a', r.surge.Tc, 1, 's'), row('Pratik kural 5 × 2L/a (gerekli, yeterli değil)', r.surge.tClose, 0, 's'),
         row('Tepe basınç', r.surge.peak, 1, 'm', 'hesap', { status: r.surge.exceeds ? 'bad' : 'ok', bar: r.surge.peak / BAR }),
       ],
       energy: [
@@ -245,7 +224,7 @@
       monthly: s.monthly.map(m => ({ m: m.m, ay: m.ay, kc: m.kc, et0: m.et0, gross: m.gross, interval: m.interval, sure: m.sure, m3da: m.m3da })),
     };
 
-    return { ok: true, Ns, jCrit, checks, count, ozet, lateral, manifold, anahat, shift, pompa, basinc, SRC, consts: { BAR, V_OK, V_MAX } };
+    return { ok: true, Ns, jCrit, checks, count, assess, ozet, lateral, manifold, anahat, shift, pompa, basinc, SRC, consts: { BAR, V_OK, V_MAX } };
   }
 
   // Görünüm modelindeki bütün sayısal değerler (aynı veri testi ve tutarlılık kontrolü için)

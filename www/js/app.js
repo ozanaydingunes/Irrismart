@@ -2,7 +2,9 @@
 (function () {
   const D = window.IRRI_DATA, E = window.IrriEngine, V = window.IrriValidate, Ct = window.IrriCatalog, Gm = window.IrriGeom, HT = window.IrriHydroTable, I = window.IrriI18n;
   const t = I.t;
-  const HV = window.IrriHydroView, HP = window.IrriHydroPanel;
+  const HV = window.IrriHydroView, HP = window.IrriHydroPanel, AS = window.IrriAssess, AV = window.IrriAssessView;
+  // MH-AKIL-1: uyarı katmanı. Sonuç, Hidrolik, PDF ve Excel aynı çağrıyı kullanır (IrriAssess.forProject).
+  const assessOf = r => AS.forProject(cur, r);
   const $ = s => document.querySelector(s);
   const KEY = 'irrismart.projects.v1', SKEY = 'irrismart.settings.v1', CKEY = 'irrismart.catalog.v1';
   const fmt = (v, d = 1) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString(I.locale, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -75,19 +77,17 @@
   // Yedekleme: tüm projeler + ayarlar + kullanıcı kataloğu tek JSON dosyasında
   $('#btnBackup').onclick = () => {
     if (!projects.length) return toast(t('Yedeklenecek proje yok'));
-    window.IrriReport.json('IrriGrow_yedek', { uygulama: 'IrriGrow', yedekSurum: 1, tarih: new Date().toISOString(), projects, settings, catalog: userCat }).catch(e => toast(t('Yedek alınamadı: ') + e.message));
+    window.IrriReport.json('IrriGrow_yedek', St.backupPayload(projects, settings, userCat)).catch(e => toast(t('Yedek alınamadı: ') + e.message));
   };
   $('#restoreFile').onchange = async ev => {
     const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
     try {
-      const j = JSON.parse(await f.text());
-      if (!j || !['IrriGrow', 'IrriSmart'].includes(j.uygulama) || !Array.isArray(j.projects)) throw new Error(t('Bu bir IrriGrow yedek dosyası değil'));
-      const valid = j.projects.filter(p => p && typeof p.id === 'string' && p.inp && typeof p.inp === 'object');
+      let j; try { j = St.readBackup(await f.text()); } catch (e) { throw new Error(e.i18n ? t(e.message) : e.message); }
+      const valid = j.valid;
       const same = valid.filter(p => projects.some(x => x.id === p.id)).length;
       if (!confirm(t('{n} proje yüklenecek.', { n: valid.length }) + (same ? ' ' + t('{n} tanesi mevcut projelerin üzerine yazılacak.', { n: same }) : '') + ' ' + t('Devam edilsin mi?'))) return;
-      for (const p of valid) { const i = projects.findIndex(x => x.id === p.id); const q = St.migrateProject(p); if (i >= 0) projects[i] = q; else projects.push(q); }
-      projects.sort((a, b) => (b.updated || 0) - (a.updated || 0));
-      if (j.settings && typeof j.settings === 'object' && confirm(t('Yedekteki fiyat ayarları da yüklensin mi?'))) { settings = Object.assign(JSON.parse(JSON.stringify(D.DEFAULT_PRICES)), { items: {}, edited: {} }, j.settings); saveSettings(); }
+      St.mergeBackup(projects, valid);
+      if (j.settings && confirm(t('Yedekteki fiyat ayarları da yüklensin mi?'))) { settings = Object.assign(JSON.parse(JSON.stringify(D.DEFAULT_PRICES)), { items: {}, edited: {} }, j.settings); saveSettings(); }
       if (j.catalog && !Ct.checkCatalog(j.catalog).length) { userCat = j.catalog; save(CKEY, userCat); catalog = Ct.mergeCatalog(window.IRRI_CATALOG, userCat); }
       persist(); cur = null; $('#projName').textContent = t('Proje seçilmedi'); renderProjects(); toast(t('{n} proje yüklendi', { n: valid.length }));
     } catch (e) { alert(t('Yedek yüklenemedi: ') + e.message); }
@@ -364,10 +364,18 @@
       (i.geom === 'parsel' && (cur.poly || []).length < 3 ? `<div class="note warn">${t('Gerçek parsel modu için Arazi ekranında sınır çizin.')}</div>` : '') +
       (i.grad && i.geom === 'parsel' ? `<p class="muted small">${t('Eğim yönü harita yükseklik verisinden alındı. Eğim alanlarını değiştirirseniz bu veri silinir.')}</p>` : '') +
       (val.warnings.length ? `<div class="note warn"><ul>${val.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>` : '') +
+      `<fieldset><legend>${t('Proje ayarları')}</legend><div class="f"><label>${t('Planlama oranı (%)')}<input name="__planOrani" id="planOrani" type="text" inputmode="decimal" value="${cur.akil && cur.akil.planOrani != null ? esc(String(Math.round(cur.akil.planOrani * 100))) : ''}" placeholder="${Math.round(AS.K_DEF * 100)}"></label></div>
+       <p class="muted small">${t('Kullanılabilir çalışma süresinin planlamada kullanılacak oranı (%50–%100). Yalnız işletme payı uyarısını (W-KAP-02) etkiler; hesap sonucunu ve teknik uygunluğu değiştirmez.')}</p></fieldset>` +
       `<p class="muted small">${t('Boş alanlarda gri değer varsayım olarak kullanılır ve raporda listelenir. Ondalık için virgül kullanabilirsiniz.')}</p>
        <div class="sticky"><button type="button" class="btn primary block" id="btnCalc" ${nErr ? 'disabled' : ''}>${t('Hesapla')}</button></div>`;
     $('#form').querySelectorAll('input,select').forEach(el => el.onchange = () => {
       const v = el.value.trim();
+      if (el.name === '__planOrani') {   // proje ayarı: motor girdisi DEĞİL (cur.inp'e yazılmaz)
+        cur.akil = cur.akil || {};
+        const x = V.parseNum(v);
+        if (v === '' || !Number.isFinite(x)) delete cur.akil.planOrani; else cur.akil.planOrani = AS.clampK(x / 100);
+        persist(); renderForm(); return;
+      }
       if (v === '') delete i[el.name]; else i[el.name] = v;
       if (el.name === 'area_da') { delete i.L; delete i.W; }
       if (el.name === 'slopeLong' || el.name === 'slopeShort') delete i.grad;
@@ -435,10 +443,11 @@
   function renderResult() {
     const r = compute(), el = $('#result');
     const notes = (r.err.length ? `<div class="note err"><b>${t('Kesin sonuç verilemiyor')}</b><ul>${r.err.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : '') +
-      (r.warn.length ? `<div class="note warn"><b>${t('Uyarılar')}</b><ul>${r.warn.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : '') +
-      (I.lang !== 'tr' && (r.warn.length || r.err.length) ? `<p class="muted small">${t('Hesap notları (uyarılar ve varsayımlar) şu an yalnız Türkçe gösterilir.')}</p>` : '');
+      (!r.ok && r.warn.length ? `<div class="note warn"><b>${t('Uyarılar')}</b><ul>${r.warn.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : '');
     if (!r.ok) { el.innerHTML = notes + `<button class="btn block" id="bBack">${t('Verilere dön')}</button>`; $('#bBack').onclick = () => show('veri'); return; }
     const s = r.schedule, m = r.main.sel, sel = r.sel;
+    const A = assessOf(r);
+    const akil = AV.make({ t, fmt, esc }).render(A) + (I.lang !== 'tr' && (A.other.length || r.asm.length) ? `<p class="muted small">${t('Hesap notları (uyarılar ve varsayımlar) şu an yalnız Türkçe gösterilir.')}</p>` : '');
     el.innerHTML = `
     <div class="big">
       <div><b>${fmt(r.field.da, 1)} da</b><span>${esc(t(D.CROPS[cur.inp.crop].ad))} · ${r.field.mode === 'parsel' ? t('parsel') : t('dikdörtgen')}</span></div>
@@ -446,7 +455,7 @@
       <div><b>${fmt(s.gross, 1)} ${t('mm/gün')}</b><span>${t('Tepe brüt su ihtiyacı')}</span></div>
       <div><b>${fmt(s.t, 1)} ${t('saat')}</b><span>${t('Shift başına / {n} günde bir', { n: s.interval })}</span></div>
     </div>
-    ${notes}
+    ${notes}${akil}
     <div class="card"><h3>${t('Yerleşim planı')}</h3><div class="layout">${layoutSvg(r)}</div>
       <p class="muted small">${r.field.mode === 'parsel' ? t('Gerçek parsel sınırı üzerinde. Haritada görmek için Arazi ekranındaki “Plan” düğmesini kullanın.') : t('Eşdeğer dikdörtgen üzerinde. Gerçek sınır için Arazi ekranında parsel çizin ve “Uygula” deyin.')} ${t('Renkler shift’leri gösterir; lateraller seyreltilerek çizilmiştir.')}</p></div>
     <div class="card"><h3>${t('Shift planlaması alternatifleri')}</h3><p class="muted small">${t('Kaynak debisi')} ${fmt(cur.inp.Q ? V.parseNum(cur.inp.Q) : 0, 1)} m³/h. ${I.lang === 'tr' ? 'Öneri ölçütü: ' + esc(r.recBasis) + '. ' : ''}${t('Satıra dokunarak seçin.')}</p>
@@ -507,7 +516,14 @@
     const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { delete cur.shiftEdit; invalidateDesign(); persist(); renderResult(); };
     $('#toHydro').onclick = e => { e.preventDefault(); show('hidrolik'); };
     bindExport('#bPdf', '#bXls', r);
+    el.querySelectorAll('select[data-onay]').forEach(x => x.onchange = () => {
+      cur.akil = cur.akil || {}; cur.akil.onay = cur.akil.onay || {};
+      if (x.value === 'yok') delete cur.akil.onay[x.dataset.onay]; else cur.akil.onay[x.dataset.onay] = x.value;
+      persist(); toast(t('Kaydedildi'));
+    });
+    if (pendingFocus) { const c = document.getElementById('ak-' + pendingFocus); pendingFocus = null; if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); } }
   }
+  let pendingFocus = null;
   const monthName = m => new Date(2026, m - 1, 1).toLocaleDateString(I.locale, { month: 'short' });
   function bindExport(a, b, r) {
     const run = (btn, label, fn) => { const el = $(btn); el.onclick = async () => { if (el.disabled) return; el.disabled = true; const old = el.textContent; el.textContent = t('{x} hazırlanıyor…', { x: label }); try { await fn(); } catch (e) { toast(t('{x} hatası: ', { x: label }) + (e && e.message || e)); } finally { el.disabled = false; el.textContent = old; } }; };
@@ -600,13 +616,14 @@
   function renderHydro() {
     const h = hydroState(), el = $('#hydro');
     const r = lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null);
-    const vm = r && r.ok ? HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q) }) : (r ? { ok: false, err: r.err } : { ok: false, err: [t('Su kaynağı debisi (m³/h) girilmedi — shift, boru çapı ve pompa hesaplanamaz.')] });
+    const vm = r && r.ok ? HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) }) : (r ? { ok: false, err: r.err } : { ok: false, err: [t('Su kaynağı debisi (m³/h) girilmedi — shift, boru çapı ve pompa hesaplanamaz.')] });
     h.ptab = h.ptab || 'ozet';
     el.innerHTML = HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
     el.classList.add('hp');
     const go = (tab, j) => { h.ptab = tab; if (j != null) h.pshift = j; persist(); renderHydro(); const v = $('#v-hidrolik'); if (v) v.scrollTop = 0; };
     el.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => go(b.dataset.ptab));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+    el.querySelectorAll('[data-kod]').forEach(b => b.onclick = () => { pendingFocus = b.dataset.kod; show('sonuc'); });
     el.querySelectorAll('[data-shift]').forEach(b => b.onclick = () => go('shift', +b.dataset.shift));
     if (h.ptab === 'tablo') renderHydroTable(h, r);
   }

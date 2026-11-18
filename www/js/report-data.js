@@ -3,6 +3,29 @@
 (function (g) {
   const D = g.IRRI_DATA || (typeof require !== 'undefined' ? require('./data.js') : null);
   const E = () => g.IrriEngine;
+  const AS = () => g.IrriAssess || (typeof require !== 'undefined' ? require('./assess.js') : null);
+  const nfmt = (v, d) => (typeof v === 'number' && Number.isFinite(v)) ? v.toLocaleString('tr-TR', { minimumFractionDigits: d ?? 1, maximumFractionDigits: d ?? 1 }) : '—';
+
+  // MH-AKIL-1: Sonuç ekranıyla aynı değerlendirme (IrriAssess.forProject). PDF ve Excel bu nesneden yazılır.
+  function akil(p, r) {
+    const A = AS().forProject(p, r), tx = x => AS().text(x, T, nfmt);
+    const findings = A.findings.map(x => ({
+      kod: x.kod, seviye: x.seviye,
+      head: `${x.kod} · ${T(AS().LEVEL_AD[x.seviye])}${x.onDegerlendirme ? ' · ' + T(AS().ON_DEG) : ''} — ${tx(x.baslik)}`,
+      kv: x.durum.map(q => [tx(q.ad), q.deger, q.birim, q.d])
+        .concat(x.sinir ? [[T('Sınır') + ': ' + tx(x.sinir.ad), x.sinir.deger, x.sinir.birim, x.sinir.d]] : [])
+        .concat([[T('Neden'), tx(x.neden), '', null]])
+        .concat(x.kisaGerekce ? [[T('Not'), tx(x.kisaGerekce), '', null]] : [])
+        .concat(x.onem ? [[T('Önem'), tx(x.onem), '', null]] : [])
+        .concat(x.onay && x.onay !== 'yok' ? [[T('Kullanıcı kararı'), T(({ bekliyor: 'İnceleniyor', kabul: 'Bilinerek kabul edildi', red: 'Çözülmesi gerekiyor' })[x.onay] || x.onay), '', null]] : []),
+      sols: [[T('Çözüm'), T('Durum'), T('Gerekçe'), T('Gereken veri')]].concat(x.cozumler.map(c => [tx(c.baslik), T(AS().DURUM_AD[c.durum]) + (c.asama && c.durum === 'degerlendirilmedi' ? ' (' + c.asama + ')' : ''), tx(c.gerekce) + (c.varsayim ? ' ' + tx(c.varsayim) : '') + (c.kapsam ? ' ' + tx(c.kapsam) : ''), (c.gerekenVeri || []).map(tx).join('; ')])),
+    }));
+    const head = [T('Kod'), T('Seviye'), T('Başlık'), T('Mevcut değer'), T('Sınır'), T('Birim'), T('Çözüm türü'), T('Çözüm durumu'), T('Açıklama / gerekçe'), T('Gereken veri')];
+    const rr = AS().reportRows(A, T, nfmt);
+    const sheet = [head].concat(rr.map(x => x.cells), A.other.map(w => ['', T('Diğer hesap notu'), '', null, null, '', '', '', w, '']));
+    const decs = [null].concat(rr.map(x => x.dec ?? null), A.other.map(() => null));
+    return { A, findings, other: A.other, count: A.count, sheet, decs };
+  }
   const T = (x, p) => g.IrriI18n ? g.IrriI18n.t(x, p) : (p ? x.replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined ? p[k] : m)) : x);
   const SRC = () => ({ kullanici: T('Kullanıcı'), katalog: T('Katalog'), ornek: T('Örnek fiyat') });
 
@@ -66,7 +89,7 @@
       [T('Fiyatı eksik zorunlu kalem'), r.cost.missing, 'adet', 0], [T('Örnek fiyatlı kalem'), r.cost.example, 'adet', 0],
       r.cost.total != null ? [T('TOPLAM MALZEME BEDELİ'), r.cost.total, 'TL', 0] : [T('TOPLAM MALZEME BEDELİ'), 'Hesaplanmadı (eksik fiyat)', '', null],
     ];
-    return { ozet, hidrolik, sektor, sektorDec, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
+    return { akil: akil(p, r), ozet, hidrolik, sektor, sektorDec, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
   }
 
   // Excel çalışma kitabı (SheetJS). Sayılar gerçek sayı hücresi, ondalık biçimi ayrı.
@@ -86,7 +109,9 @@
     };
     const kv = (name, rows) => sheet(name, [[T('Kalem'), T('Değer'), T('Birim')]].concat(rows.map(([a, b, c]) => [a, b, T(c)])), [44, 26, 10], (ri) => ri ? rows[ri - 1][3] : null);
     const tbl = (name, rows, dec, cols) => sheet(name, rows, cols, (ri, ci) => ri ? dec[ci] : null);
-    kv(sn('Özet'), TB.ozet); kv(sn('Hidrolik'), TB.hidrolik);
+    kv(sn('Özet'), TB.ozet);
+    sheet(sn('Uyarılar'), TB.akil.sheet, [10, 16, 46, 14, 12, 8, 16, 26, 90, 40], (ri, ci) => ri && (ci === 3 || ci === 4) ? TB.akil.decs[ri] : null);
+    kv(sn('Hidrolik'), TB.hidrolik);
     tbl(sn('Shift’ler'), TB.sektor, TB.sektorDec, [10, 12, 14, 14]);
     tbl(sn('Shift alternatifleri'), TB.altSek, TB.altSekDec, [13, 20, 14, 12, 16, 12, 11, 16, 20, 18]);
     tbl(sn('Ana hat alternatifleri'), TB.altHat, TB.altHatDec, [8, 6, 10, 10, 12, 16, 14, 16, 14, 30]);
@@ -175,6 +200,6 @@
   }
   function hydroWorkbook(XLSX, p, opt) { const wb = XLSX.utils.book_new(); hydroSheets(XLSX, wb, p.hydro || {}, opt); return wb; }
 
-  g.IrriReportData = { build, workbook, hydroSheets, hydroWorkbook };
+  g.IrriReportData = { akil, build, workbook, hydroSheets, hydroWorkbook };
   if (typeof module !== 'undefined') module.exports = g.IrriReportData;
 })(typeof window !== 'undefined' ? window : globalThis);

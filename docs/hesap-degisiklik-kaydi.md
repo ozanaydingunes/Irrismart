@@ -35,3 +35,14 @@ Her girdi şunları içerir:
   - `pump.shiftKWh`: yıllık pompa enerjisinin shift'lere dağılımı (toplamı `pump.kWh` ile aynı ifade).
   - `CONST` (G, η pompa, η motor) yöntem açıklaması için.
 - **Formül, katsayı veya seçim kuralı değişmedi.** Altın kayıt ve bağımsız doğrulama testleri aynı sonuçla geçiyor; `test/hydropanel.test.js` döküm toplamının motor H değerine ve shift enerjileri toplamının yıllık enerjiye eşitliğini sınıyor.
+
+---
+
+## 2026-11-18 — MH-AKIL-1: Excel raporuna "Uyarılar" sayfası eklendi (hesap değişikliği yok)
+
+- **Parmak izi (tüm kayıt):** `9ebab7fcace22e9696fd5af46715b9ad55c913ed4abc99df0fa07d0f85ecb426`
+- **Hesap parmak izi (Uyarılar sayfası hariç):** `86ce24bce78bf3d8b28733e6fe9e3f4d19f1b8cf06d46a091ae429595f2b3fa4` — MH-0 ilk kaydıyla (`46f22517…`) **aynı içerik**.
+- **Değişiklik:** Excel raporuna yapılandırılmış mühendislik uyarılarını içeren yeni bir "Uyarılar" sayfası eklendi (MH-AKIL-1, `www/js/assess.js`). Kayıt bu sayfayı da içerdiği için tüm kaydın parmak izi değişti.
+- **Değişmeyenler:** 19 kaydın hepsinde `design` (motor sonuçları ve `r.warn` metinleri), diğer bütün Excel sayfaları, A3 pafta, DXF ve Hidrolik Hesap Tablosu birebir aynı. Bu, eski ve yeni kayıtların "Uyarılar" sayfası çıkarılarak karşılaştırılmasıyla doğrulandı. Kalıcı olarak da `test/golden.test.js` içindeki "hesap bölümü MH-0’dan beri değişmedi" testi bunu denetler.
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `www/js/engine.js` bu PR'da değiştirilmedi.
+- **Doğrulama:** `test/dogrulama.test.js` (EPANET ve bağımsız bağıntılar) ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.

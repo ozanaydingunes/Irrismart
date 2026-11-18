@@ -53,6 +53,25 @@
     return c;
   }
 
-  g.IrriStore = { SCHEMA, migrateProject, parseProjects, snapshot, restoreRev, duplicate, isProject };
+  // JSON proje yedeği ("Yedekle" / "Yedekten yükle"). Uygulama ve testler aynı fonksiyonları kullanır.
+  // Excel/PDF raporları yedek değildir; yalnız bu biçim geri yüklenebilir.
+  function backupPayload(projects, settings, catalog, date) {
+    return { uygulama: 'IrriGrow', yedekSurum: 1, tarih: (date || new Date()).toISOString(), projects, settings, catalog };
+  }
+  // Dosya metnini çözer; geçersizse hata fırlatır (msg: çevrilecek metin). Dönüş: geçerli projeler, ayarlar, katalog
+  function readBackup(text) {
+    const j = typeof text === 'string' ? JSON.parse(text) : text;
+    if (!j || !['IrriGrow', 'IrriSmart'].includes(j.uygulama) || !Array.isArray(j.projects)) { const e = new Error('Bu bir IrriGrow yedek dosyası değil'); e.i18n = true; throw e; }
+    const valid = j.projects.filter(p => p && typeof p.id === 'string' && p.inp && typeof p.inp === 'object');
+    return { valid, settings: j.settings && typeof j.settings === 'object' ? j.settings : null, catalog: j.catalog || null };
+  }
+  // Yedekteki projeleri mevcut listeye işler (aynı kimlik üzerine yazılır, yeni olan eklenir). Listeyi yerinde değiştirir.
+  function mergeBackup(projects, valid) {
+    for (const p of valid) { const i = projects.findIndex(x => x.id === p.id); const q = migrateProject(p); if (i >= 0) projects[i] = q; else projects.push(q); }
+    projects.sort((a, b) => (b.updated || 0) - (a.updated || 0));
+    return projects;
+  }
+
+  g.IrriStore = { SCHEMA, migrateProject, parseProjects, snapshot, restoreRev, duplicate, isProject, backupPayload, readBackup, mergeBackup };
   if (typeof module !== 'undefined') module.exports = g.IrriStore;
 })(typeof window !== 'undefined' ? window : globalThis);

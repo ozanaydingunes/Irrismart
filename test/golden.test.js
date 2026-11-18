@@ -50,3 +50,21 @@ test('Altın kayıt: parmak izi hesap değişiklik kaydında belgelenmiş', () =
   const log = fs.readFileSync(path.join(__dirname, '..', 'docs', 'hesap-degisiklik-kaydi.md'), 'utf8');
   ok(log.includes(fp), `altın kayıt parmak izi ${fp} docs/hesap-degisiklik-kaydi.md içinde yok — gerekçesiyle ekleyin`);
 });
+
+// MH-AKIL-1: Rapor eklemeleri (Excel "Uyarılar" sayfası) hesap değişikliğini gizleyemez. Kayıtlardan bu sayfa
+// çıkarıldığında kalan her şey (motor sonuçları, diğer Excel sayfaları, pafta, DXF, hidrolik tablo) MH-0 ilk
+// kaydıyla (46f22517…) aynı içeriği vermelidir. Bir hesap değişikliği bilinçli yapılırsa bu değer de
+// gerekçesiyle docs/hesap-degisiklik-kaydi.md içinde güncellenir.
+const HESAP_IZI = '86ce24bce78bf3d8b28733e6fe9e3f4d19f1b8cf06d46a091ae429595f2b3fa4';
+function hesapIzi() {
+  return GT.fingerprint(files.map(name => {
+    const o = JSON.parse(fs.readFileSync(path.join(GT.DIR, name), 'utf8'));
+    if (o.exports && o.exports.excel) delete o.exports.excel['Uyarılar'];
+    return { name, text: JSON.stringify(o) };
+  }));
+}
+test('Altın kayıt: hesap bölümü (rapor eklemeleri hariç) MH-0’dan beri değişmedi', () => {
+  const fp = hesapIzi(), log = fs.readFileSync(path.join(__dirname, '..', 'docs', 'hesap-degisiklik-kaydi.md'), 'utf8');
+  ok(fp === HESAP_IZI, `hesap parmak izi ${fp} ≠ ${HESAP_IZI}: motor sonuçları veya mevcut çıktılar değişti`);
+  ok(log.includes(fp), 'hesap parmak izi docs/hesap-degisiklik-kaydi.md içinde yok');
+});
