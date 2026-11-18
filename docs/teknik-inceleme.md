@@ -10,6 +10,9 @@ onayıyla ele alınır.
 | T-01 | Motor ↔ DXF uzunluk farkı (küresel yerel düzlem / WGS84 UTM) | Açık — inceleme | Çizilmiş parsellerde uzunluk ve alanda yöne bağlı ±%0,2 | 18.11.2026 |
 | T-02 | `Ns` isteği uygulanamayınca motor uyarısının gerekçesi yanıltıcı | Açık — MH-MOTOR-1 (M-0) | Yalnız metin | 18.11.2026 |
 | T-03 | Ana hat alternatifleri tablosundaki enerji ile seçili düzenin enerjisi farklı tanımlı | Açık — açıklama | Rapor okunurken karışıklık | 18.11.2026 |
+| T-04 | `inp.Ns` kaynak sınırının altındaysa motor düzeni seçiyor; motor uyarı listesinde kaynak aşımı satırı yok | Açık — MH-MOTOR-1 (M-1) | W-KAP-03 "Uygunsuz" ile yakalanıyor; motor metni eksik | 18.11.2026 |
+| T-05 | Yerleşim imzası değişince elle shift ataması sorulmadan siliniyor (`app.js:406`); fırça atamaları doğrudan projeye yazılıyor | Açık — MH-MANUEL-1A | Veri kaybı riski | 18.11.2026 |
+| T-06 | Harita shift etiketleri yakınlaştırmaya göre seyrelmiyor, üst üste biniyor; etikette sabit "FIELD 1" metni | Açık — MH-SHIFT-1 | Okunabilirlik | 18.11.2026 |
 
 ## T-01 — Motor ↔ DXF uzunluk farkı
 

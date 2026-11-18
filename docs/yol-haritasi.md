@@ -67,6 +67,7 @@ Onaylanan geliştirme sırası (gerekçeler planın §13'ünde):
 | 7 | MH-MANUEL-4 — harita, malzeme ve rapor entegrasyonu | Plan |
 | 8 | MH-AKIL-5 — su darbesi ileri ön değerlendirmesi | Plan |
 | 9 | MH-MANUEL-5 — otomatik çözümler, su darbesi ve arazi modülleriyle entegrasyon | Plan |
+| MH-SHIFT-1/2/3 | Manuel shift sayısı ve haritadan shift düzenleme ([plan](mh-shift-plan.md)): 1A'dan sonra salt okunur analiz, MH-MANUEL-2'den sonra manuel sayı, MH-MANUEL-3'ten sonra harita araçları | Plan — onay bekliyor |
 | ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
@@ -150,4 +151,5 @@ aşama olarak planlanacak:
 - WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - MH-AKIL-2 telefon testi: [docs/akil-2-telefon-testi.md](akil-2-telefon-testi.md)
 - Teknik inceleme listesi: [docs/teknik-inceleme.md](teknik-inceleme.md)
+- MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (onay bekliyor)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.
