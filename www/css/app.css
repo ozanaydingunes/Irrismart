@@ -270,3 +270,56 @@ nav.tabs button span{font-size:10px}
   .hp .hp-barrow{grid-template-columns:56px minmax(0,1fr);}
   .hp .hp-bv{grid-column:2}
 }
+
+/* ===== MH-AKIL-1: mühendislik değerlendirmesi (uyarı kartları ve çözümler) ===== */
+.ak{--ak-ba:#a3201a;--ak-babg:#fde6e4;--ak-wa:#7a4a00;--ak-wabg:#fff2d1;--ak-in:#1d4e89;--ak-inbg:#e3ecf8;--ak-ok:#0b5a39;--ak-okbg:#e2f2e8;--ak-na:#4a5751;--ak-nabg:#eef1ef}
+:root[data-theme=dark] .ak{--ak-ba:#ff9b93;--ak-babg:#40191a;--ak-wa:#f6c46a;--ak-wabg:#3a2d10;--ak-in:#9ec3f0;--ak-inbg:#1a2a40;--ak-ok:#7fe0ae;--ak-okbg:#16301f;--ak-na:#c3cec8;--ak-nabg:#222c27}
+.ak .ak-strip{display:flex;flex-wrap:wrap;gap:6px 12px;margin:0 0 10px;font-size:13px}
+.ak .ak-cnt{display:inline-flex;align-items:center;gap:4px}
+.ak .ak-lv{display:inline-flex;align-items:center;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.ak .ak-lv-bad{background:var(--ak-ba);color:#fff}.ak .ak-lv-warn{background:var(--ak-wabg);color:var(--ak-wa)}
+.ak .ak-lv-pre{background:var(--ak-wabg);color:var(--ak-wa);border:1px dashed currentColor}.ak .ak-lv-info{background:var(--ak-inbg);color:var(--ak-in)}
+:root[data-theme=dark] .ak .ak-lv-bad{color:#2a0806}
+.ak .ak-card{border:1px solid var(--line);border-radius:12px;margin:8px 0;background:var(--card);overflow:hidden}
+.ak .ak-c-bad{border:2px solid var(--ak-ba)}
+.ak .ak-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:10px 12px;min-height:44px;list-style:none;color:var(--ink)}
+.ak .ak-head::-webkit-details-marker{display:none}
+.ak .ak-c-bad>.ak-head{background:var(--ak-babg)}
+.ak .ak-kod{font-size:12px;font-weight:700;color:var(--muted)}
+.ak .ak-title{flex:1 1 220px;min-width:0;font-weight:700;font-size:14.5px}
+.ak .ak-body{padding:4px 12px 12px}
+.ak .ak-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:8px;margin:8px 0}
+.ak .ak-tile{background:var(--bg);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;min-width:0}
+.ak .ak-tile.ak-lim{outline:1px dashed var(--line)}
+.ak .ak-tl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.ak .ak-tile b{font-size:18px;font-variant-numeric:tabular-nums}
+.ak .ak-tile b small{font-size:12px;font-weight:500;color:var(--muted)}
+.ak .ak-src{font-size:10.5px;color:var(--muted)}
+.ak .ak-c-bad .ak-tile:first-child b{color:var(--ak-ba)}
+.ak .ak-neden{margin:6px 0;font-size:13.5px}
+.ak .ak-key{margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--ak-wabg);color:var(--ak-wa);font-size:13px;font-weight:600}
+.ak .ak-sub{border-top:1px solid var(--line);padding:4px 0;margin-top:4px}
+.ak .ak-sub>summary{min-height:40px;display:flex;align-items:center;font-size:13.5px}
+.ak .ak-sub h4{margin:8px 0 4px;font-size:12px;color:var(--muted);text-transform:uppercase}
+.ak .ak-solist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ak .ak-sol{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.ak .ak-solh{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 10px}
+.ak .ak-solh>b{flex:1 1 180px;min-width:0;font-size:13.5px}
+.ak .ak-dz{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.ak .ak-dz-ok{background:var(--ak-okbg);color:var(--ak-ok)}.ak .ak-dz-bad{background:var(--ak-babg);color:var(--ak-ba)}
+.ak .ak-dz-warn{background:var(--ak-wabg);color:var(--ak-wa)}.ak .ak-dz-info{background:var(--ak-inbg);color:var(--ak-in)}
+.ak .ak-dz-na{background:var(--ak-nabg);color:var(--ak-na);border:1px dashed currentColor}
+.ak .ak-why{margin:6px 0 0;font-size:13px}
+.ak .ak-asm{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+.ak .ak-later{margin:4px 0 0;font-size:12px;color:var(--ak-na);font-style:italic}
+.ak .ak-need{margin-top:6px;font-size:12.5px;color:var(--ak-in)}
+.ak .ak-ul{margin:4px 0 0;padding-inline-start:18px;font-size:13px}
+.ak .ak-tbl{font-size:12.5px}
+.ak .ak-tbl td,.ak .ak-tbl th{white-space:normal}
+.ak .ak-onay{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px;font-size:13px}
+.ak .ak-onay select{min-height:40px;height:auto;flex:1 1 auto;min-width:min(100%,200px);width:auto}
+.ak .ak-legend{font-size:12px;color:var(--muted);margin:8px 0 0}
+.ak .ak-other{margin-top:8px}
+.ak .ak-other>summary{min-height:40px;display:flex;align-items:center}
+.hp .hp-kod{font-size:11.5px;color:var(--muted);font-weight:700}
+.hp .hp-acts{display:inline-flex;gap:2px;margin-inline-start:auto}

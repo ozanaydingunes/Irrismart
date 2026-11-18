@@ -316,3 +316,52 @@ verilir ve yerel biçimde gösterilir.
 | `test/assess.test.js`, `test-ui/uyari.ui.js` | yeni testler |
 | `test/upgrade.test.js`, `test/report.test.js` | genişletme |
 | `www/js/engine.js` | **değişmez** |
+
+
+## 12. Uygulama notları (MH-AKIL-1 PR'ı)
+
+- **Modüller:** `www/js/assess.js` (değerlendirme), `www/js/assess-view.js` (Sonuç ekranı kartları).
+  Sonuç, Hidrolik, PDF ve Excel aynı çağrıyı kullanır: `IrriAssess.forProject(proje, sonuç)`.
+- **Kodlar:** Plandaki listeye ek olarak motorun mevcut uyarıları için `W-KAP-03` (shift debisi >
+  kaynak), `W-LAT-02` (lateral ΔH), `W-MAN-01` (manifold basınç değişimi), `W-PN-03` (manifold PN),
+  `W-POM-03` (hidrant basıncı az farkla yetersiz), `W-FLT-01`, `W-VAN-01` kodları verildi. Eşikler
+  motorun ve MH-1 panelinin eşikleridir.
+- **Çözüm durumu `varsayimla-yetersiz`** (“Bu varsayımlarla yetersiz”) sulama aralığı için eklendi
+  (§6.3 kural 2). Varsayımlar her seçeneğin altında yazılır.
+- **Seviye uyumu:** Hidrolik paneldeki her uyarı kontrolü Sonuç ekranında aynı kod ve seviyede
+  görünür (temsili pompa ve eksik filtre kaydı her iki yerde “uyarı”).
+- **“Hesaplandı – uygun”** yalnız motorun hesapladığı shift ve ana hat çapı alternatiflerinde
+  kullanılır ve her zaman “Kontrol edilenler: …” kapsam notuyla (ekran, PDF ve Excel) birlikte yazılır;
+  su darbesi bu alternatifler için ayrıca hesaplanmadığı belirtilir.
+- **Kullanıcı kararı:** Kullanıcı kararı yok / İnceleniyor / Bilinerek kabul edildi / Çözülmesi
+  gerekiyor. `proje.akil.onay[kod]` alanında saklanır; uyarının seviyesini değiştirmez.
+- **Planlama oranı:** Veriler → Proje ayarları; `proje.akil.planOrani` (motor girdisi `inp` dışında).
+- **Yedekleme:** Uygulamanın JSON yedekleme/geri yükleme mantığı davranış değişmeden
+  `IrriStore.backupPayload / readBackup / mergeBackup` fonksiyonlarına taşındı; testler bu
+  fonksiyonları kullanır.
+- **Altın kayıt:** Excel'e “Uyarılar” sayfası eklendiği için kayıt yenilendi. Motor sonuçları ve
+  diğer çıktılar MH-0 ile aynı; ayrıntı `docs/hesap-degisiklik-kaydi.md`.
+- **Kullanıcı kararı ve teknik uygunluk:** “Bilinerek kabul edildi” kararı uyarının seviyesini,
+  sayımları, çözüm durumlarını ve `teknikUygun` sonucunu değiştirmez; ekranda ve PDF'te uyarı
+  “Uygunsuz” olarak kalır, karar ayrıca yazılır (test T-15).
+
+### 12.1 test2 günlük hacmi: 2.379 m³ ile 2.401 m³ farkı
+
+Hesap senaryosu: `{ crop: 'domates', area_da: 288,9, srcType: 'kuyu', depth: 40, region: 'akdeniz', Q: 86,3 }`
+(eşdeğer dikdörtgen). Bu, kullanıcının ekran görüntüsündeki test2 sonuçlarını (16 shift, 30,7 h,
+86,3 m³/h) birebir veren yaklaşık modeldir; kullanıcının telefonundaki gerçek test2 projesinin
+girdileri (parsel sınırı vb.) JSON yedeğiyle paylaşılırsa ayrıca doğrulanacaktır.
+
+| Değer | Tanım | Kaynak |
+|---|---|---|
+| 2.401 m³ | 8,31 mm (yuvarlanmış brüt) × 288,9 da | Tasarım önizlemesinde elle yapılan hesap; **yuvarlama** |
+| 2.399,5 m³ | 8,3056 mm × 288.900 m² | Brüt ihtiyaç × toplam alan; Hidrolik panel “Günlük hacim (tepe)” |
+| 2.379,2 m³ | 1.240,10 m³/h (Σ damlatıcı debisi) × 1,9186 h (shift süresi) ÷ 1 gün | Motorun tur süresinde kullandığı hacim; uyarı katmanı “Günlük sulama hacmi” |
+
+- 2.401 → 2.399,5: yalnız yuvarlama (+1,1 m³).
+- 2.399,5 → 2.379,2: tanım farkı (−20,2 m³, %0,84). Damlatıcılar 620.048 adet × 0,33 m × 1,40 m =
+  286.462 m² alanı kaplar (toplam alanın %99,16'sı); parsel kenarlarında tam sıra aralığı kalmadığı
+  için bu şeritlerde damlatıcı yoktur.
+- Tur süresi 16 × 1,9186 h = 30,70 h, 2.379,2 m³ ile tutarlıdır. Kapasite denetimi motorla aynı
+  tanımı (2.379,2 m³) kullanır; **hesap değiştirilmedi.** Ekranda iki büyüklük ayrı adlarla
+  (“Günlük sulama hacmi”, “Brüt ihtiyaç × toplam alan”) ve açıklamasıyla gösterilir.

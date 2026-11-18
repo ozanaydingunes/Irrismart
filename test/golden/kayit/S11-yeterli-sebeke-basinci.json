@@ -1415,6 +1415,164 @@
      ""
     ]
    ],
+   "Uyarılar": [
+    [
+     "Kod",
+     "Seviye",
+     "Başlık",
+     "Mevcut değer",
+     "Sınır",
+     "Birim",
+     "Çözüm türü",
+     "Çözüm durumu",
+     "Açıklama / gerekçe",
+     "Gereken veri"
+    ],
+    [
+     "W-SD-01",
+     "Uygunsuz",
+     "Su darbesi üst sınırı PN sınıfını aşabilir",
+     74.82764862139405,
+     102,
+     "m",
+     "",
+     "",
+     "Ani kapanma için Joukowsky üst sınırı ΔH ≈ 75 m (dalga hızı 385 m/s); işletme 61,2 m + ΔH = 136 m, PN10 sınırı 102,0 m. Ayrıntılı geçici rejim analizi yapılmadı.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Vana kapanma süresi: Kapanma süresinin 2L/a = 3,9 s’den uzun olması ani-kapanma sınırını aşmamak için gereklidir, yeterli değildir. 5 × 2L/a = 20 s yalnız pratik bir kuraldır.",
+     "Vana kapanma eğrisi"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "PN sınıfı",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Daha yüksek PN sınıfı: Üst sınır karşılaştırması MH-AKIL-5’te; negatif basınç ve kolon ayrılması bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Pompa duruşu (elektrik kesintisi): Çoğu sistemde en kritik senaryodur; bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Veri gerekli (MH-2)",
+     "Vakum riski ve hava/vakum vanaları: Yüksek noktalar için arazi kotları gerekir (MH-2).",
+     "Ana hat boyunca arazi kotları"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Veri",
+     "Veri gerekli",
+     "Ayrıntılı geçici rejim analizi gerekli: Karakteristikler yöntemiyle; IrriGrow bu sürümde yapmaz.",
+     "Pompa atalet momenti; Vana karakteristiği; Hat profili"
+    ],
+    [
+     "W-HIZ-01",
+     "Uyarı",
+     "Ana hat hızı yüksek",
+     1.9059573696437295,
+     1.5,
+     "m/s",
+     "",
+     "",
+     "En büyük hız 1,91 m/s; öneri ≤ 1,5 m/s, üst sınır 2,0 m/s.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø160 PN10: Motorla hesaplandı: hız 1,46 m/s, gerekli H 24,9 m, enerji 0 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø200 PN10: Motorla hesaplandı: hız 0,93 m/s, gerekli H 20,9 m, enerji 0 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-HIZ-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Boru",
+     "Hesaplandı – uygun",
+     "Ana hat Ø225 PN10: Motorla hesaplandı: hız 0,74 m/s, gerekli H 20,2 m, enerji 0 ₺/yıl. Kontrol edilenler: hız, işletme basıncı ve pompa kapama basıncının PN sınıfına göre durumu. Su darbesi ve diğer uyarılar bu çap için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-BAS-01",
+     "Uyarı",
+     "Bazı shift’lerde fazla basınç var",
+     39.77677969649049,
+     5,
+     "m",
+     "",
+     "",
+     "En büyük fazla basınç 39,8 m (kot farkı veya sabit kaynak basıncı).",
+     ""
+    ],
+    [
+     "W-BAS-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Veri gerekli",
+     "Shift vanalarında basınç düşürücü (regülatör): Ayar basıncı ve kayıp eğrisi üretici verisi ister.",
+     "Regülatör ayar basıncı ve kayıp eğrisi"
+    ]
+   ],
    "Hidrolik": [
     [
      "Kalem",

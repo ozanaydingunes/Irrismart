@@ -51,7 +51,8 @@
       const pct = v => (v / maxH * 100).toFixed(2) + '%';
       return `<div class="hp-kpis">${o.kpis.map(k => `<div class="hp-kpi"><span class="hp-kl">${esc(t(k.label))}</span><b>${N(k.v, k.d)}${U(k.unit)}</b>${k.sub ? `<span class="hp-ks">${N(k.sub[0], k.sub[1])}${U(k.sub[2])}</span>` : ''}${chip(vm, k.src)}</div>`).join('')}</div>
       ${card('Mühendislik kontrolleri', (() => {
-        const li = c => `<li class="hp-ck hp-ck-${c.level}">${badge(c.level)}<span><b>${esc(t(c.title))}</b> — ${esc(fill(c.text, c.params))}</span><button class="hp-link" data-go="${c.tab}">${esc(t('Ayrıntı'))} ›</button></li>`;
+        const has = new Set(((vm.assess || {}).findings || []).map(x => x.kod));
+        const li = c => `<li class="hp-ck hp-ck-${c.level}">${badge(c.level)}<span><code class="hp-kod">${esc(c.kod || '')}</code> <b>${esc(t(c.title))}</b> — ${esc(fill(c.text, c.params))}</span><span class="hp-acts">${c.level !== 'ok' && has.has(c.kod) ? `<button class="hp-link" data-kod="${esc(c.kod)}">${esc(t('Çözümler'))} ›</button>` : ''}<button class="hp-link" data-go="${c.tab}">${esc(t('Ayrıntı'))} ›</button></span></li>`;
         const open = vm.checks.filter(c => c.level !== 'ok'), okc = vm.checks.filter(c => c.level === 'ok');
         return `<ul class="hp-checks">${open.map(li).join('')}</ul>${okc.length ? `<details class="hp-okfold"><summary>${esc(t('Uygun kontroller'))} (${okc.length})</summary><ul class="hp-checks">${okc.map(li).join('')}</ul></details>` : ''}`;
       })(),
@@ -66,7 +67,7 @@
         ${card('Boru ve damlatıcı uzunlukları', kv(vm, o.lengths))}
       </div>
       ${o.critPath ? card('Kritik hidrolik güzergâh', `<p class="hp-path">K0 → ${o.critPath.segs.map(esc).join(' → ')} → M${o.critPath.unit + 1}</p><p class="hp-muted">${esc(fill('Shift {s}: gerekli H {h} m · yol {l} m', { s: o.critPath.j + 1, h: [o.critPath.H, 2], l: [o.critPath.L, 0] }))}</p>`) : ''}
-      ${o.engineWarn.length ? `<details class="hp-method"><summary>${esc(t('Hesap motoru uyarıları'))} (${o.engineWarn.length})</summary><ul class="hp-plain">${o.engineWarn.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
+      ${(o.otherWarn || o.engineWarn).length ? `<details class="hp-method"><summary>${esc(t('Diğer hesap notları'))} (${(o.otherWarn || o.engineWarn).length})</summary><ul class="hp-plain">${(o.otherWarn || o.engineWarn).map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
       ${method(['FAO-56: ET₀ × Kc × Kr / Ea', 'Shift: ardışık alt üniteler, en büyük shift debisini en aza indiren bölme', 'Gerekli H: statik + kot + istasyon kayıpları + ana hat sürtünmesi + vana + ünite girişi'],
         ['Arazi, bitki, damlatıcı ve kaynak verileri (Veriler ekranı)', 'Ekipman kataloğu ve fiyatlar (Ayarlar)'],
         ['Her shift aynı süre çalışır', 'Alan payı debi oranından hesaplanır', 'Uyarı ve varsayım metinleri motor tarafından Türkçe üretilir'])}`;
@@ -152,7 +153,7 @@
       const B = vm.basinc;
       return `${card('Shift başına basınç dökümü', table([['Shift', '', 0], ['Statik', 'm', 2], ['Kot', 'm', 2], ['İstasyon', 'm', 2], ['Ana hat', 'm', 2], ['Vana', 'm', 2], ['Ünite girişi', 'm', 2], ['Gerekli H', 'm', 2], ['Verilen H', 'm', 2], ['Pompa H', 'm', 2], ['Fazla', 'm', 2]],
         B.head.map(x => ({ status: x.sur > 5 ? 'warn' : 'ok', cells: [x.no, x.static0, x.rise, x.Hfix, x.hf, x.valve, x.hIn, x.H, x.Hd, x.Hp, x.sur] })), { status: true }))}
-      <div class="hp-cols">${card('Basınç sınıfı (PN)', kv(vm, B.pn))}${card('Su darbesi (üst sınır)', kv(vm, B.surge) + `<p class="hp-note">${esc(t('Su darbesi ayrıntılı analiz edilmedi; Joukowsky ani kapanma üst sınırıdır.'))}</p>`)}</div>
+      <div class="hp-cols">${card('Basınç sınıfı (PN)', kv(vm, B.pn))}${card('Su darbesi (üst sınır)', kv(vm, B.surge) + `<p class="hp-note">${esc(t('Su darbesi ayrıntılı analiz edilmedi; Joukowsky ani kapanma üst sınırıdır.'))} <b>${esc(t('Ön değerlendirme – mühendislik doğrulaması gerekli'))}.</b> ${esc(t('Ayrıntılı geçici rejim analizi gerekli'))}.</p>`)}</div>
       ${card('Enerji', kv(vm, B.energy))}
       ${card('Aylık sulama programı', table([['Ay', '', null], ['Kc', '', 2], ['ET₀', 'mm/gün', 2], ['Brüt', 'mm/gün', 2], ['Aralık', 'gün', 0], ['Süre', 'h', 2], ['Hacim', 'm³/da', 1]], B.monthly.map(m => ({ cells: [month(m.m), m.kc, m.et0, m.gross, m.interval, m.sure, m.m3da] }))))}
       ${notYet('Düğüm basınç profili ve hidrolik eğim çizgisi bu sürümde hesaplanmıyor (MH-4).')}

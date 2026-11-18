@@ -1,0 +1,101 @@
+{
+ "S01-duz-arazi": [
+  "W-HIZ-01:uyari",
+  "W-PN-02:uygunsuz",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S02-yukari-egimli-lateral": [
+  "W-PN-02:uygunsuz",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz",
+  "W-SHF-01:uyari"
+ ],
+ "S03-asagi-egimli-lateral": [
+  "W-HIZ-01:uyari",
+  "W-PN-02:uygunsuz",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S05-coklu-shift": [
+  "W-HIZ-01:uyari",
+  "W-KAP-01:uygunsuz",
+  "W-PN-02:uygunsuz",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S06-dusuk-kaynak-debisi": [
+  "W-KAP-01:uygunsuz",
+  "W-PN-02:uygunsuz",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:on-degerlendirme"
+ ],
+ "S07-uzun-ana-hat": [
+  "W-POM-02:uyari",
+  "W-SD-01:on-degerlendirme"
+ ],
+ "S08-yuksek-kot-farki-yukari": [
+  "W-PN-02:uygunsuz",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S09-yuksek-kot-farki-asagi": [
+  "W-BAS-01:uyari",
+  "W-HIZ-01:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S10-yetersiz-sebeke-basinci": [
+  "W-HIZ-01:uyari",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S11-yeterli-sebeke-basinci": [
+  "W-BAS-01:uyari",
+  "W-HIZ-01:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S12-lateral-20mm": [
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S13-ana-hat-zorunlu-cap": [
+  "W-POM-02:uyari",
+  "W-SD-01:on-degerlendirme"
+ ],
+ "S14-eksik-veri": [
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz",
+  "W-SHF-01:uyari"
+ ],
+ "S15-kullanici-egim-girdisi": [
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S16-pc-damlatici-egimli": [
+  "W-HIZ-01:uyari",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S17-zeytin-yuzey-suyu": [
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz"
+ ],
+ "S18-parsel-elle-shift": [
+  "W-HIZ-01:uyari",
+  "W-POM-01:uyari",
+  "W-POM-02:uyari",
+  "W-SD-01:uygunsuz",
+  "W-SHF-01:uyari"
+ ],
+ "S19-buyuk-hidrant": [
+  "W-BAS-01:uyari",
+  "W-SD-01:uygunsuz"
+ ]
+}

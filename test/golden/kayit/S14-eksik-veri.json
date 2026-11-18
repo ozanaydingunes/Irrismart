@@ -1673,6 +1673,176 @@
      ""
     ]
    ],
+   "Uyarılar": [
+    [
+     "Kod",
+     "Seviye",
+     "Başlık",
+     "Mevcut değer",
+     "Sınır",
+     "Birim",
+     "Çözüm türü",
+     "Çözüm durumu",
+     "Açıklama / gerekçe",
+     "Gereken veri"
+    ],
+    [
+     "W-SD-01",
+     "Uygunsuz",
+     "Su darbesi üst sınırı PN sınıfını aşabilir",
+     43.58040245486256,
+     61.199999999999996,
+     "m",
+     "",
+     "",
+     "Ani kapanma için Joukowsky üst sınırı ΔH ≈ 44 m (dalga hızı 303 m/s); işletme 24,8 m + ΔH = 68 m, PN6 sınırı 61,2 m. Ayrıntılı geçici rejim analizi yapılmadı.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Vana kapanma süresi: Kapanma süresinin 2L/a = 3,0 s’den uzun olması ani-kapanma sınırını aşmamak için gereklidir, yeterli değildir. 5 × 2L/a = 15 s yalnız pratik bir kuraldır.",
+     "Vana kapanma eğrisi"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "PN sınıfı",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Daha yüksek PN sınıfı: Üst sınır karşılaştırması MH-AKIL-5’te; negatif basınç ve kolon ayrılması bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi (MH-AKIL-5)",
+     "Pompa duruşu (elektrik kesintisi): Çoğu sistemde en kritik senaryodur; bu sürümde değerlendirilmiyor.",
+     ""
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Veri gerekli (MH-2)",
+     "Vakum riski ve hava/vakum vanaları: Yüksek noktalar için arazi kotları gerekir (MH-2).",
+     "Ana hat boyunca arazi kotları"
+    ],
+    [
+     "W-SD-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Veri",
+     "Veri gerekli",
+     "Ayrıntılı geçici rejim analizi gerekli: Karakteristikler yöntemiyle; IrriGrow bu sürümde yapmaz.",
+     "Pompa atalet momenti; Vana karakteristiği; Hat profili"
+    ],
+    [
+     "W-SHF-01",
+     "Uyarı",
+     "Shift debileri dengesiz",
+     50,
+     70,
+     "%",
+     "",
+     "",
+     "En küçük shift 14,3 m³/h, en büyük 28,5 m³/h (oran %50 < %70). Pompa küçük shift’lerde fazla basınç üretir.",
+     ""
+    ],
+    [
+     "W-SHF-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Shift",
+     "Hesaplandı – uygun",
+     "9 shift’li düzen: Motorla hesaplandı: debiler 14,3–14,3 m³/h, tur 17,3 h. Kontrol edilenler: tur süresi, kaynak debisi, ana hat hızı ve PN, pompa kapama basıncı. Lateral ve manifold yerleşimi değişmediği için aynıdır; su darbesi bu düzen için ayrıca hesaplanmadı.",
+     ""
+    ],
+    [
+     "W-SHF-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Shift",
+     "Değerlendirilmedi",
+     "Shift atamasını elle dengelemek: Sonuç → Shift’ler bölümünden alt üniteleri taşıyın; motor her değişiklikte yeniden hesaplar.",
+     ""
+    ],
+    [
+     "W-POM-01",
+     "Uyarı",
+     "Pompa bazı shift’lerde fazla basınç üretiyor",
+     30.756414961663193,
+     30,
+     "%",
+     "",
+     "",
+     "Gerekenden %31 fazla basınç.",
+     ""
+    ],
+    [
+     "W-POM-01",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Ekipman",
+     "Değerlendirilmedi",
+     "Basınç regülatörü veya frekans konvertörü: Enerji kazancı bu sürümde hesaplanmıyor.",
+     ""
+    ],
+    [
+     "W-POM-02",
+     "Uyarı",
+     "Pompa temsili (doğrulanmamış) kayıt",
+     null,
+     null,
+     "",
+     "",
+     "",
+     "Pompa doğrulanmış bir üretici kaydı değil; gerçek katalogla kontrol edin",
+     "Üretici pompa eğrisi (Q–H, verim, güç)"
+    ],
+    [
+     "W-POM-02",
+     "",
+     "",
+     null,
+     null,
+     "",
+     "Veri",
+     "Veri gerekli",
+     "Gerçek üretici kataloğunu yüklemek: Ayarlar → Katalog yükle (JSON).",
+     "Üretici pompa eğrisi (Q–H, verim, güç)"
+    ]
+   ],
    "Hidrolik": [
     [
      "Kalem",
