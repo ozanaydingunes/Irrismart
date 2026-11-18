@@ -46,20 +46,28 @@ Bir aşamaya, önceki aşamanın PR'ı onaylanmadan kodlama olarak başlanmaz.
 MH-KML, kendi aşaması gelmeden başka bir geliştirmenin içinde yarım ya da geçici olarak
 kodlanmaz; ayrı teknik planı ve ayrı PR'ı olur.
 
-### Paralel iz: MH-MANUEL — manuel mühendislik müdahalesi ve senaryo simülasyonu (plan onay bekliyor)
+### MH-MANUEL — manuel mühendislik müdahalesi ve senaryo simülasyonu (konsept onaylandı)
 
 Plan: [docs/mh-manuel-plan.md](mh-manuel-plan.md). Uyarının altından ilgili fiziksel girdiler bir
 taslakta değiştirilir, aynı motorla yeniden hesaplanır, eski/yeni karşılaştırılır ve onayla revizyon
-kaydıyla projeye uygulanır. Android ve masaüstünde ortak; hesap motoru değişmez.
+kaydıyla projeye uygulanır. Android ve masaüstünde ortak; MH-MANUEL-1…4 hesap motorunu değiştirmez.
 
-| Aşama | Kapsam | Durum |
+Onaylanan geliştirme sırası (gerekçeler planın §13'ünde):
+
+| Sıra | Aşama | Durum |
 |---|---|---|
-| **MH-MANUEL-1** | Düzenleme ekranı, girdiler ve geçici taslak | Plan onay bekliyor |
-| **MH-MANUEL-2** | Gerçek motorla yeniden hesaplama ve uyarı farkı | 1'e bağlı |
-| **MH-MANUEL-3** | Karşılaştırma, değişiklik geçmişi, proje revizyonları | 2'ye bağlı |
-| **MH-MANUEL-4** | Harita, malzeme ve rapor entegrasyonu | 3'e bağlı |
-| **MH-MANUEL-5** | MH-AKIL-2, MH-AKIL-5, MH-KML ve arazi bölme ile entegrasyon | İlgili aşamalara bağlı |
-| (ayrı onay) | PN sınıfı, pompa modeli, boru malzemesi gibi bugün motor girdisi olmayan kaldıraçlar | Bağımsız doğrulama + hesap değişiklik kaydı |
+| 1 | MH-WEB-2 (PR #10) — masaüstü kullanıcı kabul testi ve birleştirme | Kabul testi bekliyor |
+| 2 | MH-AKIL-2 (PR #8) — telefon testi, main ile çakışma çözümü, ayrı onay | Telefon testi bekliyor |
+| 3 | MH-MANUEL-1A — veri koruma (tam revizyon, sessiz silme yok, yedek çakışma koruması) | Plan |
+| 3 | MH-MANUEL-1B — taslak modeli ve düzenleme ekranı | Plan |
+| 4 | MH-MANUEL-2 — yeniden hesaplama ve uyarı farkları | Plan |
+| 5 | MH-MANUEL-3 — karşılaştırma, uygulama, geri dönüş | Plan |
+| 6 | MH-KML — KML/KMZ içe aktarma | Onaylı gereksinim |
+| 7 | MH-MANUEL-4 — harita, malzeme ve rapor entegrasyonu | Plan |
+| 8 | MH-AKIL-5 — su darbesi ileri ön değerlendirmesi | Plan |
+| 9 | MH-MANUEL-5 — otomatik çözümler, su darbesi ve arazi modülleriyle entegrasyon | Plan |
+| ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
+| korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
 ## Bütün aşamalar için kurallar
 
@@ -137,5 +145,6 @@ aşama olarak planlanacak:
 ## Ayrıntılı planlar
 
 - MH-AKIL-1: [docs/mh-akil-1-plan.md](mh-akil-1-plan.md)
-- MH-MANUEL: [docs/mh-manuel-plan.md](mh-manuel-plan.md) (onay bekliyor)
+- MH-MANUEL: [docs/mh-manuel-plan.md](mh-manuel-plan.md) (konsept onaylandı; revizyon onay bekliyor)
+- WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.
