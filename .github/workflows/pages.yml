@@ -1,0 +1,77 @@
+name: Web (GitHub Pages)
+
+# MH-WEB-1: IrriGrow web sürümünü GitHub Pages test ortamına yayımlar.
+# • Yalnız main dalından (birleştirme sonrası) ve elle başlatılarak çalışır; PR dalları yayımlanmaz.
+# • Önce bütün testler çalışır; biri başarısızsa yayın yapılmaz.
+# • Yayımlanan içerik www/ klasörüdür: Android APK'nın paketlediği aynı uygulama ve aynı hesap motoru.
+# • Gizli anahtar kullanılmaz. Android derleme iş akışı (apk.yml) bundan bağımsızdır.
+# Ön koşul (bir kez, depo sahibi): Settings → Pages → Build and deployment → Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Testler (yayın öncesi)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Otomatik testler
+        run: npm test
+
+      - name: Hidrolik denetim
+        run: node tools/audit.js
+
+      - name: Chromium kur (Playwright)
+        run: npx playwright install --with-deps chromium
+
+      - name: Arayüz testleri
+        run: npm run test:ui
+
+      # Yayın yolunda (/Irrismart/) bütün özellikler, indirmeler, yedek/geri yükleme ve geniş ekranlar
+      - name: Web sürümü testleri (alt yol)
+        run: npm run test:web
+
+      - name: Gizli anahtar taraması (yayımlanacak dosyalar)
+        run: node tools/secret-scan.js www
+
+  deploy:
+    name: GitHub Pages'e yayımla
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: www
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

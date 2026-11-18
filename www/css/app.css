@@ -323,3 +323,7 @@ nav.tabs button span{font-size:10px}
 .ak .ak-other>summary{min-height:40px;display:flex;align-items:center}
 .hp .hp-kod{font-size:11.5px;color:var(--muted);font-weight:700}
 .hp .hp-acts{display:inline-flex;gap:2px;margin-inline-start:auto}
+
+/* ===== MH-WEB-1: web sürümü bilgi notu (yalnız tarayıcıda; Android'de eklenmez) ===== */
+.note.webnote{background:var(--pri2);color:var(--ink);border:1px solid var(--line)}
+.note.webnote .small{color:var(--muted);display:inline-block;margin-top:4px}

@@ -1,6 +1,8 @@
 # MH-WEB — IrriGrow masaüstü web sürümü (GitHub Pages test ortamı)
 
-Durum: **teknik plan — onay bekliyor (18.11.2026).** Kodlama ve dağıtım onaydan sonra başlar.
+Durum: **onaylandı (18.11.2026).** WEB-1 ayrı PR olarak hazırlandı; birleştirme proje sahibinin onayına bağlı.
+Temel ilke: masaüstü sürümü Android uygulamasının **bütün özelliklerine** sahiptir; fark yalnız ekran düzeni ve
+kullanım ergonomisidir. Özellik eşitliği: `docs/ozellik-esitligi.md`.
 Dağıtım ayrı dal ve ayrı PR ile hazırlanır; proje sahibinin onayı olmadan `main`'e birleştirilmez.
 
 ## 1. Mevcut web sürümünün dağıtıma uygunluğu (inceleme sonucu)
@@ -120,3 +122,20 @@ değiştirmez. MH-WEB-2 ve MH-WEB-3 yol haritasındaki sıraya proje sahibinin k
 - Esri World Imagery kullanım şartları (servis bilgisinde gösterilen adres): https://goto.arcgisonline.com/maps/World_Imagery
 - Esri konum servisleri ve API anahtarı değişikliği (2021): https://esri.com/content/dam/esrisites/en-us/media/legal/ma-and-prod-spec-scope-of-use-changes/term-changes-web-notice-e300-1-27-21.pdf
 - Esri topluluk tartışması (anahtarsız World Imagery kullanımı): https://community.esri.com/t5/arcgis-online-questions/current-terms-of-use-for-http-services/td-p/173432
+
+## 8. WEB-1 uygulama notları
+
+- `.github/workflows/pages.yml`: yalnız `main` ve elle başlatma; yayın öncesi `npm test`, hidrolik denetim,
+  arayüz testleri, `npm run test:web` ve gizli anahtar taraması; biri başarısızsa dağıtım yapılmaz.
+- `www/js/platform.js`: yalnız tarayıcıda Projeler ekranına bilgi notu (yalnız bu tarayıcıda saklama,
+  otomatik bulut eşitlemesi yok, JSON yedekle taşıma, depolama kullanımı ve ~5 MB sınırı). Android'de
+  (Capacitor) hiçbir şey eklenmez.
+- `www/js/store.js`: JSON yedeğe her proje sürüm bilgisiyle (`schema`) yazılır; kayıtlı liste değişmez
+  (iki platformda ortak düzeltme).
+- `tools/secret-scan.js`: yayımlanacak dosyalarda anahtar/jeton kalıbı taraması.
+- `test-ui/web.ui.js`: `/Irrismart/` alt yolunda 110 kontrol (bütün ekranlar, harita, indirmeler, yedek,
+  hesap eşitliği, 1280/1440/1920 px). `test/web.test.js`: iş akışı ve platform ayrımı denetimleri.
+- Hesap eşitliği: tarayıcı ile Node motoru 19/19 senaryoda 1e-9 bağıl tolerans içinde aynı; 10 senaryo bit
+  düzeyinde birebir, en büyük fark 6,2 × 10⁻¹⁵ (JS motorlarının `Math.pow` son biti; gösterilen değerler aynı).
+- Mevcut arayüz geniş ekranda ortalanmış tek sütun olarak çalışır (taşma yok); profesyonel masaüstü düzeni
+  WEB-2'dedir.
