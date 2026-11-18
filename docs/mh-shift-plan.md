@@ -288,13 +288,14 @@ Onaylanan sıra (proje sahibi, 18.11.2026 — son hâli):
 | 1 | **PR #8 — MH-AKIL-2** | Android kabul testi ve birleştirme kararı |
 | 2 | **MH-MANUEL-1A** | Proje, revizyon ve yedekleme güvenliği (V-01…V-19); KML için `geoKaynak` alanı ve güvenli geometri değişimi |
 | 3 | **MH-KML** | KML/KMZ ile gerçek arazi yükleme (`docs/mh-kml-plan.md`) |
-| 4 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
-| 5 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
-| 6 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
-| 7 | **MH-SHIFT-2** | Manuel shift sayısı |
-| 8 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
-| 9 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
-| 10 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
+| 4 | **MH-2A** | Eğim, kot ve izohips görselleştirme (`docs/mh-2a-plan.md`); hesap motoru değişmez |
+| 5 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
+| 6 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
+| 7 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
+| 8 | **MH-SHIFT-2** | Manuel shift sayısı |
+| 9 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
+| 10 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
+| 11 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-AKIL-5 (su darbesi), MH-MANUEL-5, MH-2 (kot/eğim), MH-3 (kot–hidrolik), MH-MOTOR-1/2/3 | Yol haritasında; her biri ayrı plan ve onay |
 
 **MH-KML yerleşimi:** proje sahibi onayladı — MH-MANUEL-1A'dan hemen sonra (3. sıra). MH-SHIFT ve MH-AKIL-3 böylece gerçek parsellerle test edilebilir.

@@ -26,7 +26,7 @@ olmadan `main` dalına birleştirilmez.
 | 4 | **MH-KML** | KML/KMZ ile arazi sınırı içe aktarma (sıra: MH-MANUEL-1A'dan hemen sonra) | MH-MANUEL-1A |
 | 5 | **MH-AKIL-3** | Akıllı arazi bölme ve alternatif proje oluşturma | MH-AKIL-2, MH-KML |
 | 6 | **MH-AKIL-4** | Teknik ve ekonomik alternatif karşılaştırması | MH-AKIL-2, MH-AKIL-3 |
-| 7 | **MH-2** | Eğim ve kot analizi — **MH-2A**: görselleştirme, eğim analizi, kot profili ([plan](mh-2a-plan.md), onay bekliyor); sonraki alt aşamalar ve hidrolik etkisi MH-3'te | MH-KML |
+| 7 | **MH-2** | Eğim ve kot analizi — **MH-2A** onaylandı (görselleştirme, eğim, izohips, profil; MH-KML'den hemen sonra); sonraki alt aşamalar ve hidrolik etkisi MH-3'te | MH-KML |
 | 8 | **MH-3** | Arazi kotlarının hidrolik motorla entegrasyonu | MH-2 |
 
 ### Paralel iz: MH-WEB — masaüstü web sürümü (onaylandı)
@@ -61,16 +61,19 @@ Onaylanan geliştirme sırası (proje sahibi, 18.11.2026 — son hâli):
 | 1 | PR #8 — MH-AKIL-2 Android kabul testi ve birleştirme kararı | Telefon testi bekliyor |
 | 2 | MH-MANUEL-1A — proje, revizyon ve yedekleme güvenliği | Plan onaylı |
 | 3 | MH-KML — KML/KMZ ile gerçek arazi yükleme ([plan](mh-kml-plan.md)) | Plan onaylı |
-| 4 | MH-MANUEL-1B — manuel düzenleme ve taslak sistemi | Plan onaylı |
-| 5 | MH-SHIFT-1 — harita etiketleri ve shift analiz ekranı ([plan](mh-shift-plan.md)) | Plan onaylı |
-| 6 | MH-MANUEL-2 — gerçek yeniden hesaplama | Plan onaylı |
-| 7 | MH-SHIFT-2 — manuel shift sayısı (A varsayılan, B deneysel) | Plan onaylı |
-| 8 | MH-MANUEL-3 — karşılaştırma ve revizyon | Plan onaylı |
-| 9 | MH-SHIFT-3 — haritadan manuel shift düzenleme | Plan onaylı |
-| 10 | MH-MANUEL-4 — harita ve rapor entegrasyonu | Plan onaylı |
+| 4 | MH-2A — eğim, kot ve izohips görselleştirme ([plan](mh-2a-plan.md)); hesap motoru değişmez | Plan onaylı |
+| 5 | MH-MANUEL-1B — manuel düzenleme ve taslak sistemi | Plan onaylı |
+| 6 | MH-SHIFT-1 — harita etiketleri ve shift analiz ekranı ([plan](mh-shift-plan.md)) | Plan onaylı |
+| 7 | MH-MANUEL-2 — gerçek yeniden hesaplama | Plan onaylı |
+| 8 | MH-SHIFT-2 — manuel shift sayısı (A varsayılan, B deneysel) | Plan onaylı |
+| 9 | MH-MANUEL-3 — karşılaştırma ve revizyon | Plan onaylı |
+| 10 | MH-SHIFT-3 — haritadan manuel shift düzenleme | Plan onaylı |
+| 11 | MH-MANUEL-4 — harita ve rapor entegrasyonu | Plan onaylı |
 | sonra | MH-AKIL-5 (su darbesi), MH-MANUEL-5 | Yol haritasında |
 | ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
-| korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
+| ayrı (küçük) | T-08 — kot verisi kaynak atfı ([plan](t08-atif-plan.md)); 1A koduna karıştırılmaz | Plan onay bekliyor |
+| karar | T-09 — Open-Meteo ücretsiz API ticari olmayan kullanım şartı | Proje sahibinin kararı |
+| korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2B ve sonrası (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
 ## Bütün aşamalar için kurallar
 
@@ -152,7 +155,8 @@ aşama olarak planlanacak:
 - WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - MH-AKIL-2 telefon testi: [docs/akil-2-telefon-testi.md](akil-2-telefon-testi.md)
 - Teknik inceleme listesi: [docs/teknik-inceleme.md](teknik-inceleme.md)
-- MH-2A (kot ve eğim analizi): [docs/mh-2a-plan.md](mh-2a-plan.md) (onay bekliyor)
+- MH-2A (kot ve eğim analizi): [docs/mh-2a-plan.md](mh-2a-plan.md) (onaylandı)
+- T-08 kot verisi atfı (küçük bağımsız PR): [docs/t08-atif-plan.md](t08-atif-plan.md) (onay bekliyor)
 - MH-MANUEL-1A uygulama planı: [docs/mh-manuel-1a-uygulama.md](mh-manuel-1a-uygulama.md)
 - MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (mimari onaylandı)
 - MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onaylandı)

@@ -2,7 +2,7 @@
 
 Durum: **hazır plan; kodlama PR #8 tamamlanınca ve proje sahibinin başlatma onayıyla.** Ayrı dal,
 ayrı PR. Hesap motoru değişmez. Kapsam ve kabul kriterleri: `docs/mh-manuel-plan.md` §8, §14,
-§14.0, §14.1 (V-01…V-19). Bu belge, mevcut koddaki **her yazma yolunu** ve her birinin nasıl
+§14.0, §14.1 (V-01…V-19); bu belgede V-20, V-21. T-08 atfı kapsam dışıdır (§5). Bu belge, mevcut koddaki **her yazma yolunu** ve her birinin nasıl
 güvenli hâle geleceğini listeler.
 
 ## 1. Projeye yazan kod yolları (bugünkü `www/js/app.js`, main ef28f45)
@@ -76,3 +76,21 @@ için ham yedek alıyor; eksik olan, sonraki göçlerde yeni yedek alınmamasıd
 
 Telefon testi için ayrı kontrol listesi PR ile birlikte hazırlanır (eski projelerle yükseltme, yedek
 → geri yükleme, revizyona dönüş).
+
+## 5. Kapsam dışı ve sonraki aşamalarla bağlantı (18.11.2026 kararları)
+
+- **Onaylı sıra:** PR #8 → **MH-MANUEL-1A** → MH-KML → MH-2A → MH-MANUEL-1B → MH-SHIFT-1 →
+  MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3 → MH-MANUEL-4.
+- **T-08 (Open-Meteo/Copernicus atfı) bu PR'a dahil değildir.** Ayrı, küçük ve bağımsız PR olarak
+  planlandı (`docs/t08-atif-plan.md`). 1A yalnız veri güvenliğini kapsar; arayüz metni veya atıf
+  değişikliği içermez.
+- **Kot verisi için alan ayrımı (1A'da yalnız yer ayrılır, davranış değişmez):**
+  - `elev` (bugünkü Open-Meteo eğim özeti) **değiştirilmez**, `STATE_FIELDS` mühendislik grubunda
+    kalır ve revizyona girer.
+  - `geoKaynak` (MH-KML: dosya bilgisi ve `yukseklikler`, köşe başına) mühendislik grubuna eklenir.
+  - `kot` (MH-2A: kaynak listesi, `dusey`, `yuzey`, `dogruluk`, ızgara özeti; `docs/mh-2a-plan.md` §5)
+    mühendislik grubuna **ad olarak** eklenir; 1A'da hiçbir kod bu alana yazmaz. Böylece MH-2A şema
+    değişikliği gerektirmez ve revizyon/yedek gidiş-dönüşü baştan kapsar (V-01, V-05 testleri boş
+    `kot` ile çalışır).
+  - Farklı düşey referanslı kotlar birleştirilmez; 1A yalnız alanları olduğu gibi taşır.
+- **Hesap motoru, MH-0 altın kayıtları, 38 hidrolik denetim ve EPANET doğrulamaları değişmez.**
