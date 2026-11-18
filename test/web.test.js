@@ -5,8 +5,10 @@ const ROOT = path.join(__dirname, '..');
 const yml = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'pages.yml'), 'utf8');
 
 test('Pages iş akışı: yalnız main ve elle başlatma; testler geçmeden yayın yok; www/ yayımlanır', () => {
-  ok(/on:\s*\n\s*push:\s*\n\s*branches: \[main\]\s*\n\s*workflow_dispatch:/.test(yml) && !/pull_request/.test(yml), 'tetikleyici yalnız main + elle olmalı');
-  ok(/deploy:[\s\S]*needs: test/.test(yml), 'dağıtım testlere bağlı değil');
+  ok(/on:\s*\n\s*push:\s*\n\s*branches: \[main\]/.test(yml), 'main tetikleyicisi yok');
+  const dep = yml.slice(yml.indexOf('  deploy:'));
+  ok(/needs: test/.test(dep), 'dağıtım testlere bağlı değil');
+  ok(dep.includes("if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'"), 'dağıtım yalnız main ile sınırlı değil (PR yayımlanmamalı)');
   for (const step of ['npm test', 'node tools/audit.js', 'npm run test:ui', 'npm run test:web', 'node tools/secret-scan.js www']) ok(yml.includes(step), `yayın öncesi adım eksik: ${step}`);
   ok(/upload-pages-artifact@v\d+[\s\S]*path: www/.test(yml), 'yayımlanan klasör www olmalı');
   ok(!/secrets\./.test(yml), 'iş akışı gizli anahtar kullanmamalı');

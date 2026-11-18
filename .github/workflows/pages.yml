@@ -1,7 +1,8 @@
 name: Web (GitHub Pages)
 
 # MH-WEB-1: IrriGrow web sürümünü GitHub Pages test ortamına yayımlar.
-# • Yalnız main dalından (birleştirme sonrası) ve elle başlatılarak çalışır; PR dalları yayımlanmaz.
+# • Yayın yalnız main dalından (birleştirme sonrası) ve elle başlatılarak yapılır; PR dalları YAYIMLANMAZ.
+#   PR'larda yalnız test işi çalışır (web testleri PR'da da görünsün diye).
 # • Önce bütün testler çalışır; biri başarısızsa yayın yapılmaz.
 # • Yayımlanan içerik www/ klasörüdür: Android APK'nın paketlediği aynı uygulama ve aynı hesap motoru.
 # • Gizli anahtar kullanılmaz. Android derleme iş akışı (apk.yml) bundan bağımsızdır.
@@ -9,21 +10,19 @@ name: Web (GitHub Pages)
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
-    name: Testler (yayın öncesi)
-    if: github.ref == 'refs/heads/main'
+    name: Web testleri
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -59,6 +58,11 @@ jobs:
   deploy:
     name: GitHub Pages'e yayımla
     needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
