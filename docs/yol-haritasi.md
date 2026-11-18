@@ -35,9 +35,10 @@ Plan: [docs/mh-web-plan.md](mh-web-plan.md). Özellik eşitliği: [docs/ozellik-
 
 | Aşama | Kapsam | Durum |
 |---|---|---|
-| **MH-WEB-1** | GitHub Pages test ortamı (`https://ozanaydingunes.github.io/Irrismart/`), web bilgilendirme notu, dağıtım iş akışı, özellik eşitliği matrisi ve testleri | Onaylandı — PR hazırlandı, birleştirme onay bekliyor |
-| **MH-WEB-2** | Profesyonel masaüstü düzeni: üst araç çubuğu, sol modül çubuğu, geniş harita/çalışma alanı, sağ ayrıntı paneli, açılır alt panel; panel boyutlandırma, nesne seçimi, klavye kısayolları, geri al/yinele, hassas koordinat girişi, sağ tık menüsü | Tasarım önizlemesi hazırlanıyor; kodlama onaydan sonra |
-| **MH-WEB-3** | Harita üzerinden lateral ve manifold düzenleme (shift ve ana hat düzenleme bugün de var) | Ayrı teknik plan ve onay gerekli (motor girdisi) |
+| **MH-WEB-1** | GitHub Pages test ortamı (`https://ozanaydingunes.github.io/Irrismart/`), web bilgilendirme notu, dağıtım iş akışı, özellik eşitliği matrisi ve testleri | Tamamlandı — PR #9 birleştirildi; yayın doğrulandı |
+| **MH-WEB-2** | Profesyonel masaüstü düzeni: üst araç çubuğu, sol modül çubuğu, geniş harita/çalışma alanı, sağ mühendislik paneli, açılır ve boyutlandırılabilir alt panel, haritada nesne seçimi | PR hazırlandı, birleştirme onay bekliyor |
+| **MH-WEB-3 (ortak)** | Klavye kısayolları, geri al/yinele geçmişi, hassas koordinat girişi, sağ tık / uzun basma menüsü, köşe ve güzergâh düzenleme (Android + web) | Önce veri modeli ve test planı; ayrı onay |
+| **MH-WEB-3 (motor girdisi)** | Harita üzerinden lateral ve manifold düzenleme (shift ve ana hat düzenleme bugün de var) | Ayrı teknik plan, hesap değişiklik kaydı ve onay gerekli |
 | **MH-WEB-4** | KML/KMZ yükleme web'de (MH-KML tamamlanınca) | MH-KML'e bağlı |
 
 Bulut eşitlemesi yoktur; web ve telefon arasında taşıma JSON yedekle yapılır.

@@ -8,7 +8,8 @@
     "apk": "cd android && ./gradlew assembleDebug",
     "test": "node test/run.js",
     "test:ui": "node test-ui/panel.ui.js && node test-ui/uyari.ui.js",
-    "test:web": "node test-ui/web.ui.js"
+    "test:web": "node test-ui/web.ui.js",
+    "test:desk": "node test-ui/desk.ui.js"
   },
   "dependencies": {
     "@capacitor-community/file-opener": "^8.0.1",

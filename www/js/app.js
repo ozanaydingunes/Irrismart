@@ -47,8 +47,9 @@
     document.querySelectorAll('.view').forEach(e => e.classList.toggle('on', e.id === 'v-' + v));
     document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     safely(() => ({ projeler: renderProjects, arazi: openMap, veri: renderForm, sonuc: renderResult, malzeme: renderBom, ayarlar: renderSettings, hidrolik: renderHydro, teknik: renderTech })[v](), t('Ekran'));
+    if (window.IrriDesk) window.IrriDesk.refresh();
   }
-  document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
+  document.querySelectorAll('nav.tabs button[data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
   $('#btnBack').onclick = () => show('projeler');
   $('#btnSettings').onclick = () => show('ayarlar');
 
@@ -59,7 +60,7 @@
     const p = { id: Date.now().toString(36), name: name.slice(0, 80), created: Date.now(), updated: Date.now(), poly: [], src: null, inp: { crop: 'domates', srcType: 'kuyu', region: 'akdeniz', soil: 'tinli', rowDir: 'uzun', emitter: 'normal', geom: 'dikdortgen' } };
     projects.unshift(p); persist(); openProject(p.id); show('arazi');
   }
-  function openProject(id) { cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
+  function openProject(id) { cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
   function renderProjects() {
     const el = $('#projList');
     if (!projects.length) { el.innerHTML = `<div class="card center muted">${t('Henüz proje yok.')}<br>${t('“Yeni proje” ile başlayın.')}</div>`; return; }
@@ -77,7 +78,7 @@
   // Yedekleme: tüm projeler + ayarlar + kullanıcı kataloğu tek JSON dosyasında
   $('#btnBackup').onclick = () => {
     if (!projects.length) return toast(t('Yedeklenecek proje yok'));
-    window.IrriReport.json('IrriGrow_yedek', St.backupPayload(projects, settings, userCat)).catch(e => toast(t('Yedek alınamadı: ') + e.message));
+    window.IrriReport.json('IrriGrow_yedek', St.backupPayload(projects, settings, userCat)).then(() => { if (window.IrriDesk) window.IrriDesk.noteBackup(); }).catch(e => toast(t('Yedek alınamadı: ') + e.message));
   };
   $('#restoreFile').onchange = async ev => {
     const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
@@ -172,6 +173,15 @@
   }
   const tbl = rows => `<table>${rows.map(([a, b]) => `<tr><td>${a}</td><td><b>${b}</b></td></tr>`).join('')}</table>`;
   // Tasarım planını harita üzerinde göster; borulara dokununca bilgi kartı
+  // MH-WEB-2: masaüstünde haritada tıklanan nesne sağ mühendislik panelinde açılır (balon yerine).
+  // Android ve telefon genişliğinde IrriDesk etkin değildir; davranış aynen kalır (bilgi balonu).
+  function deskPick(e, sel) {
+    const D = window.IrriDesk; if (!D || !D.active) return;
+    // Seçim tıklaması haritaya geçmesin: aksi halde “Sınır” modunda aynı tıklama sınıra köşe ekler.
+    if (e && e.originalEvent) L.DomEvent.stopPropagation(e);
+    if (e && e.target && e.target.closePopup) setTimeout(() => e.target.closePopup(), 0);
+    D.select(sel);
+  }
   function drawPlan() {
     if (planLayer) { map.removeLayer(planLayer); planLayer = null; }
     const r = overlayRes;
@@ -183,20 +193,23 @@
       const b = Ly.bands[u.band]; const c = Gm.clipRect(Ly.P, b.x0, b.x1, u.y0, u.y1); if (c.length < 3) return;
       const pg = L.polygon(c.map(ll), { renderer: rend, stroke: mapMode === 'shift', color: '#fff', weight: 1, fillColor: pal[secOf[k] % pal.length], fillOpacity: .38 }).addTo(g);
       if (mapMode === 'shift') pg.on('click', () => assignUnit(r, k));
-      else pg.bindPopup(() => `<b>Shift ${secOf[k] + 1}</b> · ${t('alt ünite')} ${k + 1}` + tbl([[t('Debi'), fmt(u.Q, 2) + ' m³/h'], [t('Lateral'), fmt(u.nLat, 0)], [t('Giriş basıncı'), fmt(u.hIn, 1) + ' m']]));
+      else pg.on('click', e => deskPick(e, { type: 'shift', j: secOf[k] })).bindPopup(() => `<b>Shift ${secOf[k] + 1}</b> · ${t('alt ünite')} ${k + 1}` + tbl([[t('Debi'), fmt(u.Q, 2) + ' m³/h'], [t('Lateral'), fmt(u.nLat, 0)], [t('Giriş basıncı'), fmt(u.hIn, 1) + ' m']]));
     });
     const step = Math.max(1, Math.ceil(Ly.laterals.length / 2500));
     for (let i = 0; i < Ly.laterals.length; i += step) {
       const l = Ly.laterals[i];
       L.polyline([ll([l.ax, l.y]), ll([l.ax + l.side * l.len, l.y])], { renderer: rend, color: COL.lat, weight: 1.2, opacity: .85, interactive: mapMode !== 'shift' }).addTo(g)
+        .on('click', e => deskPick(e, { type: 'lateral', l, k: r.units.findIndex(u => u.band === l.band && l.y >= Math.min(u.y0, u.y1) - 1e-6 && l.y <= Math.max(u.y0, u.y1) + 1e-6) }))
         .bindPopup(() => `<b>Lateral Ø${r.lateral.d}</b>` + tbl([[t('İç çap'), fmt(r.lateral.ic, 1) + ' mm'], [t('Uzunluk'), fmt(l.len, 1) + ' m'], [t('Damlatıcı'), fmt(l.N, 0)], [t('Debi'), fmt(l.Q, 0) + ' l/h'], [t('Sürtünme kaybı'), fmt(l.hf, 2) + ' m'], [t('Basınç farkı'), fmt(l.dH, 2) + ' m'], [t('Giriş basıncı'), fmt(l.hreq, 1) + ' m'], [t('Malzeme'), 'PE']]));
     }
     r.units.forEach((u, k) => L.polyline([ll([u.ax, u.yIn]), ll([u.ax, u.yEnd])], { renderer: rend, color: COL.man, weight: 4, interactive: mapMode !== 'shift' }).addTo(g)
+      .on('click', e => deskPick(e, { type: 'manifold', k }))
       .bindPopup(() => `<b>Manifold Ø${u.pipe.od} PN${u.pipe.pn}</b> · Shift ${secOf[k] + 1}` + tbl([[t('İç çap'), fmt(u.pipe.ic, 1) + ' mm'], [t('Uzunluk'), fmt(u.Lm, 1) + ' m'], [t('Debi'), fmt(u.Q, 2) + ' m³/h'], [t('Hız'), fmt(u.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(u.hf, 2) + ' m'], [t('Basınç farkı'), fmt(u.varH, 2) + ' m'], [t('Giriş basıncı'), fmt(u.hIn, 1) + ' m'], [t('Malzeme'), u.pipe.malzeme || 'PE100']])));
     // Ana hat: her segment kendi çapıyla (kademeli), kimlik kodu ve bilgi kartıyla
-    r.main.net.forEach(sg => {
+    r.main.net.forEach((sg, si) => {
       if (sg.kind === 'kaynak') return;
       L.polyline([ll(sg.a), ll(sg.b)], { renderer: rend, color: COL.main, weight: sg.od >= 160 ? 7 : sg.od >= 110 ? 6 : 5, interactive: mapMode !== 'shift' }).addTo(g)
+        .on('click', e => deskPick(e, { type: 'anahat', i: si }))
         .bindPopup(() => `<b>${sg.id} · ${t('Ana hat')} PVC-U Ø${sg.od} PN${sg.pn}</b>` + tbl([[t('İç çap'), fmt(sg.ic, 1) + ' mm'], [t('Uzunluk'), fmt(sg.L, 1) + ' m'], [t('Debi (en büyük shift)'), fmt(sg.Qmax, 1) + ' m³/h'], [t('Hız'), fmt(sg.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(sg.hf, 2) + ' m'], [t('Malzeme'), 'PVC-U']]) + `<div class="small muted">Hazen-Williams C=150, +%10 ${t('yerel kayıp')}</div>`);
     });
     const M = drawModel(r);
@@ -524,6 +537,40 @@
     if (pendingFocus) { const c = document.getElementById('ak-' + pendingFocus); pendingFocus = null; if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); } }
   }
   let pendingFocus = null;
+  // ---------- MH-WEB-2: masaüstü düzeni için uygulama API'si ----------
+  // IrriDesk yalnız web'de ve ≥ 1200 px'te etkinleşir. Buradaki işlevlerin hepsi uygulamanın mevcut işlevleridir.
+  const deskExport = async kind => {
+    if (!cur) return toast(t('Önce bir proje açın veya oluşturun'));
+    const r = lastRes && lastRes.ok ? lastRes : compute();
+    if (!r.ok) return toast(t('Kesin sonuç verilemiyor'));
+    try {
+      if (kind === 'pdf') await window.IrriReport.pdf(cur, r, layoutSvg(r));
+      else if (kind === 'xlsx') await window.IrriReport.xlsx(cur, r);
+      else if (kind === 'hxlsx') await window.IrriReport.hydroXlsx(cur);
+      else {
+        const M = drawModel(r), o = techOpt();
+        if (kind === 'dxf') { if (!M.geo) toast(t('DXF yerel koordinatlarla (m) üretildi; gerçek koordinat için parsel modunu kullanın.')); await window.IrriReport.dxf(cur, M); }
+        else await window.IrriReport.sheetPdf(cur, M, Object.assign({}, o, { cropName: t(D.CROPS[cur.inp.crop].ad) }));
+      }
+    } catch (e) { toast(t('Hata: ') + (e && e.message || e)); }
+  };
+  if (window.IrriDesk) window.IrriDesk.init({
+    t, fmt, esc, I,
+    isNative: () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()),
+    cur: () => cur,
+    result: () => (cur ? (lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null)) : null),
+    assess: r => assessOf(r),
+    hv: r => HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) }),
+    show: v => show(v),
+    openHydro: (tab, j) => { const h = hydroState(); h.ptab = tab; if (j != null) h.pshift = j; persist(); show('hidrolik'); },
+    focusFinding: kod => { pendingFocus = kod; show('sonuc'); },
+    newProject: () => newProject(),
+    backup: () => $('#btnBackup').click(),
+    restore: () => $('#restoreFile').click(),
+    export: kind => deskExport(kind),
+    themeOf: () => themeOf(), setTheme: v => setTheme(v),
+    mapResize: () => setTimeout(() => { if (map) map.invalidateSize(); }, 80),
+  });
   const monthName = m => new Date(2026, m - 1, 1).toLocaleDateString(I.locale, { month: 'short' });
   function bindExport(a, b, r) {
     const run = (btn, label, fn) => { const el = $(btn); el.onclick = async () => { if (el.disabled) return; el.disabled = true; const old = el.textContent; el.textContent = t('{x} hazırlanıyor…', { x: label }); try { await fn(); } catch (e) { toast(t('{x} hatası: ', { x: label }) + (e && e.message || e)); } finally { el.disabled = false; el.textContent = old; } }; };

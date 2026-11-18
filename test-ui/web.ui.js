@@ -196,7 +196,7 @@ const check = (c, msg) => { if (c) passes++; else { fails++; console.log('✗ ' 
       await brushes[brushes.length - 1].click(); await pg.waitForTimeout(200);
       const mb = await pg.$eval('#map', e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
       let assigned = false;
-      for (const [fx, fy] of [[0.5, 0.45], [0.4, 0.4], [0.6, 0.5], [0.45, 0.55], [0.55, 0.35]]) {
+      for (const [fx, fy] of [0.3, 0.4, 0.5, 0.6, 0.7].flatMap(x => [0.3, 0.4, 0.5, 0.6].map(y => [x, y]))) {
         await pg.mouse.click(mb.x + mb.w * fx, mb.y + mb.h * fy); await pg.waitForTimeout(400);
         if (await pg.evaluate(() => JSON.parse(localStorage.getItem('irrismart.projects.v1')).some(p => p.shiftEdit))) { assigned = true; break; }
       }

@@ -155,20 +155,27 @@ Platforma özgü kod yalnız şu dört yerdedir:
 
 ### K. Masaüstü ergonomisi (WEB-2 / WEB-3 kapsamı)
 
-Aşağıdakiler **iki platformda da bugün yoktur**. Gerektiğinde ortak geliştirme olarak eklenir ve
-Android'de dokunmatik karşılığıyla sunulur.
+K-1…K-3 **MH-WEB-2 ile web masaüstünde (≥ 1200 px) uygulanmıştır.** Masaüstü düzeni yalnız web'de
+etkinleşir; Android uygulaması (tablet dahil) ve 1200 px'ten dar tarayıcılar bugünkü mobil düzeni
+aynen kullanır. Düzen yalnız sunumdur: bütün değerler aynı motor ve aynı MH-1 görünüm modelinden
+(`hydro-view.js`) gelir. K-4…K-9 **iki platformda da bugün yoktur** ve arayüzde gösterilmez;
+ortak geliştirme olarak eklenir ve Android'de dokunmatik karşılığıyla sunulur.
 
-| Kod | Özellik | Durum | Aşama |
-|---|---|---|---|
-| K-1 | Geniş harita + sol modül çubuğu + sağ ayrıntı paneli + açılır alt panel | ➖ | WEB-2 (tasarım önizlemesi sunuldu) |
-| K-2 | Panel boyutlandırma, panel kapatınca çalışma alanının genişlemesi | ➖ | WEB-2 |
-| K-3 | Haritada nesne seçimi → sağ panelde ayrıntı (shift, ana hat, manifold, lateral, kaynak) | 🔶 Bugün açılır bilgi balonu var | WEB-2 |
-| K-4 | Klavye kısayolları | ➖ | WEB-2 |
-| K-5 | Geri al / yinele (bütün düzenlemeler) | ➖ (yalnız son nokta) | WEB-2 (ortak) |
-| K-6 | Hassas koordinat girişi (köşe, kaynak) | ➖ | WEB-2 (ortak) |
-| K-7 | Sağ tık menüsü | ➖ | WEB-2 (Android'de uzun basma) |
-| K-8 | Lateral ve manifold düzenleme | ➖ | WEB-3 (motor girdisi; ayrı plan ve onay) |
-| K-9 | KML/KMZ sürükle-bırak | ➖ | MH-KML / WEB-4 |
+| Kod | Özellik | Android | Web masaüstü | Aşama / test |
+|---|---|---|---|---|
+| K-1 | Üst araç çubuğu (yeni, projeler, kayıt ve yedek durumu, yedek/geri yükleme, raporlar, tema, ayarlar) + sol modül çubuğu (simgelere daralır) + sağ mühendislik paneli + alt panel | ➖ Mobil düzen (alt sekmeler; aynı işlevler ekranlarda) | ✅ | WEB-2 · desk.ui ✅ |
+| K-2 | Panel boyutlandırma (alt panel sürükleme ve ↑/↓ tuşları), panel kapatınca çalışma alanının genişlemesi, tam ekran haritada panellerin gizlenmesi | ➖ | ✅ | WEB-2 · desk.ui ✅ |
+| K-3 | Haritada nesne seçimi → sağ panelde gerçek hesap değerleri (shift: numara, alan, debi, süre, hacim, gerekli basınç ve dökümü, pompa görev noktası, açılan manifoldlar, uyarılar; manifold; lateral; ana hat kesiti; kaynak ve pompa) | 🔶 Açılır bilgi balonu (özet değerler) | ✅ Alt panel tablolarından da seçilir | WEB-2 · desk.ui ✅ (değerler motorla birebir) |
+| K-4 | Klavye kısayolları | ➖ | ➖ (yalnız standart Tab/Enter/Boşluk erişimi) | WEB-3 |
+| K-5 | Geri al / yinele (bütün düzenlemeler) | ➖ (yalnız son nokta) | ➖ (yalnız son nokta) | WEB-3 (ortak; veri modeli ve test planı önce) |
+| K-6 | Hassas koordinat girişi (köşe, kaynak) | ➖ | ➖ | WEB-3 (ortak) |
+| K-7 | Sağ tık menüsü | ➖ | ➖ | WEB-3 (Android'de uzun basma) |
+| K-8 | Lateral ve manifold düzenleme | ➖ | ➖ | WEB-3 (motor girdisi; ayrı plan ve onay) |
+| K-9 | KML/KMZ sürükle-bırak | ➖ | ➖ | MH-KML / WEB-4 |
+
+**Platform farkları (bilerek):** masaüstünde haritada plan nesnesine tıklamak bilgi balonu yerine sağ
+paneli açar ve bu tıklama parsel sınırına köşe eklemez. Plan dışındaki boş alana tıklamak her iki
+platformda da seçili çizim moduna göre (sınır köşesi, kaynak, istasyon, ana hat) çalışır.
 
 ## Hesap eşitliği
 
