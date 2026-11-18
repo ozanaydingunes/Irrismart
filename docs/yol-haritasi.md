@@ -67,7 +67,8 @@ Onaylanan geliştirme sırası (gerekçeler planın §13'ünde):
 | 7 | MH-MANUEL-4 — harita, malzeme ve rapor entegrasyonu | Plan |
 | 8 | MH-AKIL-5 — su darbesi ileri ön değerlendirmesi | Plan |
 | 9 | MH-MANUEL-5 — otomatik çözümler, su darbesi ve arazi modülleriyle entegrasyon | Plan |
-| MH-SHIFT-1/2/3 | Manuel shift sayısı ve haritadan shift düzenleme ([plan](mh-shift-plan.md)): 1A'dan sonra salt okunur analiz, MH-MANUEL-2'den sonra manuel sayı, MH-MANUEL-3'ten sonra harita araçları | Plan — onay bekliyor |
+| MH-SHIFT-1/2/3 | Manuel shift sayısı ve haritadan shift düzenleme ([plan](mh-shift-plan.md)). Onaylı sıra: PR #8 → 1A → 1B → SHIFT-1 → MANUEL-2 → SHIFT-2 → MANUEL-3 → SHIFT-3. İlk sürümde yöntem A (yan yana) varsayılan, B (dengeli) deneysel, C (komşulu dengeli) doğrulamadan sonra | Mimari onaylandı |
+| MH-KML | Harita oluştururken KML/KMZ yükleme ([plan](mh-kml-plan.md)) | Plan — yerleşim onay bekliyor |
 | ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2 (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
@@ -137,7 +138,7 @@ geometri, boş dosya) ve geometri doğrulama (kapanmamış halka, kendini kesen 
 nokta, boşluk, çoklu parsel, bilinen alan ve çevreli örnek dosyalar). Google Earth ve QGIS
 çıktısı örnek dosyalarla sınanır.
 
-**Teknik plan:** MH-KML aşaması başlamadan önce ayrı teknik plan hazırlanır ve onaya sunulur.
+**Teknik plan:** [docs/mh-kml-plan.md](mh-kml-plan.md) — harita oluştururken KML/KMZ yükleme (Android dosya seçici, masaüstü sürükle-bırak), içe aktarma önizlemesi, doğrulama kuralları ve testler. Onay bekliyor. Yerleşim önerisi: MH-MANUEL-1A'dan hemen sonra (gerekçe planda).
 
 **Bu aşamada yapılmayacaklar:** GeoJSON, SHP ve diğer formatlar. Her biri ileride ayrı
 aşama olarak planlanacak:
@@ -151,5 +152,6 @@ aşama olarak planlanacak:
 - WEB-2 kabul testi: [docs/web-2-kabul-testi.md](web-2-kabul-testi.md)
 - MH-AKIL-2 telefon testi: [docs/akil-2-telefon-testi.md](akil-2-telefon-testi.md)
 - Teknik inceleme listesi: [docs/teknik-inceleme.md](teknik-inceleme.md)
-- MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (onay bekliyor)
+- MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (mimari onaylandı)
+- MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onay bekliyor)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.

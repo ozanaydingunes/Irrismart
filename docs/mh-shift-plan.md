@@ -1,6 +1,19 @@
 # MH-SHIFT — Manuel shift sayısı ve haritadan shift düzenleme
 
-Durum: **uygulanabilirlik raporu ve teknik plan — onay bekliyor (18.11.2026). Kodlama yok.**
+Durum: **mimari onaylandı (18.11.2026): motor değiştirilmeden, `shiftEdit` (motorun elle atama
+girişi) üzerinden. Kodlamaya henüz başlanmadı; aşamalar sırası geldiğinde ayrı PR'larla.**
+
+## 0. Proje sahibinin kararları (18.11.2026)
+
+| No | Karar |
+|---|---|
+| 1 | Kullanıcı shift sayısını değiştirebilir (ör. 22 → 18, 19, 20, 21). Uygulanamayan sayının nedeni gösterilir; analiz bir uyarı ekranında da yapılabilir, **uygunsuz düzen onaysız projeye uygulanmaz**. Karşılaştırma: kaynak debisi, shift başına en büyük debi, sulama turu, pompa kapasitesi, hidrolik kayıplar, işletme basıncı, enerji, malzeme maliyeti — hepsi gerçek motor sonucu. |
+| 2 | Üç gruplama yöntemi: **A – Yan yana** (motorun bugünkü kuralı), **B – Dengeli** (komşu olmayan ünite aynı shift'e girebilir), **C – Komşulu dengeli** (debi dengesi + fiziksel komşuluk + saha işletmesi). **İlk sürümde varsayılan A**; B açıkça "deneysel alternatif" etiketiyle; C uzun vadeli varsayılan hedefi, mühendislik doğrulaması tamamlanmadan varsayılan yapılmaz. Komşu olmayan atamalarda bağımsız vana kontrolü ve saha bağlantılarının uygunluğu doğrulanır. |
+| 3 | Harita işlemleri: seç, çoklu seç, taşı, birleştir, ayır, numara değiştir, otomatik düzeni geri çağır, taslak kaydet, eski/yeni karşılaştır. Onaysız projeye yazılmaz. |
+| 4 | Etiketler: yakınlaştırmaya göre yoğunluk (uzak: numara; orta: numara + debi; yakın: ayrıntı), tamamen gizle/göster, seçili shift belirgin vurgu, "FIELD 1" gibi metinler seçili dile uygun, boru hatlarını ve önemli elemanları mümkün olduğunca kapatmaz. |
+| 5 | Elle atamalar girdi değişince veya "Otomatiğe dön" ile **uyarısız silinmez** (MH-MANUEL-1A). Seçenekler: koru, uyarla, ayrı taslak olarak sakla, açık onayla sıfırla. Yerleşim değişince eski atama fiziksel olarak geçersizse gizlenmez; güvenli yeniden eşleme veya yeniden düzenleme istenir. |
+| 6 | Hesap doğruluğu kuralları §9'da test olarak; motor ↔ DXF uzunluk farkı ayrı teknik inceleme maddesi (T-01) olarak korunur. |
+| 7 | Sıra: PR #8 → MH-MANUEL-1A → MH-MANUEL-1B → MH-SHIFT-1 → MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3. MH-KML, akıllı arazi bölme, kot/eğim ve ileri hidrolik yol haritasında kalır. Harita oluştururken KML/KMZ yükleme eklenir (`docs/mh-kml-plan.md`). |
 Hesap motoru değiştirilmedi; aşağıdaki bütün sayılar bugünkü `IrriEngine.design` +
 `IrriAssess.evaluate` ile hesaplandı (**Motor**). MH-SHIFT, MH-MANUEL'in (taslak, yeniden hesaplama,
 karşılaştırma, revizyon) ilk somut "kaldıracı"dır ve MH-AKIL-3 (akıllı arazi bölme) ile ortak veri
@@ -129,10 +142,19 @@ Yeni modül `www/js/shift-groups.js` (motor değil; DOM'a dokunmaz; Node'da test
 
 - `range(r, Qs)` → `{ fizikAlt: ⌈ΣQ/Qs⌉, motorAlt: NsMin, ust: n, tShift, turSiniriIcinEnCok }`
 - `generate(r, k, yontem)` → `assign[]` veya gerekçeli `null`. Yöntemler:
-  - **sıralı**: motorun `partition` kuralı (+ tam k için en büyük bloğu ikiye bölme),
-  - **dengeli**: büyük debi önce, en az yüklü shift'e (komşuluk aranmaz),
-  - **komşulu dengeli** (önerilen varsayılan): aynı manifold hattı/bant içinde komşu alt üniteleri
-    tercih eden, kaynak sınırını kesin koşul alan yerel iyileştirme.
+  - **A – Yan yana** (ilk sürümün varsayılanı): motorun `partition` kuralı (+ tam k için en büyük
+    bloğu ikiye bölme). Komşuluk korunur.
+  - **B – Dengeli** (deneysel alternatif; ekranda "Deneysel — saha doğrulaması gerekli" etiketi):
+    büyük debi önce, en az yüklü shift'e; komşuluk aranmaz.
+  - **C – Komşulu dengeli** (uzun vadeli varsayılan hedefi): aynı manifold hattı/bant içinde komşu
+    alt üniteleri tercih eden, kaynak sınırını kesin koşul alan yerel iyileştirme; vana grupları ve
+    saha işletmesi kısıtlarını da dikkate alır. **Doğrulama (D-1…D-6) tamamlanıp proje sahibi
+    onaylamadan varsayılan yapılmaz.**
+- Her düzen için ayrıca **komşuluk raporu**: her shift'in kaç ayrı parçadan oluştuğu, aynı shift'te
+  birbirine bağlı olmayan alt ünite sayısı. B ve C sonuçlarında bu rapor zorunlu gösterilir.
+- **Uyarı ekranında analiz:** istenen sayı uygulanamıyorsa (kaynak, tur, basınç) düzen yine motorla
+  hesaplanıp "analiz" olarak gösterilebilir; bu durumda "Uygula" kapalıdır ve ekranda "uygunsuz —
+  projeye uygulanamaz" yazar.
 - Her `assign` `opt.manual` olarak motora verilir; **bütün sonuçlar motordandır**.
 - Sayı girildiğinde ekran, bulunan en iyi gruplamanın sonuçlarını gösterir; bulunamazsa
   istenen/uygulanan/neden/seçilebilir değerler (MH-MANUEL §4.2).
@@ -171,8 +193,12 @@ yalnız **Yeniden hesapla** ile gelir; o zamana kadar "Hesaplanmadı" yazar.
 
 **Etiketler:** yakınlaştırmaya göre üç düzey — uzak: yalnız numara rozeti; orta: numara + debi;
 yakın: tam kutu (alan, debi, süre, basınç). Çakışan etiketler yerleştirici ile kaydırılır ya da
-gizlenir. "Shift etiketleri" aç/kapa düğmesi. Renkler ardışık shift'lerde ayırt edilebilir
-(renk + numara; yalnız renge dayanılmaz). Etiketteki sabit "FIELD 1" metni Türkçeleştirilir.
+gizlenir; yerleştirici ana hat, manifold, kaynak, istasyon ve vana sembollerini "kaçınılacak alan"
+olarak alır (bugün boru etiketlerinde kullanılan yerleştirici genişletilir). "Shift etiketleri"
+aç/kapa düğmesi (tercih projede değil, cihazda saklanır). Seçili shift kalın çerçeve + diğer
+shift'lerin soluklaştırılmasıyla vurgulanır. Renkler ardışık shift'lerde ayırt edilebilir (renk +
+numara; yalnız renge dayanılmaz). Etiketteki sabit "FIELD 1" metni çeviri sözlüğüne alınır ve seçili
+dile uyar (Türkçe: "Arazi 1 — Shift n").
 
 ## 8. Taslak, uygulama ve veri güvenliği
 
@@ -181,8 +207,18 @@ gizlenir. "Shift etiketleri" aç/kapa düğmesi. Renkler ardışık shift'lerde 
 - **Uygula** onay ister; önce tam durum revizyonu, sonra değişiklik kaydı (eski/yeni shift sayısı,
   en büyük shift, tur, pompa, enerji, malzeme, uyarı farkı). Önceki düzene revizyondan dönülür.
 - İmza (yerleşim) değişirse taslak **silinmez**, "yerleşim değişti — atama geçersiz" olarak
-  saklanır. Bugünkü sessiz silme (`app.js:406`) ve fırçanın doğrudan projeye yazması
-  MH-MANUEL-1A'da kaldırılır.
+  saklanır. Bugünkü sessiz silme (`app.js:406`), "Otomatiğe dön"ün onaysız silmesi ve fırçanın
+  doğrudan projeye yazması MH-MANUEL-1A'da kaldırılır.
+- **Elle atama korunurken girdi değişirse** kullanıcıya dört seçenek sunulur:
+  1. **Koru** — girdi değişikliği yerleşimi değiştirmiyorsa atama aynen kalır (imza aynı).
+  2. **Uyarla** — yerleşim değiştiyse **güvenli yeniden eşleme** önerilir (aşağıda); önizleme
+     onaylanmadan uygulanmaz.
+  3. **Ayrı taslak olarak sakla** — eski atama, eski yerleşim imzasıyla taslaklarda kalır.
+  4. **Onayla sıfırla** — otomatik düzene dönülür; eski atama önce revizyona alınır.
+- **Güvenli yeniden eşleme:** yeni her alt ünite, eski alt ünitelerle **alan örtüşmesine** göre
+  eşlenir (en büyük örtüşen eski ünitenin shift'i). Örtüşmesi %50'nin altında kalan veya iki shift
+  arasında bölünen üniteler "eşlenemedi" olarak işaretlenir ve kullanıcı atamadan uygulanamaz.
+  Eşleme sonrası düzen yine motorla hesaplanır ve karşılaştırılır. Eşlenemeyen bir durum gizlenmez.
 - Kaynak debisi hiçbir işlemde değişmez; kaynak değişikliği ayrı bir girdi taslağıdır.
 
 ## 9. Doğrulama ve otomatik test planı
@@ -205,6 +241,12 @@ gizlenir. "Shift etiketleri" aç/kapa düğmesi. Renkler ardışık shift'lerde 
 | S-14 | Android (390 px, dokunmatik, Capacitor) ve masaüstü (1280/1440/1920) aynı değerler |
 | S-15 | Performans: aralık taraması (ör. 19–29, 11 motor çalıştırması) parça parça, ilerleme göstergesiyle; telefonda < 10 s |
 | S-16 | MH-0 altın kayıtları, 38 hidrolik denetim, EPANET doğrulamaları değişmez |
+| S-17 | Varsayılan yöntem A; B her ekranda ve raporda "Deneysel" etiketli; C, onay bayrağı açılmadan varsayılan olamaz |
+| S-18 | Komşuluk raporu: A'da her shift tek parça; B/C'de parça sayısı doğru hesaplanır ve gösterilir |
+| S-19 | Uygunsuz düzen "analiz" olarak gösterilebilir ama "Uygula" kapalı (kaynak aşımı, W-KAP-03, kritik uyarı) |
+| S-20 | Girdi değişince dört seçenek (koru, uyarla, ayrı taslak, onayla sıfırla); hiçbiri sorulmadan çalışmaz; "Otomatiğe dön" onay ister ve eski atamayı revizyona alır |
+| S-21 | Yeniden eşleme: bilinen iki yerleşim arasında örtüşme eşlemesi doğru; %50 altı örtüşme "eşlenemedi"; eşlenemeyen varken uygulanamaz |
+| S-22 | Etiketler: seçili shift vurgusu; boru/kaynak/vana sembolleri üzerine etiket yerleşmez (yerleştirici testi); "FIELD 1" metni 8 dilde çevrili |
 
 **Bağımsız mühendislik doğrulaması**
 
@@ -215,6 +257,7 @@ gizlenir. "Shift etiketleri" aç/kapa düğmesi. Renkler ardışık shift'lerde 
 | D-3 | 18 shift için kaynak gereksinimi ve tur sınırı (§4 formülleri) elle hesaplanır |
 | D-4 | §5'teki malzeme/enerji farkı kesit kesit izlenir (hangi ana hat parçası küçüldü, neden) |
 | D-5 | Saha uygulanabilirliği: komşu olmayan shift'lerin vana programı ve otomasyon kontrol listesi (mühendis onayı) |
+| D-6 | B ve C için bağımsız vana kontrolü: her alt ünitenin shift vanası ayrı kumanda edilebiliyor mu (kontrolör çıkış sayısı, kablo/hidrolik komut hattı, vana açma-kapama sırası ve dolum süresi); gerçek saha bağlantılarıyla karşılaştırma. C varsayılan olmadan önce en az bir gerçek projede saha doğrulaması |
 
 ## 10. Ekranlar
 
@@ -238,14 +281,26 @@ gizlenir. "Shift etiketleri" aç/kapa düğmesi. Renkler ardışık shift'lerde 
 
 ## 12. Yol haritası yerleşimi
 
-| Aşama | Kapsam | Bağımlılık |
-|---|---|---|
-| MH-SHIFT-1 | Salt okunur analiz: mümkün aralık (fiziksel/motor), shift başına süre, tur sınırı, "neden 22?" açıklaması; etiket yoğunluğu ve aç/kapa | MH-MANUEL-1A (veri koruma) |
-| MH-SHIFT-2 | Manuel shift sayısı: gruplama üretici + motorun elle atama yolu, taslak, karşılaştırma, uygula/iptal | MH-MANUEL-1B ve 2 |
-| MH-SHIFT-3 | Haritadan düzenleme: çoklu seçim, taşı, birleştir, ayır, numara, otomatiğe dön (Android + masaüstü) | MH-SHIFT-2, MH-MANUEL-3 |
-| MH-MOTOR-1 | M-0 ve M-1 (uyarı metinleri) | Ayrı onay |
-| MH-MOTOR-x | M-2/M-3 (motor aday üretimi) | Saha doğrulaması + ayrı onay |
-| MH-AKIL-3 | Arazi bölme ile ortak `assign[]` ve kaynak grubu | MH-SHIFT-2 |
+Onaylanan sıra (proje sahibi, 18.11.2026):
 
-Önerilen sıra: PR #8 → MH-MANUEL-1A → (MH-SHIFT-1) → MH-MANUEL-1B → MH-MANUEL-2 → **MH-SHIFT-2** →
-MH-MANUEL-3 → **MH-SHIFT-3** → MH-KML → MH-MANUEL-4 → …
+| Sıra | Aşama | Kapsam |
+|---|---|---|
+| 1 | PR #8 | MH-AKIL-2 Android kabul testi |
+| 2 | MH-MANUEL-1A | Veri koruma (elle shift atamalarının sessiz silinmesinin kaldırılması dahil) |
+| 3 | MH-MANUEL-1B | Manuel taslak altyapısı |
+| 4 | **MH-SHIFT-1** | Etiket düzeni (yoğunluk, aç/kapa, vurgu, çeviri, boru kaçınma) ve salt okunur shift analizi (mümkün aralık, fiziksel/motor sınırları, tur sınırı, "neden bu sayı?") |
+| 5 | MH-MANUEL-2 | Gerçek yeniden hesaplama |
+| 6 | **MH-SHIFT-2** | Manuel shift sayısı: A (varsayılan), B (deneysel); uyarı ekranında analiz; taslak, karşılaştırma, onaylı uygulama |
+| 7 | MH-MANUEL-3 | Proje karşılaştırma ve revizyon |
+| 8 | **MH-SHIFT-3** | Haritadan düzenleme (Android + masaüstü), yeniden eşleme |
+| sonra | C yöntemi varsayılan | D-1…D-6 ve saha doğrulamasından sonra, ayrı onayla |
+| ayrı | MH-MOTOR-1 (M-0, M-1), MH-MOTOR-x (M-2, M-3) | Ayrı plan, PR, doğrulama ve onay |
+| korunur | MH-KML, MH-AKIL-3 (arazi bölme), MH-2/MH-3 (kot/eğim), ileri hidrolik (MH-AKIL-5, MH-MOTOR) | Yol haritasında |
+
+**MH-KML yerleşimi önerisi (onay bekliyor).** KML/KMZ yükleme bir geometri **girdisi**dir;
+MH-MANUEL ve MH-SHIFT'e bağımlı değildir, ama geometri değişikliğinin güvenli yapılması
+(revizyon, elle shift atamalarının yeniden eşlenmesi) MH-MANUEL-1A'ya bağlıdır. Öneri: MH-KML'i
+**MH-MANUEL-1A'dan hemen sonra** almak. Gerekçe: (1) geometri değişiminin veri güvenliği 1A ile
+hazır olur; (2) MH-SHIFT ve MH-AKIL-3 gerçek parsellerle (KML) test edilebilir; (3) diğer
+aşamaların koduna dokunmaz. Proje sahibi mevcut sırayı korumak isterse MH-KML, MH-SHIFT-3'ten sonra
+gelir. Ayrıntı: `docs/mh-kml-plan.md`.
