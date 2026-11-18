@@ -222,12 +222,16 @@
       };
       const reqH = (pipe) => {
         const sz = sizeNet(pipe); let hfMax = 0;
+        const crit = [];   // yalnız çıktı (MH-1 paneli): her shift'te H'yi belirleyen ünite ve bileşenleri; H değerini etkilemez
         const H = groups.map((gr, j) => {
           const to = new Float64Array(NET.length);   // girişten segment sonuna kümülatif sürtünme (ağaç sırası: ebeveyn < çocuk)
           for (const i of active[j]) to[i] = (parent[i] >= 0 ? to[parent[i]] : 0) + Hy.hfHW(Qseg[i][j] / 3600, sz[i].ic / 1000, NET[i].L) * 1.10;
-          return Math.max(...gr.map(k => { const u = units[k]; const hf = u.segs.length ? to[u.segs[u.segs.length - 1]] : 0; hfMax = Math.max(hfMax, hf); return static0 + u.rise + hf + Hfix[j] + uValve[k].loss(u.Q) + u.hIn; }));
+          const parts = gr.map(k => { const u = units[k]; const hf = u.segs.length ? to[u.segs[u.segs.length - 1]] : 0; hfMax = Math.max(hfMax, hf); const valve = uValve[k].loss(u.Q); return { k, rise: u.rise, hf, valve, hIn: u.hIn, H: static0 + u.rise + hf + Hfix[j] + valve + u.hIn }; });
+          const h = Math.max(...parts.map(x => x.H));
+          crit.push(parts.find(x => x.H === h));
+          return h;
         });
-        return { H, sz, hfMax };
+        return { H, sz, hfMax, crit };
       };
       const alts = [];
       for (const od of Object.keys(pvcByOd).map(Number).sort((a, b) => a - b)) {
@@ -248,7 +252,7 @@
           let pipeCost = 0, prSrc = null;
           sz.forEach((p, i) => { const pr = Ct.priceOf(prices, `pvc:${p.od}:${p.pn}`, p); if (pr.v == null || pipeCost == null) pipeCost = null; else { pipeCost += pr.v * NET[i].L; prSrc = prSrc || pr.src; } });
           const pr = { src: prSrc };
-          alts.push({ od, pn: pipe.pn, ic: pipe.ic, pipe, v, sz, Hd, surplus, Pout, Pop, Pshut, hf: RH.hfMax, H, Hp, Hmax: Math.max(...H), kWh, energyCost: kWh * ep, pipeCost, priceSrc: pr.src, annual: pipeCost != null ? pipeCost * crf + kWh * ep : null });
+          alts.push({ od, pn: pipe.pn, ic: pipe.ic, pipe, v, sz, Hd, surplus, Pout, Pop, Pshut, hf: RH.hfMax, crit: RH.crit, H, Hp, Hmax: Math.max(...H), kWh, energyCost: kWh * ep, pipeCost, priceSrc: pr.src, annual: pipeCost != null ? pipeCost * crf + kWh * ep : null });
           break; // bu çap için uygun en düşük PN bulundu
         }
       }
@@ -275,11 +279,13 @@
           const b = sp.best, p = b.p;
           const kWh = b.pts.reduce((t, x) => t + x.P / ETA_M * hoursSeason, 0);
           pump = { need: true, fromCatalog: true, p, id: p.id, ad: `${p.marka} ${p.model}`, tip: p.tip, motor: p.motorKw, Q: dQ, H: dH, pts: b.pts, Pmax: b.Pmax, over: b.over, verified: !!p.dogrulandi, kaynak: p.kaynak, count: sp.count, kWh,
+            shiftKWh: b.pts.map(x => x.P / ETA_M * hoursSeason),   // yalnız çıktı: kWh toplamının shift dağılımı
             text: `${p.marka} ${p.model} (${tipAd(p.tip)}), ${tr(p.motorKw, 1)} kW — görev noktası ${tr(dQ)} m³/h @ ${tr(dH)} m` };
         } else {
           const gp = Ct.genericPump(dQ, dH);
           const kWh = duties.reduce((t, d) => t + G * d.Q / 3600 * d.H / (ETA_P * ETA_M) * d.hours, 0);
           pump = { need: true, fromCatalog: false, tip: pumpTips[0], Q: dQ, H: dH, Phyd: gp.Phyd, shaft: gp.shaft, motor: gp.motor, kWh,
+            shiftKWh: duties.map(d => G * d.Q / 3600 * d.H / (ETA_P * ETA_M) * d.hours),
             text: `Katalogda uygun pompa yok — gereksinim: ${tipAd(pumpTips[0])}, ${tr(dQ)} m³/h @ ${tr(dH)} m, ~${tr(gp.motor, 1)} kW motor` };
         }
       }
@@ -515,7 +521,7 @@
     return { list, picks, priced, basis: priced ? 'yatirim' : 'metraj' };
   }
 
-  const api = { design, layoutAlternatives, schedule, tipAd, fieldFromPolygon: Gm.fieldFromPolygon, slopeFromPoints: Gm.slopeFromPoints, jSmooth: Hy.jSmooth, hfHW: Hy.hfHW, christiansen: Hy.christiansen, lateralCalc: Hy.lateralCalc, velocity: Hy.velocity };
+  const api = { CONST: { G, ETA_P, ETA_M }, design, layoutAlternatives, schedule, tipAd, fieldFromPolygon: Gm.fieldFromPolygon, slopeFromPoints: Gm.slopeFromPoints, jSmooth: Hy.jSmooth, hfHW: Hy.hfHW, christiansen: Hy.christiansen, lateralCalc: Hy.lateralCalc, velocity: Hy.velocity };
   g.IrriEngine = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

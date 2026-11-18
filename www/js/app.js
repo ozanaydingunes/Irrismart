@@ -2,6 +2,7 @@
 (function () {
   const D = window.IRRI_DATA, E = window.IrriEngine, V = window.IrriValidate, Ct = window.IrriCatalog, Gm = window.IrriGeom, HT = window.IrriHydroTable, I = window.IrriI18n;
   const t = I.t;
+  const HV = window.IrriHydroView, HP = window.IrriHydroPanel;
   const $ = s => document.querySelector(s);
   const KEY = 'irrismart.projects.v1', SKEY = 'irrismart.settings.v1', CKEY = 'irrismart.catalog.v1';
   const fmt = (v, d = 1) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString(I.locale, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -595,9 +596,22 @@
   }
   let hydroSave = null;
   const persistSoon = () => { clearTimeout(hydroSave); hydroSave = setTimeout(persist, 400); };
+  // Profesyonel hidrolik paneli (MH-1): 8 sekme; son sekme mevcut Hidrolik Hesap Tablosu
   function renderHydro() {
     const h = hydroState(), el = $('#hydro');
     const r = lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null);
+    const vm = r && r.ok ? HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q) }) : (r ? { ok: false, err: r.err } : { ok: false, err: [t('Su kaynağı debisi (m³/h) girilmedi — shift, boru çapı ve pompa hesaplanamaz.')] });
+    h.ptab = h.ptab || 'ozet';
+    el.innerHTML = HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
+    el.classList.add('hp');
+    const go = (tab, j) => { h.ptab = tab; if (j != null) h.pshift = j; persist(); renderHydro(); const v = $('#v-hidrolik'); if (v) v.scrollTop = 0; };
+    el.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => go(b.dataset.ptab));
+    el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+    el.querySelectorAll('[data-shift]').forEach(b => b.onclick = () => go('shift', +b.dataset.shift));
+    if (h.ptab === 'tablo') renderHydroTable(h, r);
+  }
+  function renderHydroTable(h, r) {
+    const el = $('#hpTable');
     el.innerHTML = `<div class="seg"><button data-tab="sys" class="${h.tab === 'sys' ? 'on' : ''}">${t('Sistem')} (SİSTEM)</button><button data-tab="fric" class="${h.tab === 'fric' ? 'on' : ''}">${t('Sürtünme')} (IRRIFRICT)</button></div>
       <div id="hBody"></div>
       <p class="muted small"><span class="cell-in legend"></span> ${t('Açık kahverengi: elle girilen değer')} · <span class="cell-out legend"></span> ${t('Beyaz: otomatik hesap')}. ${t('Formüller kullanıcının Excel dosyasından birebir alınmıştır.')}</p>
@@ -751,6 +765,7 @@
     const s = settings, inp = (k, v, lab) => `<label>${lab}<input data-k="${k}" type="text" inputmode="decimal" value="${String(v ?? '').replace('.', ',')}">${s.edited[k] ? '' : `<span class="muted small">${t('örnek değer')}</span>`}</label>`;
     const cnt = (a, f) => t('{n} kayıt ({m} doğrulanmış)', { n: a.length, m: a.filter(f || (x => x.dogrulandi)).length });
     $('#settings').innerHTML = `<div class="card"><h3>${t('Dil')} / Language</h3>${langSelect('langSet')}
+      <label style="margin-top:10px">${t('Görünüm')}<select id="themeSet">${[['acik', 'Açık'], ['koyu', 'Koyu'], ['sistem', 'Sistem ayarı']].map(([k, l]) => `<option value="${k}" ${themeOf() === k ? 'selected' : ''}>${t(l)}</option>`).join('')}</select></label>
       ${['he', 'zh'].includes(I.lang) ? `<p class="muted small">${t('PDF raporu bu dilde İngilizce üretilir (yazı tipi ve yazım yönü kısıtı); Excel raporu seçili dildedir.')}</p>` : ''}</div>
       <div class="card"><h3>${t('Birim fiyatlar')} (₺)</h3><p class="muted small">${t('Varsayılanlar yalnızca örnektir. Diğer kalemlerin fiyatları Malzeme ekranından girilir.')}</p>
       <div class="f">${inp('lateral16', s.lateral16, t('Damla borusu') + ' Ø16 (₺/m)')}${inp('lateral20', s.lateral20, t('Damla borusu') + ' Ø20 (₺/m)')}${inp('damlatici', s.damlatici, t('Damlatıcı') + ' (₺/' + t('adet') + ')')}${inp('startKonnektor', s.startKonnektor, t('Start konnektör') + ' (₺)')}${inp('laterlSonu', s.laterlSonu, t('Lateral sonu') + ' (₺)')}${inp('elektrik', s.elektrik, t('Elektrik') + ' (₺/kWh)')}${inp('faiz', s.faiz, t('Faiz oranı (0,10 = %10)'))}${inp('omur', s.omur, t('Ekonomik ömür (yıl)'))}</div>
@@ -767,6 +782,7 @@
         <button class="btn sm" id="catTpl">${t('Şablon indir')}</button>${userCat ? `<button class="btn sm danger" id="catDel">${t('Kullanıcı kataloğunu kaldır')}</button>` : ''}</div></div>
       <div class="card small muted"><b>IrriGrow v0.6.1</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
     bindLang('langSet');
+    $('#themeSet').onchange = ev => { setTheme(ev.target.value); };
     $('#settings').querySelectorAll('input[data-k]').forEach(el => el.onchange = () => {
       const [a, b] = el.dataset.k.split('.'); const v = V.parseNum(el.value);
       if (v === null || Number.isNaN(v) || v < 0) { toast(t('Geçerli, negatif olmayan bir sayı girin')); renderSettings(); return; }
@@ -791,6 +807,18 @@
     }).catch(e => toast(e.message));
     const del = $('#catDel'); if (del) del.onclick = () => { if (confirm(t('Kullanıcı kataloğu kaldırılsın mı?'))) { userCat = null; try { localStorage.removeItem(CKEY); } catch (e) { } catalog = window.IRRI_CATALOG; lastRes = null; renderSettings(); } };
   }
+
+  // Görünüm (tema): cihaz tercihi; varsayılan açık tema (mevcut görünüm)
+  const TKEY = 'irrigrow.theme';
+  function themeOf() { try { return localStorage.getItem(TKEY) || 'acik'; } catch (e) { return 'acik'; } }
+  function applyTheme(v) {
+    const dark = v === 'koyu' || (v === 'sistem' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    const m = document.querySelector('meta[name=theme-color]'); if (m) m.setAttribute('content', dark ? '#121a16' : '#ffffff');
+  }
+  function setTheme(v) { try { localStorage.setItem(TKEY, v); } catch (e) { } applyTheme(v); }
+  applyTheme(themeOf());
+  if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeOf() === 'sistem') applyTheme('sistem'); }; if (mq.addEventListener) mq.addEventListener('change', f); }
 
   window.IrriApp = { toast };
   window.addEventListener('error', e => toast(t('Hata: ') + (e.message || '?')));

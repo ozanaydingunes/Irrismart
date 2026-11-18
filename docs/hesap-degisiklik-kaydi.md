@@ -24,3 +24,14 @@ Her girdi şunları içerir:
 - **Bilinen sınırlamalar** (bu kayıtta bilinçli olarak donduruldu):
   - S03: Aşağı eğimli lateral, yukarı eğimli gibi hesaplanıyor (MH-3).
   - Manifoldda v > 2 m/s'de Watters-Keller, Darcy-Weisbach'tan az kayıp veriyor (MH-4, uyarı).
+
+---
+
+## 2026-11-17 — MH-1: Hidrolik paneli için motor çıktısı eklendi (sonuç değişikliği yok)
+
+- **Parmak izi:** `46f22517b152d2412fd148aa292a72d13fd7feee2078de83a74509b49268f639` (değişmedi).
+- **Değişiklik:** `engine.js` yalnızca daha önce iç değişkende kalan iki ara sonucu dışarı veriyor:
+  - `main.alts[].crit`: her shift'te gerekli H'yi belirleyen alt ünite ve bileşenleri (kot, ana hat sürtünmesi, vana, ünite girişi). H aynı ifadeyle hesaplanır; yalnız toplanmadan önce kaydedilir.
+  - `pump.shiftKWh`: yıllık pompa enerjisinin shift'lere dağılımı (toplamı `pump.kWh` ile aynı ifade).
+  - `CONST` (G, η pompa, η motor) yöntem açıklaması için.
+- **Formül, katsayı veya seçim kuralı değişmedi.** Altın kayıt ve bağımsız doğrulama testleri aynı sonuçla geçiyor; `test/hydropanel.test.js` döküm toplamının motor H değerine ve shift enerjileri toplamının yıllık enerjiye eşitliğini sınıyor.
