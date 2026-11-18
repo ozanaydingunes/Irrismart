@@ -327,3 +327,109 @@ nav.tabs button span{font-size:10px}
 /* ===== MH-WEB-1: web sürümü bilgi notu (yalnız tarayıcıda; Android'de eklenmez) ===== */
 .note.webnote{background:var(--pri2);color:var(--ink);border:1px solid var(--line)}
 .note.webnote .small{color:var(--muted);display:inline-block;margin-top:4px}
+
+/* ===== MH-WEB-2: profesyonel masaüstü düzeni =====
+   Yalnız web'de ve ≥ 1200 px genişlikte html.desk sınıfıyla etkinleşir (www/js/desk.js).
+   Android (Capacitor) ve telefon genişliğinde bu kuralların hiçbiri uygulanmaz. */
+.desk-only{display:none}
+html.desk .desk-only{display:flex}
+html.desk{--top:56px;--tab:0px}
+html.desk header.top{height:var(--top);gap:10px;padding:0 12px}
+html.desk header .logo{height:40px}
+html.desk #btnBack{display:none}
+html.desk header .ttl{flex:0 1 auto;min-width:0;max-width:320px;overflow:hidden}
+html.desk header .ttl span{overflow:hidden;text-overflow:ellipsis}
+html.desk #deskTools{flex:1 0 auto;min-width:0;align-items:center;gap:8px;flex-wrap:nowrap;overflow:visible}
+@media (max-width:1439px){html.desk #deskTools{gap:6px}html.desk .dt-btn{padding:0 8px}}
+html.desk .dt-gap{flex:1}
+html.desk .dt-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer;list-style:none}
+html.desk .dt-btn::-webkit-details-marker{display:none}
+html.desk .dt-btn.dt-pri{background:var(--pri);border-color:var(--pri);color:var(--onpri)}
+html.desk .dt-status{font-size:12px;color:var(--muted);white-space:nowrap;flex:none}
+html.desk .dt-status.dt-sync{flex:0 1 auto}
+html.desk .dt-status.dt-warn{color:var(--warn);background:var(--warnbg);border-radius:999px;padding:2px 9px;font-weight:600}
+html.desk .dt-menu{position:relative}
+html.desk .dt-pop{position:absolute;right:0;top:calc(100% + 6px);min-width:220px;display:flex;flex-direction:column;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:1200}
+html.desk .dt-pop button{min-height:38px;text-align:start;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+html.desk .dt-pop button:hover:not(:disabled),html.desk .dt-pop button:focus-visible{background:var(--pri2)}
+html.desk .dt-pop button:disabled{color:var(--muted);cursor:not-allowed}
+html.desk .dt-theme{display:flex;flex-direction:row;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--muted);white-space:nowrap}
+html.desk .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.desk .dt-theme select{min-height:36px;width:130px;flex:none;padding:0 8px}
+html.desk #btnSettings{flex:none;margin-inline-start:4px}
+
+/* Sol modül çubuğu: mevcut sekme çubuğu dikey */
+html.desk nav.tabs{top:var(--top);bottom:0;right:auto;width:var(--rail);height:auto;padding:8px;flex-direction:column;gap:2px;border-top:0;border-right:1px solid var(--line);overflow-y:auto}
+html.desk nav.tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;min-height:42px;padding:0 12px;border-radius:9px;font-size:14px;text-align:start}
+html.desk nav.tabs button i{width:22px;text-align:center;font-style:normal}
+html.desk nav.tabs button span{font-size:14px}
+html.desk nav.tabs button.on{background:var(--pri2)}
+html.desk #deskRail{min-height:36px;color:var(--muted);font-size:13px}
+html.desk.desk-rail-min nav.tabs button{justify-content:center;padding:0}
+html.desk.desk-rail-min nav.tabs button span{display:none}
+
+/* Orta çalışma alanı */
+html.desk main{top:var(--top);left:var(--rail);right:var(--right);bottom:var(--drawer)}
+html.desk .pad{max-width:1180px;padding:18px 24px 32px}
+html.desk .pad.wide{max-width:none}
+html.desk #form .f{grid-template-columns:repeat(3,minmax(0,1fr))}
+html.desk #form fieldset{margin-bottom:14px}
+html.desk #projList{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:10px}
+html.desk #projList .proj{margin:0}
+
+/* Sağ mühendislik paneli */
+html.desk #deskRight{position:fixed;top:var(--top);right:0;bottom:0;width:var(--right);flex-direction:column;background:var(--surface);border-left:1px solid var(--line);z-index:900;overflow:hidden}
+#deskRight .dk-head{display:flex;align-items:flex-start;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+#deskRight .dk-head>div{flex:1;min-width:0}
+#deskRight .dk-head strong{display:block;font-size:16px}
+#deskRight .dk-kind{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+#deskRight .dk-x,#deskRight .dk-reopen{min-width:32px;min-height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer}
+#deskRight .dk-reopen{width:100%;height:100%;border:0;border-radius:0;font-size:18px;color:var(--pri)}
+#deskRight .dk-body{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+#deskRight .dk-body h4{margin:6px 0 0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.dk-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dk-kpi{background:var(--bg);border-radius:10px;padding:8px 10px;min-width:0}
+.dk-kpi>span{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.dk-kpi b{font-size:18px;font-variant-numeric:tabular-nums}
+.dk-kpi small,.dk-kv small{color:var(--muted)}
+.dk-kv{margin:0;display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13px}
+.dk-kv dt{color:var(--muted)}.dk-kv dd{margin:0;text-align:end;font-weight:600;font-variant-numeric:tabular-nums}
+.dk-muted{margin:0;font-size:12.5px;color:var(--muted)}
+.dk-counts{margin:0;display:flex;gap:6px;flex-wrap:wrap}
+.dk-lv{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--bg)}
+.dk-w-uygunsuz .dk-lv,.dk-lv.dk-w-uygunsuz{background:#a3201a;color:#fff}
+.dk-w-uyari .dk-lv,.dk-lv.dk-w-uyari{background:var(--warnbg);color:var(--warn)}
+.dk-w-on-degerlendirme .dk-lv,.dk-lv.dk-w-on-degerlendirme{background:var(--warnbg);color:var(--warn);outline:1px dashed currentColor}
+.dk-w-bilgi .dk-lv{background:#e3ecf8;color:#1d4e89}
+:root[data-theme=dark] .dk-w-uygunsuz .dk-lv,:root[data-theme=dark] .dk-lv.dk-w-uygunsuz{background:#ff9b93;color:#2a0806}
+:root[data-theme=dark] .dk-w-bilgi .dk-lv{background:#1a2a40;color:#9ec3f0}
+.dk-warn{display:block;width:100%;text-align:start;min-height:36px;padding:6px 10px;margin:0 0 6px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.dk-warn.dk-w-uygunsuz{border-color:#a3201a}
+.dk-warn code{font-size:12px;color:var(--muted);font-weight:700}
+.dk-links{display:flex;flex-wrap:wrap;gap:6px}
+.dk-links button{min-height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--pri);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.dk-n{font-variant-numeric:tabular-nums}
+
+/* Alt panel */
+html.desk #deskBottom{position:fixed;left:var(--rail);right:var(--right);bottom:0;height:var(--drawer);flex-direction:column;background:var(--surface);border-top:1px solid var(--line);z-index:850}
+#deskBottom .db-grip{height:6px;flex:none;cursor:row-resize;background:var(--line)}
+#deskBottom .db-grip:focus-visible{outline:2px solid var(--pri)}
+#deskBottom .db-bar{display:flex;align-items:center;gap:4px;padding:0 10px;height:34px;flex:none}
+#deskBottom .db-tab{min-height:30px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+#deskBottom .db-tab.on{background:var(--pri2);font-weight:700}
+#deskBottom .dt-btn{min-height:30px;font-size:12.5px}
+#deskBottom .db-body{flex:1;overflow:auto;padding:0 12px 10px}
+.db-t{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.db-t th{position:sticky;top:0;background:var(--surface);text-align:end;padding:6px 8px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)}
+.db-t td{text-align:end;padding:5px 8px;border-bottom:1px solid var(--line)}
+.db-t th:first-child,.db-t td:first-child,.db-t td.db-l{text-align:start}
+.db-t tr[data-sel]{cursor:pointer}
+.db-t tr[data-sel]:hover td,.db-t tr[data-sel]:focus td{background:var(--bg)}
+.db-t tr.on td{background:var(--pri2);font-weight:600}
+.db-warns{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:6px;padding-top:6px}
+
+/* Tam ekran harita: bütün paneller gizlenir */
+html.desk body.mapfull nav.tabs,html.desk body.mapfull #deskRight,html.desk body.mapfull #deskBottom{display:none}
+html.desk body.mapfull main{left:0;right:0;bottom:0}
+nav.tabs button.desk-only{display:none}
+html.desk nav.tabs button.desk-only{display:flex}

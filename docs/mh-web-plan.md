@@ -58,8 +58,8 @@ değişmez.
 | Aşama | Kapsam | Hesap motoru |
 |---|---|---|
 | **MH-WEB-1** | Pages test ortamı: mevcut uygulamanın yayımlanması, web notu, dağıtım iş akışı, alt yol testleri. Sekiz hidrolik bölüm, sonuçlar, uyarılar, PDF/Excel/DXF, JSON yedek/geri yükleme ilk günden çalışır (aynı kod). | Değişmez |
-| **MH-WEB-2** | Masaüstü düzeni (≥ 1200 px): solda geniş harita, sağda mühendislik kontrol paneli (Sonuç özeti, uyarılar, hidrolik sekmeler). Telefon düzeni aynen kalır. Tasarım önizlemesi kodlamadan önce sunulur. | Değişmez |
-| **MH-WEB-3** | Harita üzerinden düzenleme. Bugün mevcut: shift ataması ve ana hat güzergâhı haritada düzenlenebiliyor (Android ve web). **Yeni:** lateral ve manifold düzenleme. Bu, motorun otomatik yerleşimine kullanıcı müdahalesi demektir. Motor girdi modeli ve altın kayıt etkilenebileceği için ayrı teknik plan, hesap değişiklik kaydı ve onay gerektirir. | Değişebilir — ayrı onay |
+| **MH-WEB-2** | Profesyonel masaüstü düzeni (yalnız web, ≥ 1200 px): üst araç çubuğu, sol modül çubuğu (daraltılabilir), orta çalışma alanı, sağ mühendislik paneli (seçili nesnenin gerçek motor değerleri), alt panel (Shift'ler, ana hat kesitleri, malzeme, uyarılar; açılır/kapanır, boyutlandırılır). Bütün modüller masaüstü genişliğine uyarlandı. Android ve telefon düzeni aynen kalır. Kod: `www/js/desk.js`; test: `test-ui/desk.ui.js`. | Değişmez |
+| **MH-WEB-3** | Fare/klavye ile hassas düzenleme — **ortak (Android + web)**: geri al/yinele geçmişi, klavye kısayolları, sağ tık (Android'de uzun basma) menüsü, koordinatla köşe/kaynak girişi, köşe ve güzergâh düzenleme; ayrıca lateral ve manifold düzenleme. Geometri ve motor girdisini değiştirdiği için önce **veri modeli** (düzenleme geçmişi, kullanıcı müdahalesinin projede saklanması, eski projelerle uyum) ve **test planı** hazırlanır; lateral/manifold düzenleme için hesap değişiklik kaydı ve altın kayıt etkisi ayrıca onaylanır. | Değişebilir — ayrı onay |
 | **MH-WEB-4** | MH-KML tamamlandığında KML/KMZ yükleme web'de de etkin (aynı kod; masaüstünde sürükle-bırak eklenir). | Değişmez |
 
 Önerilen sıra: MH-WEB-1, MH-AKIL-2'den hemen sonra yapılabilir; küçüktür ve uygulama kodunu

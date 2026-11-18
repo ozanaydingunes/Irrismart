@@ -55,6 +55,10 @@ jobs:
       - name: Arayüz testleri
         run: npm run test:ui
 
+      # MH-WEB-2: 1280/1440/1920 masaüstü düzeni; telefon ve Android'de masaüstü düzeninin etkinleşmediği
+      - name: Masaüstü düzeni testleri
+        run: npm run test:desk
+
   apk:
     name: Debug APK
     needs: test

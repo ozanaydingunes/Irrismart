@@ -52,6 +52,10 @@ jobs:
       - name: Web sürümü testleri (alt yol)
         run: npm run test:web
 
+      # MH-WEB-2: 1280/1440/1920 masaüstü düzeni; telefon ve Android'de masaüstü düzeninin etkinleşmediği
+      - name: Masaüstü düzeni testleri
+        run: npm run test:desk
+
       - name: Gizli anahtar taraması (yayımlanacak dosyalar)
         run: node tools/secret-scan.js www
 
