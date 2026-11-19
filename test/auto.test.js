@@ -174,3 +174,31 @@ test('A1-14 Kapsam: motor, otomatik seçim, arayüz ve projeler bu modülü kull
   const a = src('js/auto.js');
   ok(!/IrriEngine|\.design\(|localStorage|document\./.test(a), 'auto.js motoru çağırmaz, depolamaya ve DOM’a dokunmaz');
 });
+
+test('A1-15 Zorunlu uygunluk filtresi kapatılamaz; kurallar ve API değiştirilemez', () => {
+  const adaylar = [ad('uygunsuz', 'uygunsuz', 1, 1, 1, 10, 0.5, 0.1, 1), ad('ok', 'uygun', 100, 50, 10, 40, 1.4, 0.9, 12)];
+  for (const sec of [{ filtre: false }, { zorunluFiltre: false, agirliklar: A.VARSAYILAN_AGIRLIK }, { tumAdaylar: true }]) {
+    let at = false; try { A.alternatifSec(adaylar, sec); } catch (e) { at = /devre dışı bırakılamaz/.test(e.message); } ok(at, JSON.stringify(sec));
+  }
+  ok(Object.isFrozen(A) && Object.isFrozen(A.YETENEK) && Object.isFrozen(A.BOYUTLAR), 'API dondurulmuş');
+  const once = A.uygunluk; try { A.uygunluk = () => ({ durum: 'uygun', kurallar: [] }); } catch (e) { /* katı kip */ }
+  ok(A.uygunluk === once, 'uygunluk() değiştirilemez');
+  try { A.YETENEK.kotHidrolikte = true; } catch (e) { /* katı kip */ }
+  ok(A.YETENEK.kotHidrolikte === false, 'yetenek bayrağı değiştirilemez (kesin uygunluk açılamaz)');
+});
+
+test('A1-16 Kilitli tasarım uygunsuz hâle gelirse kilit korunur ve gerekçe açıklanır', () => {
+  const s5 = SC.find(s => s.id === 'S05-coklu-shift'), r5 = tasarla(s5);
+  let t = A.kilitle(A.yeniTasarim('otomatik'), 'shift.sayi', r5.sectors.Ns, 1);
+  t = A.kilitle(t, 'boru.ana', { malzeme: 'PVC-U', od: r5.main.sel.od, sdr: 33, pn: r5.main.sel.pn }, 2);
+  const u = A.uygunluk(r5, { kaynakDebisi: kaynak(s5) });
+  const g = A.kilitliTasarimGerekce(t, u);
+  ok(g.durum === 'uygunsuz' && g.kilitlerKorundu && A.kilitliMi(t, 'shift.sayi') && A.kilitliMi(t, 'boru.ana'), 'kilitler korunur');
+  const u02 = g.gerekceler.find(x => x.kod === 'U-02');
+  ok(u02 && u02.ilgiliKilitler.includes('shift.sayi') && u02.deger > u02.sinir, 'U-02 gerekçesi ve ilgili kilit');
+  ok(/Kilitli seçimleriniz korundu/.test(g.mesaj) && /U-02/.test(g.mesaj) && /kendiliğinden değiştirmez/.test(g.mesaj), g.mesaj);
+  const s1 = SC[0], u1 = A.uygunluk(tasarla(s1), { kaynakDebisi: kaynak(s1) });
+  ok(A.kilitliTasarimGerekce(t, u1).durum === 'uygun', 'uygun tasarımda gerekçe yok');
+  const eks = A.kilitliTasarimGerekce(t, A.uygunluk(tasarla(s1), {}));
+  ok(eks.durum === 'veri-eksik' && eks.gerekceler.some(x => x.kod === 'U-03' && x.durum === 'veri-eksik'), 'eksik veri de gerekçe olarak gösterilir, uygun sayılmaz');
+});

@@ -201,6 +201,9 @@
   // aday: { id, uygunluk (uygunluk() çıktısı), metrik: { yatirim|null, metraj, enerjiYillik, bakimYillik|null,
   //          hidrolik: { Hmax, vMax, tekduzelikOrani, toplamKayip } }, crf }
   function alternatifSec(adaylar, secenek = {}) {
+    // Zorunlu uygunluk filtresi kapatılamaz: yalnız 'agirliklar' seçeneği kabul edilir.
+    const bilinmeyen = Object.keys(secenek || {}).filter(k => k !== 'agirliklar');
+    if (bilinmeyen.length) throw new Error(`Bilinmeyen seçenek (${bilinmeyen.join(', ')}): zorunlu uygunluk filtresi devre dışı bırakılamaz`);
     const agirlik = secenek.agirliklar || VARSAYILAN_AGIRLIK;
     const ae = agirlikDogrula(agirlik); if (ae.length) throw new Error(ae.join('; '));
     const havuz = (adaylar || []).filter(a => a.uygunluk && a.uygunluk.durum === 'uygun');   // zorunlu filtre: puanlamadan ÖNCE
@@ -251,6 +254,25 @@
     };
   }
 
+  // ---------- 8b. Kilitli tasarım uygunsuz hâle gelirse: kilit korunur, gerekçe açıklanır ----------
+  // u: uygunluk() çıktısı (kilitli seçimlerle hesaplanmış tasarım). Kilitleri DEĞİŞTİRMEZ; kullanıcıya açıklama üretir.
+  const KURAL_ILGILI = { 'U-01': ['lateral.cap', 'boru.manifold', 'shift.atama'], 'U-02': ['shift.sayi', 'shift.atama'], 'U-03': ['shift.sayi', 'shift.atama'],
+    'U-04': ['boru.ana'], 'U-05': ['boru.ana', 'boru.manifold', 'ekipman.pompa'], 'U-06': ['lateral.cap', 'boru.manifold'], 'U-07': ['ekipman.pompa'] };
+  function kilitliTasarimGerekce(t, u) {
+    const kilitli = Object.keys((t && t.kilitler) || {});
+    if (!u || !Array.isArray(u.kurallar)) return { durum: 'veri-eksik', mesaj: 'Uygunluk sonucu yok' };
+    const sorunlu = u.kurallar.filter(k => k.durum !== 'uygun');
+    if (!sorunlu.length) return { durum: 'uygun', kilitli, gerekceler: [] };
+    const gerekceler = sorunlu.map(k => ({ kod: k.kod, ad: k.ad, durum: k.durum, deger: k.deger, sinir: k.sinir, aciklama: k.mesaj,
+      ilgiliKilitler: (KURAL_ILGILI[k.kod] || []).filter(a => kilitli.includes(a)) }));
+    const kilitKaynakli = gerekceler.some(g => g.ilgiliKilitler.length);
+    return { durum: u.durum, kilitli, kilitlerKorundu: true, gerekceler,
+      mesaj: kilitli.length
+        ? `Kilitli seçimleriniz korundu (${kilitli.join(', ')}). Bu tasarım şu koşulları sağlamıyor: ${gerekceler.map(g => `${g.kod} ${g.ad}`).join('; ')}.`
+          + (kilitKaynakli ? ' İlgili kilitleri gözden geçirebilirsiniz; sistem kilitleri kendiliğinden değiştirmez.' : '')
+        : `Bu tasarım şu koşulları sağlamıyor: ${gerekceler.map(g => `${g.kod} ${g.ad}`).join('; ')}.` };
+  }
+
   // ---------- 9. Aday uzayı (ortak değerlendirme yapısı) ----------
   // secenekler: { alan: [değerler] }. Kilitli alan tek değere (kullanıcının değeri) indirgenir. Sınır aşılırsa kısmi.
   function adayUzayi(secenekler, t, sinir = 200) {
@@ -265,7 +287,10 @@
 
   const api = { SURUM, MODLAR, ALTERNATIFLER, BOYUTLAR, VARSAYILAN_AGIRLIK, YETENEK, yeniTasarim, tasarimOku, tasarimDogrula,
     kilitle, kilitAc, kilitliMi, birlestir, kilitDurumu, uygunluk, geciciRejim, veriNiteligi, degerlendir,
-    agirlikDogrula, alternatifSec, metrikCikar, adayUzayi };
+    agirlikDogrula, alternatifSec, metrikCikar, adayUzayi, kilitliTasarimGerekce };
+  // Kurallar ve API dışarıdan değiştirilemez (ör. uygunluk() yerine her şeyi 'uygun' sayan bir işlev konamaz)
+  Object.freeze(KURALLAR); KURALLAR.forEach(Object.freeze); Object.freeze(BOYUTLAR); Object.values(BOYUTLAR).forEach(Object.freeze);
+  Object.freeze(YETENEK); Object.freeze(api);
   g.IrriAuto = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

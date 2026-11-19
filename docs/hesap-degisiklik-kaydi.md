@@ -14,13 +14,6 @@ Her girdi şunları içerir:
 
 ---
 
-## 2026-11-19 — MH-AUTO-1: Akıllı Otomatik Tasarım veri modeli ve saf kurallar (hesap değişikliği yok)
-
-- **Altın kayıt parmak izi:** değişmedi.
-- **Değişiklik:** yeni bağımsız modül `www/js/auto.js` ve `test/auto.test.js`. Modül motoru çağırmaz, motor sonucunu ve projeleri değiştirmez; `index.html` yüklemez (test A1-14).
-- **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `engine.js`, `layout.js`, `catalog.js`, `assess.js`, `app.js` bu PR'da değiştirilmedi.
-- **Doğrulama:** `test/dogrulama.test.js`, `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
-
 ## 2026-11-17 — MH-0: İlk altın referans kaydı
 
 - **Parmak izi:** `46f22517b152d2412fd148aa292a72d13fd7feee2078de83a74509b49268f639`
@@ -53,3 +46,18 @@ Her girdi şunları içerir:
 - **Değişmeyenler:** 19 kaydın hepsinde `design` (motor sonuçları ve `r.warn` metinleri), diğer bütün Excel sayfaları, A3 pafta, DXF ve Hidrolik Hesap Tablosu birebir aynı. Bu, eski ve yeni kayıtların "Uyarılar" sayfası çıkarılarak karşılaştırılmasıyla doğrulandı. Kalıcı olarak da `test/golden.test.js` içindeki "hesap bölümü MH-0’dan beri değişmedi" testi bunu denetler.
 - **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `www/js/engine.js` bu PR'da değiştirilmedi.
 - **Doğrulama:** `test/dogrulama.test.js` (EPANET ve bağımsız bağıntılar) ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
+
+## 2026-11-19 — PN-1: Standart tabanlı boru kütüphanesi eklendi (hesap değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi (kayıt yenilenmedi).
+- **Değişiklik:** yalnız veri ve doğrulama katmanı eklendi: `www/js/pipes-data.js`, `www/js/pipes.js`; `www/js/catalog.js` içinde isteğe bağlı `borular.kutuphane` bölümünün doğrulaması. Kütüphane hesap motoru, otomatik boru seçimi, ekranlar ve raporlar tarafından **kullanılmıyor**; `index.html` modülü yüklemiyor (test P1-10).
+- **Değişmeyenler:** `engine.js`, `catalog-data.js` (otomatik seçim listesi), `layout.js`, `hydraulics.js`, `assess.js`, `mergeCatalog` davranışı. Eski katalog ile yeni tablo arasındaki farklar `docs/pn-1-karsilastirma.md`'de raporlandı; hiçbiri düzeltilmedi.
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.**
+- **Doğrulama:** `test/dogrulama.test.js` (EPANET ve bağımsız bağıntılar), `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
+
+## 2026-11-19 — MH-AUTO-1: Akıllı Otomatik Tasarım veri modeli ve saf kurallar (hesap değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi.
+- **Değişiklik:** yeni bağımsız modül `www/js/auto.js` ve `test/auto.test.js`. Modül motoru çağırmaz, motor sonucunu ve projeleri değiştirmez; `index.html` yüklemez (test A1-14).
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `engine.js`, `layout.js`, `catalog.js`, `assess.js`, `app.js` bu PR'da değiştirilmedi.
+- **Doğrulama:** `test/dogrulama.test.js`, `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.

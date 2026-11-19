@@ -19,7 +19,15 @@ Durum: **kod PR'ı; proje sahibinin onayı olmadan birleştirilmez (19.11.2026).
 | Geçici rejim | `geciciRejim` | Joukowsky aşımı → `gecici-analiz-gerekli` (asla tek başına `uygunsuz`) |
 | Doğrulanmış uygunluk | `degerlendir`, `veriNiteligi`, `YETENEK` | MH-3 ve MH-AKIL-5 yokken en yüksek durum **"Ön tasarım — mühendislik doğrulaması gerekli"** |
 | Alternatifler | `alternatifSec`, `metrikCikar`, `agirlikDogrula`, `VARSAYILAN_AGIRLIK` | Zorunlu filtre puanlamadan önce. Uygun aday yoksa **"Uygun tasarım bulunamadı"** + sağlanamayan koşullar. Ekonomik (yıllık toplam), Dengeli (%35/%30/%20/%15, değiştirilebilir), Performans (enerji → kayıp → tekdüzelik → hız) |
+| Kilitli tasarım gerekçesi | `kilitliTasarimGerekce` | Kilitli seçimlerle tasarım uygunsuz/eksik veriliyse kilitler korunur; sağlanamayan koşullar, değerleri, sınırları ve ilgili kilitler açıklanır |
 | Aday uzayı | `adayUzayi` | Boyutların çarpımı; kilitli boyut sabit; geçersiz değer elenir; sınır aşılırsa "kısmi" |
+
+## Güvenlik kuralları (değiştirilemez)
+
+- Eksik veri hiçbir kuralda `uygun` sayılmaz (A1-05).
+- `alternatifSec` yalnız `agirliklar` seçeneğini kabul eder; zorunlu filtreyi kapatmaya yönelik her seçenek reddedilir (A1-15).
+- Modül API'si, kurallar ve `YETENEK` bayrakları dondurulmuştur: `uygunluk()` değiştirilemez, "kesin uygunluk" bayrağı açılamaz (A1-15).
+- Doğrulanmamış sıcaklık katsayıları bu modülde hiç kullanılmaz (PN-1: `IrriPipes.sicaklikKatsayisi()` yalnız doğrulanmış tablo).
 
 ## Bilinen sınırlar (bilerek)
 
@@ -30,7 +38,7 @@ Durum: **kod PR'ı; proje sahibinin onayı olmadan birleştirilmez (19.11.2026).
 - Hidrolik performans göstergesi: normalize en yüksek basınç, ana hat hızı ve tekdüzelik oranının
   ortalaması (küçük = iyi). Tanım MH-AUTO-5'te gözden geçirilecek.
 
-## Testler (`test/auto.test.js`, A1-01…A1-14)
+## Testler (`test/auto.test.js`, A1-01…A1-16)
 
 Mod modeli, kilitler ve değişmezlik, uygulanamayan kilit, 19 altın senaryoda kurallar ve motor
 sonucunun değişmediği, eksik veri, geçici rejim ayrımı, "ön tasarım" sınırı, uygun tasarım yok,
