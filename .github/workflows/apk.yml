@@ -89,16 +89,24 @@ jobs:
           node-version: '22'
           cache: npm
 
+      # Sürüm tek kaynaktan (package.json); APK ve indirme paketi adı sürümü içerir
+      - name: Sürüm
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "IRRI_SURUM=$V" >> "$GITHUB_ENV"
+          echo "APK_DOSYA=IrriGrow-$V-debug.apk" >> "$GITHUB_ENV"
+          echo "IrriGrow sürümü: $V"
+
       - name: Testler ve APK derlemesi
         env:
-          APK_OUT: ${{ github.workspace }}/IrriSmart-AI-debug.apk
+          APK_OUT: ${{ github.workspace }}/${{ env.APK_DOSYA }}
         run: bash ci/build-apk.sh
 
       # APK kimliği: paket adı, sürüm, SDK seviyeleri ve imza sertifikası beklenen değerlerle karşılaştırılır.
       # Sertifika, depodaki android/app/irrismart-debug.keystore ile aynı olmalı (eski APK'ların üzerine kurulum için).
       - name: APK doğrulama (paket, sürüm, imza)
         env:
-          APK: ${{ github.workspace }}/IrriSmart-AI-debug.apk
+          APK: ${{ github.workspace }}/${{ env.APK_DOSYA }}
           EXPECT_PKG: com.irrigrow.app.dev
           EXPECT_MIN_SDK: '24'
           EXPECT_TARGET_SDK: '36'
@@ -110,6 +118,7 @@ jobs:
           echo "$BADGING" | grep -E "^(package|sdkVersion|minSdkVersion|targetSdkVersion|application-label):"
           PKG=$(echo "$BADGING" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
           VC=$(echo "$BADGING" | sed -n "s/^package: .* versionCode='\([^']*\)'.*/\1/p")
+          VN=$(echo "$BADGING" | sed -n "s/^package: .* versionName='\([^']*\)'.*/\1/p")
           # aapt2 34 "sdkVersion:", aapt2 36 "minSdkVersion:" yazar
           MIN=$(echo "$BADGING" | sed -n "s/^\(min\)\{0,1\}[sS]dkVersion:'\([^']*\)'/\2/p")
           TGT=$(echo "$BADGING" | sed -n "s/^targetSdkVersion:'\([^']*\)'/\1/p")
@@ -119,13 +128,22 @@ jobs:
           test "$PKG" = "$EXPECT_PKG" || { echo "HATA: paket adı $PKG (beklenen $EXPECT_PKG)"; exit 1; }
           test "$CERT" = "$EXPECT_CERT" || { echo "HATA: imza sertifikası $CERT (beklenen $EXPECT_CERT)"; exit 1; }
           test -n "$EXPECT_VC" && test "$VC" = "$EXPECT_VC" || { echo "HATA: versionCode $VC (beklenen $EXPECT_VC)"; exit 1; }
+          test "$VN" = "$IRRI_SURUM" || { echo "HATA: versionName $VN (beklenen $IRRI_SURUM, package.json)"; exit 1; }
+          # İmza türü: debug anahtarı, APK imza şeması v2 doğrulanmış olmalı (Android 7+ kurulum)
+          SCHEME=$("$BT/apksigner" verify --verbose "$APK")
+          echo "$SCHEME" | grep -E "^Verified using v[0-9]+ scheme"
+          echo "$SCHEME" | grep -q "^Verified using v2 scheme (APK Signature Scheme v2): true" || { echo "HATA: v2 imza şeması yok"; exit 1; }
+          "$BT/apksigner" verify --print-certs "$APK" | grep -q "CN=Android Debug" && echo "İmza türü: DEBUG anahtarı (yalnız test/sürüm adayı; Play Store için yükleme anahtarı gerekir)" || echo "İmza türü: debug olmayan sertifika"
           test "$MIN" = "$EXPECT_MIN_SDK" || { echo "HATA: minSdk $MIN (beklenen $EXPECT_MIN_SDK)"; exit 1; }
           test "$TGT" = "$EXPECT_TARGET_SDK" || { echo "HATA: targetSdk $TGT (beklenen $EXPECT_TARGET_SDK)"; exit 1; }
-          echo "APK doğrulandı: $PKG, versionCode $VC, minSdk $MIN, targetSdk $TGT; sertifika depodaki debug keystore ile aynı"
+          echo "APK doğrulandı: $PKG, sürüm $VN (versionCode $VC), minSdk $MIN, targetSdk $TGT; sertifika depodaki debug keystore ile aynı"
+          (cd "$(dirname "$APK")" && sha256sum "$(basename "$APK")" | tee "$(basename "$APK").sha256")
 
       - uses: actions/upload-artifact@v4
         with:
-          name: IrriSmart-AI-debug-apk
-          path: IrriSmart-AI-debug.apk
+          name: IrriGrow-${{ env.IRRI_SURUM }}-debug-apk
+          path: |
+            ${{ env.APK_DOSYA }}
+            ${{ env.APK_DOSYA }}.sha256
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
