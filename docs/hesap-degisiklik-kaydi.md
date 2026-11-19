@@ -14,6 +14,14 @@ Her girdi şunları içerir:
 
 ---
 
+## 2026-11-19 — PN-1: Standart tabanlı boru kütüphanesi eklendi (hesap değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi (kayıt yenilenmedi).
+- **Değişiklik:** yalnız veri ve doğrulama katmanı eklendi: `www/js/pipes-data.js`, `www/js/pipes.js`; `www/js/catalog.js` içinde isteğe bağlı `borular.kutuphane` bölümünün doğrulaması. Kütüphane hesap motoru, otomatik boru seçimi, ekranlar ve raporlar tarafından **kullanılmıyor**; `index.html` modülü yüklemiyor (test P1-10).
+- **Değişmeyenler:** `engine.js`, `catalog-data.js` (otomatik seçim listesi), `layout.js`, `hydraulics.js`, `assess.js`, `mergeCatalog` davranışı. Eski katalog ile yeni tablo arasındaki farklar `docs/pn-1-karsilastirma.md`'de raporlandı; hiçbiri düzeltilmedi.
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.**
+- **Doğrulama:** `test/dogrulama.test.js` (EPANET ve bağımsız bağıntılar), `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
+
 ## 2026-11-17 — MH-0: İlk altın referans kaydı
 
 - **Parmak izi:** `46f22517b152d2412fd148aa292a72d13fd7feee2078de83a74509b49268f639`

@@ -20,6 +20,12 @@
     const b = c.borular || {};
     for (const k of ['pe', 'pvc']) (b[k] || []).forEach((p, i) => { num(p.od, 'od', i, k); num(p.ic, 'ic', i, k); num(p.pn, 'pn', i, k); if (p.ic >= p.od) e.push(`${k}[${i}] iç çap dış çaptan küçük olmalı`); });
     (b.lateral || []).forEach((p, i) => { num(p.od, 'od', i, 'lateral'); num(p.ic, 'ic', i, 'lateral'); num(p.maxH, 'maxH', i, 'lateral'); });
+    // PN-1: isteğe bağlı standart tabanlı boru kütüphanesi bölümü (yalnız doğrulama; seçim ve birleştirme davranışı değişmez)
+    if (b.kutuphane !== undefined) {
+      if (!Array.isArray(b.kutuphane)) e.push('borular.kutuphane bir dizi olmalı');
+      else if (g.IrriPipes) e.push(...g.IrriPipes.dogrula(b.kutuphane, Object.assign({}, g.IrriPipes.veri.KAYNAKLAR, c.kaynaklar || {})));
+      else e.push('borular.kutuphane doğrulanamadı: boru kütüphanesi modülü yüklü değil');
+    }
     return e;
   }
   // Varsayılan katalog + kullanıcı kataloğu (aynı id'ler kullanıcınınkiyle değişir; bölüm 'yalnizKullanici' ise jenerikler çıkarılır)
