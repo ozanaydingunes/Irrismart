@@ -299,14 +299,18 @@
 
     // ---------- Su darbesi (ön değerlendirme; ayrıntısı MH-AKIL-5) ----------
     const sg = r.surge;
-    chk('W-SD-01', sg.exceeds ? 'bad' : 'warn', 'basinc', 'Su darbesi (Joukowsky üst sınırı)', 'ΔH ≈ {a} m, tepe {b} m — ön değerlendirme', { a: [sg.dH, 0], b: [sg.peak, 0] });
-    find('W-SD-01', sg.exceeds ? 'uygunsuz' : 'on-degerlendirme', {
+    // K-2: normal işletme basıncı (W-PN-01/02) ve teorik su darbesi ayrı değerlendirilir. Yalnız Joukowsky üst sınırının
+    // aşılması kesin "uygunsuz" sayılmaz: "Geçici rejim analizi gerekli" (ön değerlendirme). Hesap değerleri değişmez.
+    chk('W-SD-01', 'warn', 'basinc', 'Su darbesi (Joukowsky üst sınırı)', 'ΔH ≈ {a} m, teorik tepe {b} m — ön değerlendirme', { a: [sg.dH, 0], b: [sg.peak, 0] });
+    find('W-SD-01', 'on-degerlendirme', {
       onDegerlendirme: true,
-      baslik: sg.exceeds ? T('Su darbesi üst sınırı PN sınıfını aşabilir') : T('Su darbesi ön değerlendirmesi'),
-      neden: T('Ani kapanma için Joukowsky üst sınırı ΔH ≈ {a} m (dalga hızı {c} m/s); işletme {o} m + ΔH = {b} m, PN{p} sınırı {s} m. Ayrıntılı geçici rejim analizi yapılmadı.',
+      baslik: sg.exceeds ? T('Geçici rejim analizi gerekli') : T('Su darbesi ön değerlendirmesi'),
+      neden: T(sg.exceeds
+        ? 'Teorik su darbesi üst sınırı PN sınıfını aşabilir. Ayrıntılı geçici rejim analizi gereklidir. Ani kapanma için Joukowsky üst sınırı ΔH ≈ {a} m (dalga hızı {c} m/s); işletme {o} m + ΔH = {b} m, PN{p} sınırı {s} m.'
+        : 'Ani kapanma için Joukowsky üst sınırı ΔH ≈ {a} m (dalga hızı {c} m/s); işletme {o} m + ΔH = {b} m, PN{p} sınırı {s} m. Ayrıntılı geçici rejim analizi yapılmadı.',
         { a: n(sg.dH, 0), c: n(sg.a, 0), o: n(sg.Pline, 1), b: n(sg.peak, 0), p: String(ms.pn), s: n(sg.pnH, 1) }),
       onem: T('{a}. {b}.', { a: T(ON_DEG), b: T(TRANSIENT) }),
-      durum: [qty('Joukowsky ΔH', sg.dH, 'm', 0), qty('Tepe basınç (üst sınır)', sg.peak, 'm', 0), qty('Kritik süre 2L/a', sg.Tc, 's', 1)],
+      durum: [qty('Joukowsky ΔH', sg.dH, 'm', 0), qty('Teorik tepe basınç (üst sınır, gerçek en yüksek basınç değil)', sg.peak, 'm', 0), qty('Kritik süre 2L/a', sg.Tc, 's', 1)],
       sinir: qty('PN sınırı', sg.pnH, 'm', 1, 'katalog'),
       cozumler: [
         sol('ekipman', T('Vana kapanma süresi'), 'degerlendirilmedi', T('Kapanma süresinin 2L/a = {a} s’den uzun olması ani-kapanma sınırını aşmamak için gereklidir, yeterli değildir. 5 × 2L/a = {b} s yalnız pratik bir kuraldır.', { a: n(sg.Tc, 1), b: n(sg.tClose, 0) }), { asama: 'MH-AKIL-5', gerekenVeri: [T('Vana kapanma eğrisi')] }),

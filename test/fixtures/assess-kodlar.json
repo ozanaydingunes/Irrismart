@@ -4,20 +4,20 @@
   "W-PN-02:uygunsuz",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S02-yukari-egimli-lateral": [
   "W-PN-02:uygunsuz",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz",
+  "W-SD-01:on-degerlendirme",
   "W-SHF-01:uyari"
  ],
  "S03-asagi-egimli-lateral": [
   "W-HIZ-01:uyari",
   "W-PN-02:uygunsuz",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S05-coklu-shift": [
   "W-HIZ-01:uyari",
@@ -25,7 +25,7 @@
   "W-PN-02:uygunsuz",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S06-dusuk-kaynak-debisi": [
   "W-KAP-01:uygunsuz",
@@ -41,27 +41,27 @@
  "S08-yuksek-kot-farki-yukari": [
   "W-PN-02:uygunsuz",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S09-yuksek-kot-farki-asagi": [
   "W-BAS-01:uyari",
   "W-HIZ-01:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S10-yetersiz-sebeke-basinci": [
   "W-HIZ-01:uyari",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S11-yeterli-sebeke-basinci": [
   "W-BAS-01:uyari",
   "W-HIZ-01:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S12-lateral-20mm": [
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S13-ana-hat-zorunlu-cap": [
   "W-POM-02:uyari",
@@ -70,32 +70,32 @@
  "S14-eksik-veri": [
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz",
+  "W-SD-01:on-degerlendirme",
   "W-SHF-01:uyari"
  ],
  "S15-kullanici-egim-girdisi": [
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S16-pc-damlatici-egimli": [
   "W-HIZ-01:uyari",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S17-zeytin-yuzey-suyu": [
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ],
  "S18-parsel-elle-shift": [
   "W-HIZ-01:uyari",
   "W-POM-01:uyari",
   "W-POM-02:uyari",
-  "W-SD-01:uygunsuz",
+  "W-SD-01:on-degerlendirme",
   "W-SHF-01:uyari"
  ],
  "S19-buyuk-hidrant": [
   "W-BAS-01:uyari",
-  "W-SD-01:uygunsuz"
+  "W-SD-01:on-degerlendirme"
  ]
 }
