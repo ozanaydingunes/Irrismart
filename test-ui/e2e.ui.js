@@ -100,8 +100,26 @@ const KMZ = (() => { const z = C.utils.cfb_new(); C.utils.cfb_add(z, 'doc.kml', 
   // E-5
   const pdf = await download(pg, '#bPdf'), xls = await download(pg, '#bXls');
   check(pdf.buf.slice(0, 4).toString() === '%PDF' && pdf.buf.length > 20000, 'E-5 PDF');
-  check(/^IrriGrow_Buyuk_tarla_.*\.pdf$/.test(pdf.fn) && /^IrriGrow_Buyuk_tarla_.*\.xlsx$/.test(xls.fn), `E-5 Türkçe proje adında dosya adı bozuk: ${pdf.fn} / ${xls.fn}`);
   const wb = XLSX.read(xls.buf); const hid = XLSX.utils.sheet_to_json(wb.Sheets['Hidrolik'], { header: 1 }).map(x => x.join(' ')).join('\n');
+  check(/^IrriGrow_Buyuk_tarla-[0-9a-z]{4}_\d{8}-\d{4}\.pdf$/.test(pdf.fn) && /^IrriGrow_Buyuk_tarla-[0-9a-z]{4}_.*\.xlsx$/.test(xls.fn), `E-5 Türkçe proje adında dosya adı: ${pdf.fn} / ${xls.fn}`);
+  // Yalnız dosya adı ASCII: proje adı ve rapor içeriği Türkçe kalır
+  const ozetSayfa = wb.SheetNames.map(n => XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 }).map(x => x.join(' ')).join('\n')).join('\n');
+  check(/Büyük tarla/.test(ozetSayfa) && (await proje(pg)).name === 'Büyük tarla', 'E-5 proje adı / Excel içeriği Türkçe kalmalı');
+  check(/[çğışöüÇĞİŞÖÜ]/.test(ozetSayfa.replace(/Büyük tarla/g, '')), 'E-5 Excel içindeki Türkçe metinler değişmemeli');
+  const adlar = await pg.evaluate(() => ['Büyük tarla', 'Buyuk tarla', 'Buyuk_tarla', 'Buyuk  tarla', 'Поле 1', 'Поле 2', 'שדה', '田地', 'S01 Domates'].map(IrriReport.dosyaAdi));
+  check(new Set(adlar).size === adlar.length && adlar.every(a => /^[A-Za-z0-9_-]+$/.test(a)) && adlar[8] === 'S01_Domates' && adlar[1] === 'Buyuk_tarla', 'E-5 farklı adlar aynı dosya adına düşmemeli: ' + adlar.join(', '));
+  check(adlar[0] === await pg.evaluate(() => IrriReport.dosyaAdi('Büyük tarla')), 'E-5 dosya adı eki sabit olmalı');
+  // Android (sahte Capacitor dosya sistemi): aynı dakikada iki kayıt birbirinin üzerine yazılmaz
+  const yazilan = await pg.evaluate(async () => {
+    const dosyalar = new Set(), yol = []; const eski = window.Capacitor;
+    window.Capacitor = { isNativePlatform: () => true, Plugins: { Filesystem: {
+      writeFile: async o => { if (o.directory === 'DOCUMENTS') { dosyalar.add(o.path); yol.push(o.path); } return { uri: 'file:///cache/' + o.path }; },
+      stat: async o => { if (!dosyalar.has(o.path)) throw new Error('File does not exist'); return {}; } } } };
+    try { for (let k = 0; k < 3; k++) await IrriReport.saveFile('IrriGrow_' + IrriReport.dosyaAdi('Büyük tarla'), 'pdf', 'JVBERg==', 'application/pdf'); }
+    finally { window.Capacitor = eski; document.querySelectorAll('#fileSheet').forEach(e => e.remove()); }
+    return yol;
+  });
+  check(yazilan.length === 3 && new Set(yazilan).size === 3 && /_2\.pdf$/.test(yazilan[1]) && /_3\.pdf$/.test(yazilan[2]), 'E-5 Android: aynı adlı dosyanın üzerine yazıldı: ' + yazilan.join(', '));
   check(new RegExp(`PE100 Ø${od} SDR17 PN10 \\(elle seçildi\\)`).test(hid), 'E-5 Excel Hidrolik sayfasında seçilen boru yok');
   await go(pg, 'hidrolik'); await pg.click('[data-ptab=tablo]'); await pg.waitForTimeout(400);
   const hx = await download(pg, '#hXls'); check(hx.buf.slice(0, 2).toString() === 'PK', 'E-5 Hidrolik Excel');
