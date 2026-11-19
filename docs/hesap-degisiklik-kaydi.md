@@ -75,3 +75,12 @@ Her girdi şunları içerir:
 - **Doğrulama:** `test/pn3a.test.js` P3-01…P3-07 — bağımsız hız ve Hazen-Williams hesabı, seçilen boruyla ana hat ağının **EPANET 2.3** (Hazen-Williams) çözümü (4 durum, bütün shift'ler, ≤ max(0,10 m; %0,2)). `test/dogrulama.test.js`, `test/golden.test.js`, `tools/audit.js` (38/38), arayüz (226 + 54), web (110) ve masaüstü (132) takımları aynı sonuçla geçiyor. Kasıtlı hata denemeleri (iç çap yerine dış çap, kademenin kapatılmaması, doğrulanmamış satırın kabulü) testlerce yakalandı.
 - **Bilinen sınırlar:** manifold boru seçimi ve arayüz PN-3b'de; `index.html` kütüphaneyi henüz yüklemiyor (tarayıcıda seçim yapılamaz; seçim içeren bir yedek açılırsa "Boru kütüphanesi yüklü değil" gerekçesiyle hesap yapılmaz). Ekran ve rapor etiketlerinin malzemeye göre güncellenmesi PN-3b/PN-4'te.
 
+## 2026-11-19 — K-2 (IrriGrow 1.0): Su darbesi sınıflandırması — "Geçici rejim analizi gerekli" (hesap değişikliği yok)
+
+- **Parmak izi (tüm kayıt):** `4477d46a767a6599fb04a116fac5d6930f27d3b906cecd5a5258dd05cc9e5cae`
+- **Hesap parmak izi (Uyarılar sayfası hariç):** `86ce24bce78bf3d8b28733e6fe9e3f4d19f1b8cf06d46a091ae429595f2b3fa4` — **değişmedi** (MH-0 ile aynı içerik; `test/golden.test.js` "hesap bölümü MH-0'dan beri değişmedi" testi geçiyor).
+- **Değişiklik (`www/js/assess.js`, `www/js/hydro-view.js`):** normal işletme basıncı (W-PN-01, W-PN-02) ve teorik su darbesi (W-SD-01) ayrı değerlendirilir. Yalnız Joukowsky üst sınırının PN sınırını aşması artık kesin **"Uygunsuz" değildir**: W-SD-01 her durumda "Ön değerlendirme" seviyesindedir; aşım varsa başlık **"Geçici rejim analizi gerekli"** ve gerekçe "Teorik su darbesi üst sınırı PN sınıfını aşabilir. Ayrıntılı geçici rejim analizi gereklidir." olur. Hidrolik panelindeki "Tepe basınç" satırı "Teorik tepe basınç (üst sınır)" adını ve uyarı (sarı) durumunu alır.
+- **Değişen kayıt alanı:** yalnız 15 senaryonun Excel "Uyarılar" sayfasındaki W-SD-01 satırı (seviye, başlık, gerekçe metni). Motor sonuçları, diğer Excel sayfaları, pafta, DXF ve hidrolik tablo **aynı**.
+- **Gerekçe:** proje sahibi kararı (docs/mh-pn-plan.md D-7; 1.0 Kapanış Planı E-3). Joukowsky ani kapanma üst sınırıdır, gerçek en yüksek basınç değildir; gerçek geçici basınç zarfı MH-AKIL-5 (2.0) kapsamındadır.
+- **Doğrulama:** `npm test`, `tools/audit.js` 38/38, EPANET karşılaştırması, `test:ui`, `test:web`, `test:desk` geçiyor. `test/fixtures/assess-kodlar.json` (senaryo başına uyarı kodu kümesi) yalnız W-SD-01 seviyesi için yenilendi.
+

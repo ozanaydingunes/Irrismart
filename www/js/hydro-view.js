@@ -212,7 +212,7 @@
       surge: [
         row('Dalga hızı a', r.surge.a, 0, 'm/s'), row('Joukowsky ΔH', r.surge.dH, 1, 'm'),
         row('Kritik kapanma süresi 2L/a', r.surge.Tc, 1, 's'), row('Pratik kural 5 × 2L/a (gerekli, yeterli değil)', r.surge.tClose, 0, 's'),
-        row('Tepe basınç', r.surge.peak, 1, 'm', 'hesap', { status: r.surge.exceeds ? 'bad' : 'ok', bar: r.surge.peak / BAR }),
+        row('Teorik tepe basınç (üst sınır)', r.surge.peak, 1, 'm', 'hesap', { status: r.surge.exceeds ? 'warn' : 'ok', bar: r.surge.peak / BAR }),   // K-2: aşım → 'Geçici rejim analizi gerekli', kesin uygunsuz değil
       ],
       energy: [
         row('Sezonluk pompa enerjisi', p.kWh || 0, 0, 'kWh'),
