@@ -2,7 +2,11 @@
 (function () {
   const RD = window.IrriReportData;
   const n = (v, d = 1) => (v == null || (typeof v === 'number' && !Number.isFinite(v))) ? '-' : typeof v === 'number' ? v.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : String(v);
-  const safe = s => String(s).replace(/[^\wçğıöşüÇĞİÖŞÜ\- ]+/g, '').trim().replace(/\s+/g, '_') || 'proje';
+  // Dosya adı yalnız ASCII: Chromium/Android bazı ASCII dışı adları ("Büyük tarla") "download" olarak kaydediyor.
+  // Proje adı değişmez; yalnız indirilen dosyanın adı sadeleşir (ü→u, ş→s, …).
+  const TR_ASCII = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'C', Ğ: 'G', İ: 'I', Ö: 'O', Ş: 'S', Ü: 'U' };
+  const safe = s => String(s).replace(/[çğıöşüÇĞİÖŞÜ]/g, c => TR_ASCII[c]).normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9_\- ]+/g, '').trim().replace(/\s+/g, '_') || 'proje';
   const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   function b64FromBuf(buf) { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
 
