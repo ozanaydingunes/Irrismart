@@ -85,8 +85,8 @@
     try {
       let j; try { j = St.readBackup(await f.text()); } catch (e) { throw new Error(e.i18n ? t(e.message) : e.message); }
       const valid = j.valid;
-      const same = valid.filter(p => projects.some(x => x.id === p.id)).length;
-      if (!confirm(t('{n} proje yüklenecek.', { n: valid.length }) + (same ? ' ' + t('{n} tanesi mevcut projelerin üzerine yazılacak.', { n: same }) : '') + ' ' + t('Devam edilsin mi?'))) return;
+      const plan = St.planBackup(projects, valid);
+      if (!confirm(t('{n} proje yüklenecek.', { n: valid.length }) + (plan.farkli ? ' ' + t('{n} tanesi mevcut projelerle aynı kimlikte ama farklı: mevcut projeler korunacak, yedektekiler “(yedekten)” adıyla ayrı proje olarak eklenecek.', { n: plan.farkli }) : '') + (plan.ayni ? ' ' + t('{n} tanesi zaten aynı; değişmeyecek.', { n: plan.ayni }) : '') + ' ' + t('Devam edilsin mi?'))) return;
       St.mergeBackup(projects, valid);
       if (j.settings && confirm(t('Yedekteki fiyat ayarları da yüklensin mi?'))) { settings = Object.assign(JSON.parse(JSON.stringify(D.DEFAULT_PRICES)), { items: {}, edited: {} }, j.settings); saveSettings(); }
       if (j.catalog && !Ct.checkCatalog(j.catalog).length) { userCat = j.catalog; save(CKEY, userCat); catalog = Ct.mergeCatalog(window.IRRI_CATALOG, userCat); }
@@ -129,10 +129,11 @@
       const r = overlayRes && overlayRes.ok ? overlayRes : null;
       const n = r ? r.sel.groups.length : 0;
       bar.style.display = 'flex';
-      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} <button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>`
+      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} <button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>${cur.shiftEditYedek ? ` <button class="btn sm" id="mGeri" style="flex:none">${t('Elle atamayı geri getir')}</button>` : ''}`
         : `<span class="small">${t('Önce “Uygula” ile parsel planını oluşturun.')}</span>`;
       bar.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { brush = +x.dataset.b; setMode('shift'); });
-      const au = $('#mAuto'); if (au) au.onclick = () => { delete cur.shiftEdit; invalidateDesign(); persist(); compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
+      const au = $('#mAuto'); if (au) au.onclick = () => { if (!otomatigeDon()) return; compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
+      const gg = $('#mGeri'); if (gg) gg.onclick = () => { elleAtamayiGeriGetir(); compute(); setMode('shift'); drawPoly(); };
     } else bar.style.display = 'none';
     document.documentElement.style.setProperty('--mapbar', (m === 'shift' ? 196 : 150) + 'px');
     if (map) setTimeout(() => map.invalidateSize(), 30);
@@ -281,7 +282,7 @@
   $('#mUndo').onclick = () => { if (mapMode === 'anahat') (cur.route || []).pop(); else if (mapMode === 'istasyon') cur.station = null; else cur.poly.pop(); invalidateDesign(); persist(); drawPoly(); };
   $('#mClear').onclick = () => {
     if (mapMode === 'anahat') { if (confirm(t('Ana hat güzergâhı silinsin mi?'))) { cur.route = []; invalidateDesign(); persist(); drawPoly(); } return; }
-    if (confirm(t('Sınır ve kaynak noktası silinsin mi?'))) { cur.poly = []; cur.src = null; cur.station = null; cur.route = []; delete cur.shiftEdit; delete cur.inp.grad; invalidateDesign(); persist(); drawPoly(); }
+    if (confirm(t('Sınır ve kaynak noktası silinsin mi?') + (cur.shiftEdit ? ' ' + t('Elle yapılan shift ataması da kaldırılacak.') : '') + ' ' + t('Önceki hâl revizyon olarak saklanır.'))) { St.snapshot(cur, 'temizleme öncesi'); cur.poly = []; cur.src = null; cur.station = null; cur.route = []; delete cur.shiftEdit; delete cur.inp.grad; invalidateDesign(); persist(); drawPoly(); }
   };
   $('#mFull').onclick = () => { document.body.classList.toggle('mapfull'); setTimeout(() => map && map.invalidateSize(), 60); };
   $('#mPlan').onclick = () => { showPlan = !showPlan; if (showPlan) { const r = overlayRes || compute(); if (!r.ok) toast(t('Plan çizilemedi: ') + r.err[0]); else if (r.layout.mode !== 'parsel') toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)')); } $('#mPlan').classList.toggle('primary', showPlan && !!overlayRes); drawPoly(); };
@@ -398,12 +399,29 @@
     $('#btnCalc').onclick = () => show('sonuc');
   }
 
+  // K-1: "Otomatiğe dön" onay ister; elle atama 'shiftEditYedek' olarak saklanır ve geri getirilebilir
+  function otomatigeDon() {
+    const e = cur.shiftEdit || cur.shiftEditEski;
+    if (e && !confirm(t('Elle yapılan shift ataması kaldırılıp otomatik shift’lere dönülsün mü? Atama saklanır; “Elle atamayı geri getir” ile geri alabilirsiniz.'))) return false;
+    if (e) cur.shiftEditYedek = Object.assign({}, e, { t: Date.now() });
+    delete cur.shiftEdit; delete cur.shiftEditEski; invalidateDesign(); persist();
+    return true;
+  }
+  function elleAtamayiGeriGetir() {
+    if (!cur.shiftEditYedek) return;
+    cur.shiftEdit = cur.shiftEditYedek; delete cur.shiftEditYedek; invalidateDesign(); persist();
+    toast(t('Elle yapılan shift ataması geri getirildi'));
+  }
+
   // ---------- Hesap ----------
   function compute() {
     const opt = designOpt();
-    const r = E.design(cur.inp, settings, Object.assign({ manual: cur.shiftEdit || null }, opt));
+    // K-1: elle shift ataması hiçbir zaman uyarısız silinmez. Yerleşim değişirse 'shiftEditEski' olarak saklanır;
+    // yerleşim aynı imzaya dönerse kendiliğinden geri gelir.
+    const r = E.design(cur.inp, settings, Object.assign({ manual: cur.shiftEdit || cur.shiftEditEski || null }, opt));
+    if (r.ok && !cur.shiftEdit && cur.shiftEditEski && cur.shiftEditEski.sig === r.layout.sig) { cur.shiftEdit = cur.shiftEditEski; delete cur.shiftEditEski; persist(); toast(t('Elle yapılan shift ataması geri yüklendi')); }
+    if (r.ok && cur.shiftEdit && cur.shiftEdit.sig !== r.layout.sig) { cur.shiftEditEski = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; persist(); toast(t('Yerleşim değiştiği için elle shift ataması şu an uygulanamıyor; atama saklandı (yerleşim eski hâline dönerse geri gelir).')); }
     if (r.ok) { const before = cur.rev; St.snapshot(cur, 'hesap'); if (cur.rev !== before) save(KEY, projects); }
-    if (r.ok && cur.shiftEdit && cur.shiftEdit.sig !== r.layout.sig) { delete cur.shiftEdit; persist(); }
     // Kayıtlı shift sayısı artık mümkün değilse (veriler değişti) seçimi sıfırla
     if (r.ok && cur.inp.Ns && !r.sectorAlts.some(a => a.Ns === Number(V.parseNum(cur.inp.Ns)))) { delete cur.inp.Ns; persist(); return compute(); }
     lastRes = r; overlayRes = r; return r;
@@ -450,7 +468,7 @@
   }
   function bindAlt(el) {
     const b = $('#bAlt'); if (b) b.onclick = () => { b.disabled = true; b.textContent = t('Hesaplanıyor…'); setTimeout(() => safely(() => { altCache = E.layoutAlternatives(cur.inp, settings, designOpt()); $('#altBody').innerHTML = altHtml(altCache); bindAlt(el); }, t('Alternatifler')), 30); };
-    el.querySelectorAll('tr[data-alt]').forEach(x => x.onclick = () => { const v = altCache.list[+x.dataset.alt]; const keep = altCache; cur.inp.rowDir = v.rowDir; cur.inp.latD = v.latD; delete cur.inp.Ns; delete cur.inp.mainOd; delete cur.shiftEdit; invalidateDesign(); altCache = keep; persist(); renderResult(); toast(t('Yerleşim uygulandı')); });
+    el.querySelectorAll('tr[data-alt]').forEach(x => x.onclick = () => { const v = altCache.list[+x.dataset.alt]; const keep = altCache; cur.inp.rowDir = v.rowDir; cur.inp.latD = v.latD; delete cur.inp.Ns; delete cur.inp.mainOd; if (cur.shiftEdit) { cur.shiftEditEski = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; } invalidateDesign(); altCache = keep; persist(); renderResult(); toast(t('Yerleşim uygulandı')); });
   }
 
   function renderResult() {
@@ -526,7 +544,7 @@
       cur.shiftEdit = { sig: r.layout.sig, assign: assign.map(v => mp.get(v)) }; invalidateDesign(); persist(); renderResult();
     });
     $('#bShiftMap').onclick = () => { if (r.layout.mode !== 'parsel') return toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)')); show('arazi'); setMode('shift'); drawPoly(); };
-    const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { delete cur.shiftEdit; invalidateDesign(); persist(); renderResult(); };
+    const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { if (otomatigeDon()) renderResult(); };
     $('#toHydro').onclick = e => { e.preventDefault(); show('hidrolik'); };
     bindExport('#bPdf', '#bXls', r);
     el.querySelectorAll('select[data-onay]').forEach(x => x.onchange = () => {

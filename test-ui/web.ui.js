@@ -201,7 +201,35 @@ const check = (c, msg) => { if (c) passes++; else { fails++; console.log('✗ ' 
         if (await pg.evaluate(() => JSON.parse(localStorage.getItem('irrismart.projects.v1')).some(p => p.shiftEdit))) { assigned = true; break; }
       }
       check(assigned, '[A-13/E-4] haritada fırçayla shift ataması yapılamadı');
-      const au = await pg.$('#mAuto'); if (au) { await au.click(); await pg.waitForTimeout(400); }
+      // [K-1] Elle atama hiçbir yoldan uyarısız silinmez
+      const LS = () => JSON.parse(localStorage.getItem('irrismart.projects.v1'));
+      const pid = await pg.evaluate(() => (JSON.parse(localStorage.getItem('irrismart.projects.v1')).find(p => p.shiftEdit) || {}).id);
+      const st = () => pg.evaluate(id => { const p = JSON.parse(localStorage.getItem('irrismart.projects.v1')).find(x => x.id === id); return { e: !!p.shiftEdit, eski: !!p.shiftEditEski, yedek: !!p.shiftEditYedek, sig: (p.shiftEdit || p.shiftEditEski || {}).sig }; }, pid);
+      const s0 = await st();
+      // 1) Yerleşimi değiştiren girdi: atama 'shiftEditEski' olarak saklanır; eski değere dönünce geri gelir
+      await go(pg, 'veri');
+      const se0 = await pg.$eval('#form input[name=Se]', e => e.value);
+      await pg.fill('#form input[name=Se]', '0,5'); await pg.dispatchEvent('#form input[name=Se]', 'change'); await pg.waitForTimeout(300);
+      await pg.click('#btnCalc'); await pg.waitForTimeout(1200);
+      const s1 = await st();
+      check(!s1.e && s1.eski && s1.sig === s0.sig, '[K-1a] yerleşim değişince elle shift ataması saklanmadı');
+      await go(pg, 'veri');
+      await pg.fill('#form input[name=Se]', se0); await pg.dispatchEvent('#form input[name=Se]', 'change'); await pg.waitForTimeout(300);
+      await pg.click('#btnCalc'); await pg.waitForTimeout(1200);
+      const s2 = await st();
+      check(s2.e && !s2.eski && s2.sig === s0.sig, '[K-1b] eski yerleşime dönünce elle atama geri gelmedi');
+      // 2) "Otomatik": onayla kaldırılır, saklanır ve "Elle atamayı geri getir" ile geri gelir
+      await go(pg, 'arazi');
+      if (!(await pg.$eval('#mModes [data-m=shift]', e => e.classList.contains('on')))) { await pg.click('#mModes [data-m=shift]'); await pg.waitForTimeout(400); }
+      const au = await pg.$('#mAuto'); if (au) { await au.click(); await pg.waitForTimeout(500); }
+      const s3 = await st();
+      check(!s3.e && s3.yedek, '[K-1c] "Otomatik" elle atamayı saklamadı');
+      const gg = await pg.$('#mGeri'); check(!!gg, '[K-1d] "Elle atamayı geri getir" düğmesi yok');
+      if (gg) { await gg.click(); await pg.waitForTimeout(500); }
+      const s4 = await st();
+      check(s4.e && !s4.yedek && s4.sig === s0.sig, '[K-1e] elle atama geri getirilemedi');
+      const au2 = await pg.$('#mAuto'); if (au2) { await au2.click(); await pg.waitForTimeout(400); }
+      void LS;
     }
     await pg.click('#mModes [data-m=sinir]');
 
@@ -275,6 +303,21 @@ const check = (c, msg) => { if (c) passes++; else { fails++; console.log('✗ ' 
     require('../test/_lib.js'); const rn = globalThis.IrriEngine.design(src.find(p => p.id === 'p1').inp);
     check(r && JSON.stringify(r) === JSON.stringify([rn.sel.Ns, rn.sel.cycleHours, rn.main.sel.Hmax]), 'W-4: geri yüklenen projenin sonucu farklı');
     check(!errs.length, 'W-4: ' + errs.join(' | '));
+    await ctx.close();
+  }
+
+  // ---------- W-4b (K-1): aynı kimlikli ama farklı proje geri yüklenince mevcut proje KORUNUR, yedekteki kopya olarak eklenir ----------
+  {
+    const src = JSON.parse(backup.buf.toString()).projects;
+    const yerel = JSON.parse(JSON.stringify(src[0])); yerel.name = 'Yerelde değişti'; yerel.inp = Object.assign({}, yerel.inp, { Q: 77 }); yerel.updated = 99;
+    const { ctx, pg, errs } = await open({ projects: [yerel] });
+    await pg.setInputFiles('#restoreFile', backup.fp); await pg.waitForTimeout(1200);
+    const after = await pg.evaluate(() => JSON.parse(localStorage.getItem('irrismart.projects.v1')));
+    const kept = after.find(p => p.id === yerel.id);
+    check(kept && kept.name === 'Yerelde değişti' && String(kept.inp.Q) === '77', 'W-4b: mevcut proje yedekle üzerine yazıldı');
+    const kopya = after.find(p => p.kaynakKimlik === yerel.id);
+    check(kopya && /\(yedekten\)$/.test(kopya.name) && JSON.stringify(kopya.inp) === JSON.stringify(src[0].inp), 'W-4b: yedekteki proje kopya olarak eklenmedi');
+    check(!errs.length, 'W-4b: ' + errs.join(' | '));
     await ctx.close();
   }
 
