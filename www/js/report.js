@@ -192,6 +192,9 @@
     h1(tr('Maliyet')); kv(T.toplam);
     if (T.akil.other.length) { h1(tr('Diğer hesap notları')); kv(T.akil.other.map((w, i) => [String(i + 1), w, '', null])); }
     h1(tr('Varsayımlar')); kv(r.asm.map((a, i) => [String(i + 1), a, '', null]));
+    // K-5: kot/parsel kaynağı, atıflar ve kot verisinin sınırları (yalnız haritadan kot alınmış veya KML/KMZ ile içe aktarılmış projede)
+    const kaynak = window.IrriKaynak ? window.IrriKaynak.projeSatirlari(p, tr, (v, d) => n(v, d)) : [];
+    if (kaynak.length) { h1(tr('Veri kaynakları ve sınırlamalar')); kv(kaynak.map((a, i) => [String(i + 1), a, '', null])); }
     need(18); doc.setFont('DV', 'normal'); doc.setFontSize(8); doc.setTextColor(95, 111, 102);
     doc.text(doc.splitTextToSize(tr('Bu rapor ön projelendirme amaçlıdır. Hesaplar FAO-56, Keller & Bliesner, Watters-Keller ve Hazen-Williams (C=150) bağıntılarıyla yapılmıştır. "Jenerik" veya "örnek" olarak işaretli ekipman ve fiyatlar gerçek ürün verisi değildir; uygulama öncesi saha ölçümü, su analizi ve üretici kataloğu değerleriyle kontrol edilmelidir.'), Wd - 2 * M), M, y);
     const pages = doc.getNumberOfPages(); for (let i = 1; i <= pages; i++) { doc.setPage(i); doc.setFontSize(8); doc.text(`${i} / ${pages}`, Wd - M, 292, { align: 'right' }); }

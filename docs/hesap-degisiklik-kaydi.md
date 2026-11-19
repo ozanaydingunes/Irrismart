@@ -84,3 +84,10 @@ Her girdi şunları içerir:
 - **Gerekçe:** proje sahibi kararı (docs/mh-pn-plan.md D-7; 1.0 Kapanış Planı E-3). Joukowsky ani kapanma üst sınırıdır, gerçek en yüksek basınç değildir; gerçek geçici basınç zarfı MH-AKIL-5 (2.0) kapsamındadır.
 - **Doğrulama:** `npm test`, `tools/audit.js` 38/38, EPANET karşılaştırması, `test:ui`, `test:web`, `test:desk` geçiyor. `test/fixtures/assess-kodlar.json` (senaryo başına uyarı kodu kümesi) yalnız W-SD-01 seviyesi için yenilendi.
 
+## 2026-11-19 — K-5 (IrriGrow 1.0): Kot verisi kaynakları ve sınırları raporlara eklendi (hesap değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi (kayıt yenilenmedi). Altın senaryolarda harita kotu ve KML kaynağı olmadığından raporları birebir aynı.
+- **Değişiklik:** yeni saf modül `www/js/sources.js`; harita atfı, Ayarlar kartı, PDF "Veri kaynakları ve sınırlamalar" bölümü ve Excel "Varsayımlar" sayfasında "Veri kaynağı" satırları. Rapor eki yalnız `proje.elev` (Open-Meteo kotu) veya `proje.geoKaynak` (KML/KMZ) olan projelerde.
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `engine.js`, `assess.js`, `hydraulics.js` bu PR'da değiştirilmedi; eğim ölçümü (`measureSlope`, Open-Meteo) aynen.
+- **Doğrulama:** `npm test`, `test/golden.test.js`, `tools/audit.js` (38/38) ve arayüz takımları geçiyor.
+
