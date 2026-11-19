@@ -126,7 +126,10 @@
     'Sıcaklık katsayıları (PE100, PE80, PVC-U): iki bağımsız kaynakla doğrulanamadı; ISO 4427-1:2019 Ek A metnine erişilemedi',
     'ISO ve EN resmî kayıt sayfaları (iso.org) bu ortamdan okunamadı (HTTP 403); sürüm bilgisi kataloglardaki atıflardan',
   ];
-  const api = { KAYNAKLAR, SATIRLAR, ADAYLAR, SICAKLIK, SICAKLIK_ADAY, EKSIK, SURUM_PE, TARIH: T };
+  // Üreticiye özel kombinasyonlar (ileride içe aktarılır): standart tablodan ayrı; her kayıt üretici, ürün serisi,
+  // katalog sürümü, kendi standart sürümü ve tasarım katsayısıyla. PN-1'de boş.
+  const URETICI_KAYITLARI = [];
+  const api = { KAYNAKLAR, SATIRLAR, ADAYLAR, SICAKLIK, SICAKLIK_ADAY, EKSIK, URETICI_KAYITLARI, SURUM_PE, TARIH: T };
   g.IRRI_PIPES_DATA = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -157,3 +157,27 @@ test('P1-14 Sıcaklık belirsizliği kullanıcıya gösterilebilir; katsayı ür
   ok(P.sicaklikDurumu('PVC-U').belirsizlik.length === 0 && P.sicaklikDurumu('PVC-U').mesaj, 'PVC-U yalnız eksik veri mesajı');
   for (const T of [20, 25, 30, 40, 50]) ok(P.sicaklikKatsayisi('PE100', T) === null, `PE100 ${T} °C null`);
 });
+
+test('P1-15 Doğrulanmamış sıcaklık sayıları hesap parametresi olarak seçilemez', () => {
+  for (const m of P.MALZEMELER) ok(P.sicaklikSecenekleri(m).length === 0, `${m} seçilebilir tablo olmamalı`);
+  const d = P.sicaklikDurumu('PE100');
+  ok(d.aday.secilebilir === false && d.aday.yalnizBilgi === true, 'aday yalnız bilgi');
+  // Aday tablo içe aktarılmak istense reddedilir
+  const e = P.sicaklikTablosuDogrula(D.SICAKLIK_ADAY.PE100);
+  ok(e.some(x => x.includes('aday tablo hesaba alınamaz')) && e.some(x => x.includes('yeterli kaynak')), e.join('; '));
+  ok(P.sicaklikTablosuDogrula({ dogrulama: 'iki-uretici-katalogu', kaynaklar: ['a', 'b'], noktalar: [[20, 1], [30, 1.1]] }).some(x => x.includes('katsayı')), 'katsayı > 1 reddedilir');
+  ok(P.sicaklikTablosuDogrula({ dogrulama: 'iki-uretici-katalogu', kaynaklar: ['a', 'b'], noktalar: [[20, 1], [30, 0.9]] }).length === 0, 'geçerli biçim');
+  ok(P.sicaklikKatsayisi('PE100', 30) === null, 'aday değer hesaba girmez');
+});
+
+test('P1-16 Üreticiye özel kayıtlar standart kütüphaneden ayrı tanımlanır', () => {
+  ok(Array.isArray(D.URETICI_KAYITLARI) && D.URETICI_KAYITLARI.length === 0 && P.ureticiListe().length === 0, 'PN-1’de üretici kaydı yok');
+  const u = { uretici: 'Firma A', urunSerisi: 'Seri X', katalogSurum: '2026/1', standart: 'EN ISO 1452-2', standartSurum: 'EN ISO 1452-2:2009', cTasarim: 2.0,
+    dogrulama: P.DUZEY_URETICI, malzeme: 'PVC-U', od: 110, sdr: 26, enMin: 4.2, pn: 10, ulke: 'TR' };
+  ok(P.ureticiKaydiDogrula([u]).length === 0, P.ureticiKaydiDogrula([u]).join('; '));
+  const e = P.ureticiKaydiDogrula([Object.assign({}, u, { katalogSurum: '', cTasarim: null, dogrulama: 'iki-uretici-katalogu', ulke: 'Türkiye' })]);
+  for (const k of ['katalogSurum', 'cTasarim', 'dogrulama', 'ISO 3166-1']) ok(e.some(x => x.includes(k)), `yakalanmadı: ${k}`);
+  // Üretici kaydı standart doğrulamasından geçemez (iki üretici kaynağı yok) ve standart listede görünmez
+  ok(P.dogrula([Object.assign({}, u, { hatTurleri: ['ana'], dogrulamaTarihi: '2026-11-19', kaynaklar: [] })]).length > 0, 'standart kütüphaneye giremez');
+  ok(P.liste().every(s => !s.uretici), 'standart liste üreticisiz');
+});

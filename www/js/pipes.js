@@ -7,14 +7,15 @@
   const HAT_TURLERI = ['ana', 'dagitim', 'manifold'];
   const DUZEYLER = ['iki-uretici-katalogu', 'standart-metni'];   // etkin kütüphane yalnız bu düzeyleri kabul eder
   const PN_MERDIVEN = [4, 5, 6, 8, 10, 12.5, 16, 20, 25];
+  const DUZEY_URETICI = 'uretici-katalogu';   // yalnız o üreticinin kendi ürünü için; standart kütüphaneye karışmaz
   const r1 = x => Math.round(x * 10) / 10;
   // Veri değiştirilemez: çağıran kod (ekran, rapor) kütüphane satırlarını yanlışlıkla bozamaz
   const dondur = o => { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.values(o).forEach(dondur); Object.freeze(o); } return o; };
-  if (D) ['SATIRLAR', 'ADAYLAR', 'KAYNAKLAR', 'SICAKLIK', 'SICAKLIK_ADAY', 'EKSIK'].forEach(k => dondur(D[k]));
+  if (D) ['SATIRLAR', 'ADAYLAR', 'KAYNAKLAR', 'SICAKLIK', 'SICAKLIK_ADAY', 'EKSIK', 'URETICI_KAYITLARI'].forEach(k => dondur(D[k]));
 
-  // Geçerli (doğrulanmış) kombinasyonlar
+  // Geçerli (doğrulanmış) STANDART TABANLI kombinasyonlar. Üreticiye özel kayıtlar burada yoktur (ureticiListe).
   function liste(f = {}) {
-    return D.SATIRLAR.filter(s => DUZEYLER.includes(s.dogrulama)
+    return D.SATIRLAR.filter(s => DUZEYLER.includes(s.dogrulama) && !s.uretici
       && (!f.malzeme || s.malzeme === f.malzeme)
       && (!f.hatTuru || s.hatTurleri.includes(f.hatTuru))
       && (f.od == null || s.od === f.od)
@@ -38,9 +39,10 @@
     return { tamam: hesap === s.pn, ham, hesap, tablo: s.pn };
   }
   // Sıcaklık düşürme katsayısı. Doğrulanmış tablo yoksa ya da T aralık dışındaysa null — değer uydurulmaz.
+  // Yalnız doğrulanmış tablo (SICAKLIK) kullanılır; SICAKLIK_ADAY hiçbir yoldan hesaba girmez.
   function sicaklikKatsayisi(malzeme, T) {
     const t = D.SICAKLIK[malzeme];
-    if (!t || !Array.isArray(t.noktalar) || !Number.isFinite(T)) return null;
+    if (!t || !DUZEYLER.includes(t.dogrulama) || !Array.isArray(t.noktalar) || !Number.isFinite(T)) return null;
     const n = t.noktalar;
     if (T < n[0][0] - 1e-9 || T > n[n.length - 1][0] + 1e-9) return null;
     for (let i = 0; i < n.length - 1; i++) {
@@ -51,10 +53,49 @@
   }
   // Ekranda gösterilecek durum: doğrulanmış tablo yoksa 'veri-eksik' + (varsa) tek kaynaklı aday ve belirsizlik notları
   function sicaklikDurumu(malzeme) {
-    if (D.SICAKLIK[malzeme]) return { durum: 'dogrulandi' };
+    if (sicaklikSecenekleri(malzeme).length) return { durum: 'dogrulandi' };
     const aday = D.SICAKLIK_ADAY[malzeme] || null;
-    return { durum: 'veri-eksik', aday, belirsizlik: aday && aday.belirsizlik ? aday.belirsizlik : [],
+    // Aday yalnız BİLGİ olarak döner (kopya, secilebilir: false); hesap parametresi olarak seçilemez.
+    return { durum: 'veri-eksik', aday: aday ? Object.assign({}, aday, { secilebilir: false, yalnizBilgi: true }) : null,
+      belirsizlik: aday && aday.belirsizlik ? aday.belirsizlik : [],
       mesaj: 'Sıcaklık katsayısı doğrulanmadı — 20 °C değeri dışında izin verilen basınç düzeltilemez' };
+  }
+  // Kullanıcının hesap parametresi olarak SEÇEBİLECEĞİ sıcaklık tabloları: yalnız doğrulanmış olanlar.
+  function sicaklikSecenekleri(malzeme) {
+    const t = D.SICAKLIK[malzeme];
+    return t && DUZEYLER.includes(t.dogrulama) && sicaklikTablosuDogrula(t).length === 0 ? [t] : [];
+  }
+  // İçe aktarılan veya elle girilen sıcaklık tablosu: doğrulama düzeyi ve kaynak zorunlu; tek kaynaklı/aday tablo reddedilir.
+  function sicaklikTablosuDogrula(t) {
+    const e = [];
+    if (!t || typeof t !== 'object') return ['sıcaklık tablosu bir nesne olmalı'];
+    if (!DUZEYLER.includes(t.dogrulama)) e.push(`sıcaklık tablosu doğrulama düzeyi ${DUZEYLER.join('/')} olmalı (tek kaynaklı veya aday tablo hesaba alınamaz)`);
+    if (!Array.isArray(t.kaynaklar) || t.kaynaklar.length < (t.dogrulama === 'standart-metni' ? 1 : 2)) e.push('sıcaklık tablosu için yeterli kaynak yok');
+    const n = t.noktalar;
+    if (!Array.isArray(n) || n.length < 2) e.push('en az iki sıcaklık noktası gerekli');
+    else {
+      n.forEach((p, i) => { if (!Array.isArray(p) || !Number.isFinite(p[0]) || !Number.isFinite(p[1]) || p[1] <= 0 || p[1] > 1) e.push(`nokta ${i}: [°C, 0 < katsayı ≤ 1] olmalı`); });
+      for (let i = 1; i < n.length; i++) if (n[i][0] <= n[i - 1][0] || n[i][1] > n[i - 1][1]) e.push('sıcaklık artan, katsayı azalan olmalı');
+    }
+    return [...new Set(e)];
+  }
+
+  // Üreticiye özel kayıtlar: standart tablodan AYRI tutulur; kendi standart sürümü, tasarım katsayısı ve katalog sürümüyle.
+  function ureticiListe(f = {}) {
+    return (D.URETICI_KAYITLARI || []).filter(s => s.dogrulama === DUZEY_URETICI
+      && (!f.uretici || s.uretici === f.uretici) && (!f.malzeme || s.malzeme === f.malzeme) && (f.od == null || s.od === f.od));
+  }
+  function ureticiKaydiDogrula(satirlar) {
+    const e = [];
+    (satirlar || []).forEach((s, i) => {
+      const k = `uretici[${i}]`;
+      for (const f of ['uretici', 'katalogSurum', 'standart', 'standartSurum']) if (typeof s[f] !== 'string' || !s[f].trim()) e.push(`${k}.${f} gerekli`);
+      if (!(Number.isFinite(s.cTasarim) && s.cTasarim >= 1)) e.push(`${k}.cTasarim (tasarım katsayısı) gerekli ve ≥ 1 olmalı`);
+      if (s.dogrulama !== DUZEY_URETICI) e.push(`${k}.dogrulama '${DUZEY_URETICI}' olmalı`);
+      for (const f of ['od', 'sdr', 'enMin', 'pn']) if (!(typeof s[f] === 'number' && Number.isFinite(s[f]) && s[f] > 0)) e.push(`${k}.${f} pozitif sayı olmalı`);
+      if (s.ulke != null && !/^[A-Z]{2}$/.test(s.ulke)) e.push(`${k}.ulke ISO 3166-1 iki harfli kod olmalı`);
+    });
+    return e;
   }
 
   const MALZEME_ESKI = { pe: 'PE100', pvc: 'PVC-U' };
@@ -112,7 +153,7 @@
     return e;
   }
 
-  const api = { MALZEMELER, HAT_TURLERI, DUZEYLER, PN_MERDIVEN, liste, bul, icCap, pnDenetim, sicaklikKatsayisi, sicaklikDurumu, esdeger, karsilastir, dogrula, veri: D };
+  const api = { MALZEMELER, HAT_TURLERI, DUZEYLER, DUZEY_URETICI, PN_MERDIVEN, liste, bul, icCap, pnDenetim, sicaklikKatsayisi, sicaklikDurumu, sicaklikSecenekleri, sicaklikTablosuDogrula, ureticiListe, ureticiKaydiDogrula, esdeger, karsilastir, dogrula, veri: D };
   g.IrriPipes = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
