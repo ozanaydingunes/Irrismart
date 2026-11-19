@@ -24,7 +24,7 @@ jobs:
   test:
     name: Web testleri
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -42,8 +42,16 @@ jobs:
       - name: Hidrolik denetim
         run: node tools/audit.js
 
+      # Tarayıcı dosyaları önbellekte (anahtar: package-lock.json → Playwright sürümü); sistem bağımlılıkları her seferinde kurulur
+      - name: Playwright önbelleği
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Paket sunucusu kesintisine karşı en çok 3 deneme; başarısızsa iş kırmızı biter (testler atlanmaz)
       - name: Chromium kur (Playwright)
-        run: npx playwright install --with-deps chromium
+        run: bash tools/ci-playwright-kur.sh
 
       - name: Arayüz testleri
         run: npm run test:ui
