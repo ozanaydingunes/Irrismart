@@ -74,6 +74,14 @@
       else errors[k] = T('Geçersiz seçim');
     }
     if (Array.isArray(inp.months)) clean.months = inp.months.filter(m => Number.isInteger(m) && m >= 1 && m <= 12);
+    // PN-3a: kullanıcı boru seçimi (yalnız yapı denetimi; kütüphane geçerliliği motorda IrriPipes ile)
+    if (inp.boruSecimi != null) {
+      const b = inp.boruSecimi, a = b && typeof b === 'object' ? b.ana : undefined;
+      const fazla = b && typeof b === 'object' ? Object.keys(b).filter(k => k !== 'ana') : ['?'];
+      const pos = x => typeof x === 'number' && Number.isFinite(x) && x > 0;
+      if (fazla.length || (a != null && !(typeof a === 'object' && ['PE100', 'PE80', 'PVC-U'].includes(a.malzeme) && pos(a.od) && pos(a.sdr)))) errors.boruSecimi = T('Geçersiz boru seçimi');
+      else if (a != null) clean.boruSecimi = { ana: { malzeme: a.malzeme, od: a.od, sdr: a.sdr } };
+    }
     if (inp.grad && Number.isFinite(inp.grad.gx) && Number.isFinite(inp.grad.gy) && Math.hypot(inp.grad.gx, inp.grad.gy) < 0.5) clean.grad = { gx: inp.grad.gx, gy: inp.grad.gy };
 
     // Alanlar arası kontroller

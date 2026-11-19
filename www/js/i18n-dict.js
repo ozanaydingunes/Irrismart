@@ -3,6 +3,7 @@
 (function (g) {
   const L = ['en', 'de', 'es', 'ru', 'it', 'he', 'zh'];
   const R = [
+['Geçersiz boru seçimi','Invalid pipe selection','Ungültige Rohrauswahl','Selección de tubería no válida','Недопустимый выбор трубы','Selezione del tubo non valida','בחירת צינור לא תקינה','管道选择无效'],
 ['kullanıcı','user','Benutzer','usuario','пользователь','utente','משתמש','用户'],
 ['katalog','catalogue','Katalog','catálogo','каталог','catalogo','קטלוג','目录'],
 ['örnek','sample','Beispiel','ejemplo','пример','esempio','דוגמה','示例'],

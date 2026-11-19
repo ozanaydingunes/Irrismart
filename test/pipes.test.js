@@ -107,9 +107,12 @@ test('P1-09 Geriye uyum: eski katalog doğrulaması aynı; kutuphane bölümü y
   ok(JSON.stringify(m.borular.pe) === JSON.stringify(CAT.borular.pe) && JSON.stringify(m.borular.pvc) === JSON.stringify(CAT.borular.pvc), 'otomatik seçim listeleri değişmez');
 });
 
-test('P1-10 Motor ve arayüz bu modülü kullanmaz (PN-1 kapsamı)', () => {
+test('P1-10 Arayüz ve eski katalog bu modülü kullanmaz; motor yalnız kullanıcı seçimi için (PN-3a)', () => {
   const src = f => fs.readFileSync(path.join(__dirname, '..', 'www', f), 'utf8');
-  for (const f of ['js/engine.js', 'js/layout.js', 'js/hydraulics.js', 'js/assess.js', 'js/app.js', 'js/catalog-data.js'])
+  // PN-3a: motor kütüphaneyi YALNIZ inp.boruSecimi.ana varken kullanır (test/pn3a.test.js). Otomatik seçim kütüphaneyi kullanmaz.
+  const e = src('js/engine.js');
+  ok((e.match(/IrriPipes/g) || []).length === 1 && /if \(inp\.boruSecimi && inp\.boruSecimi\.ana\)/.test(e), 'motorda kütüphane yalnız seçim bloğunda');
+  for (const f of ['js/layout.js', 'js/hydraulics.js', 'js/assess.js', 'js/app.js', 'js/catalog-data.js'])
     ok(!/IrriPipes|IRRI_PIPES_DATA|pipes(-data)?\.js/.test(src(f)), `${f} kütüphaneyi kullanmamalı`);
   ok(!/pipes(-data)?\.js/.test(src('index.html')), 'index.html henüz yüklememeli (PN-2)');
 });

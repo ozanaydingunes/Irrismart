@@ -180,7 +180,18 @@
     NET.forEach((sg, i) => { sg.id = 'AH-' + String(i + 1).padStart(2, '0'); for (const k of sg.down) units[k].segs.push(i); });
     const parent = NET.map(() => -1); units.forEach(u => { for (let t = 1; t < u.segs.length; t++) parent[u.segs[t]] = u.segs[t - 1]; });
     NET.forEach((sg, i) => { sg.parent = parent[i]; });
-    const teleskop = inp.teleskop !== 'hayir';
+    // PN-3a: kullanıcının seçtiği ana hat borusu (doğrulanmış kütüphaneden). Seçim yoksa bu blok hiçbir şeyi değiştirmez.
+    let anaSecim = null;
+    if (inp.boruSecimi && inp.boruSecimi.ana) {
+      const s = inp.boruSecimi.ana, Pp = g.IrriPipes || (() => { try { return req('./pipes.js'); } catch (e) { return null; } })();
+      if (!Pp) return fail('Boru kütüphanesi yüklü değil: seçilen ana hat borusuyla hesap yapılamadı.');
+      const row = Pp.bul(s.malzeme, s.od, s.sdr);
+      if (!row) return fail(`Seçilen ana hat borusu (${s.malzeme} Ø${s.od} SDR${s.sdr}) doğrulanmış boru kütüphanesinde yok; hesap yapılmadı.`);
+      anaSecim = { id: `kutuphane:${row.malzeme}:${row.od}:${row.sdr}`, malzeme: row.malzeme, od: row.od, pn: row.pn, sdr: row.sdr, et: row.enMin, ic: Pp.icCap(row),
+        standart: row.standart, dogrulama: row.dogrulama, kutuphane: true, fiyat: null };
+      asm.push(`Ana hat borusu kullanıcı tarafından seçildi: ${row.malzeme} Ø${row.od} SDR${row.sdr} PN${row.pn}; iç çap ${tr(anaSecim.ic, 1)} mm = dış çap − 2 × en küçük et (${tr(row.enMin, 1)} mm). Kaynak: ${row.standart}, iki bağımsız üretici kataloğuyla karşılaştırıldı (standart metniyle doğrudan doğrulanmadı). Otomatik ana hat çapı/PN seçimi bu proje için uygulanmadı`);
+    }
+    const teleskop = inp.teleskop !== 'hayir' && !anaSecim;   // seçilen boru tüm ana hat boyunca tek çap
     asm.push(teleskop ? 'Ana hat kademeli: her segment, taşıdığı en büyük shift debisinde hız ≤ max(seçilen ana çaptaki hız, 0,9) ve ≤ 1,5 m/s olacak en küçük çapla; çap ana çapı geçmez, basınç sınıfı ana hatla aynı' : 'Ana hat tüm uzunlukta tek çap');
     // Su yüzeyine göre en alçak nokta: kapalı vanada en yüksek statik basınç burada oluşur
     const zMin = Math.min(...units.map(u => (srcType === 'sebeke' ? 0 : depth) + dZ + u.rise), (srcType === 'sebeke' ? 0 : depth) + Math.min(0, dZ));
@@ -234,11 +245,9 @@
         return { H, sz, hfMax, crit };
       };
       const alts = [];
-      for (const od of Object.keys(pvcByOd).map(Number).sort((a, b) => a - b)) {
-        for (const pipe of pvcByOd[od]) {
-          const v = Hy.velocity(Qmax, pipe.ic);
-          if (v > 2.0) break;
-          if (v < 0.3 && alts.length) break; // en küçük çap düşük hızda da kabul
+      // Bir ana hat borusu için hidrolik ve maliyet (otomatik seçim ve kullanıcı seçimi aynı ifadeleri kullanır)
+      const altHesapla = (pipe, v) => {
+          const od = pipe.od;
           const RH = reqH(pipe), H = RH.H, sz = RH.sz;
           // Verilen basınç: kuyuda su en az yüzeye + istasyon kayıplarına kadar basılır; şebekede mevcut basınç düşürülemez
           const Hd = H.map((h, j) => srcType === 'sebeke' ? Math.max(h, Havail) : srcType === 'kuyu' ? Math.max(h, depth + Hfix[j]) : Math.max(h, 0));
@@ -247,19 +256,32 @@
           const Pout = Math.max(...Hd) - (srcType === 'sebeke' ? 0 : depth);
           const Pop = Math.max(...Hd) - zMin;                         // en alçak noktada, sürtünmesiz (güvenli yön)
           const Hp0 = Math.max(...Hp), Pshut = (Hp0 > 0.5 ? 1.3 * Hp0 : 0) + Havail - zMin;
-          if (pipe.pn * 10.2 < Math.max(1.25 * Pop, Pshut)) continue; // daha yüksek PN dene
           const kWh = Hp.reduce((t, h, j) => t + G * h * (sch.seasonM3 * Qj[j] / Qfield) / 3600 / (ETA_P * ETA_M), 0);
           let pipeCost = 0, prSrc = null;
-          sz.forEach((p, i) => { const pr = Ct.priceOf(prices, `pvc:${p.od}:${p.pn}`, p); if (pr.v == null || pipeCost == null) pipeCost = null; else { pipeCost += pr.v * NET[i].L; prSrc = prSrc || pr.src; } });
+          sz.forEach((p, i) => { const pr = Ct.priceOf(prices, fiyatAnahtari(p), p); if (pr.v == null || pipeCost == null) pipeCost = null; else { pipeCost += pr.v * NET[i].L; prSrc = prSrc || pr.src; } });
           const pr = { src: prSrc };
-          alts.push({ od, pn: pipe.pn, ic: pipe.ic, pipe, v, sz, Hd, surplus, Pout, Pop, Pshut, hf: RH.hfMax, crit: RH.crit, H, Hp, Hmax: Math.max(...H), kWh, energyCost: kWh * ep, pipeCost, priceSrc: pr.src, annual: pipeCost != null ? pipeCost * crf + kWh * ep : null });
+          return { od, pn: pipe.pn, ic: pipe.ic, pipe, v, sz, Hd, surplus, Pout, Pop, Pshut, hf: RH.hfMax, crit: RH.crit, H, Hp, Hmax: Math.max(...H), kWh, energyCost: kWh * ep, pipeCost, priceSrc: pr.src, annual: pipeCost != null ? pipeCost * crf + kWh * ep : null };
+      };
+      if (anaSecim) {
+        // Kullanıcı seçimi: reddedilmez, hesaplanır; sınır aşımları ayrıca işaretlenir (uyarılar aşağıda)
+        const v = Hy.velocity(Qmax, anaSecim.ic), a = altHesapla(anaSecim, v);
+        a.secim = 'kullanici'; a.hizUygun = v <= 2.0 + 1e-9; a.pnYeterli = anaSecim.pn * 10.2 >= Math.max(1.25 * a.Pop, a.Pshut) - 1e-9;
+        alts.push(a);
+      } else for (const od of Object.keys(pvcByOd).map(Number).sort((a, b) => a - b)) {
+        for (const pipe of pvcByOd[od]) {
+          const v = Hy.velocity(Qmax, pipe.ic);
+          if (v > 2.0) break;
+          if (v < 0.3 && alts.length) break; // en küçük çap düşük hızda da kabul
+          const a = altHesapla(pipe, v);
+          if (pipe.pn * 10.2 < Math.max(1.25 * a.Pop, a.Pshut)) continue; // daha yüksek PN dene
+          alts.push(a);
           break; // bu çap için uygun en düşük PN bulundu
         }
       }
       if (!alts.length) return null;
       const allPriced = alts.every(a => a.annual != null);
       const byAnnual = allPriced ? [...alts].sort((a, b) => a.annual - b.annual)[0] : (alts.find(a => a.v <= 1.5) || alts[alts.length - 1]);
-      const user = inp.mainOd ? alts.find(a => a.od === inp.mainOd) : null;
+      const user = anaSecim ? alts[0] : inp.mainOd ? alts.find(a => a.od === inp.mainOd) : null;
       const sel = user || byAnnual;
       alts.forEach(a => { a.tags = []; });
       byAnnual.tags.push(allPriced ? 'En düşük yıllık maliyet' : 'Önerilen (v ≤ 1,5 m/s)');
@@ -349,6 +371,10 @@
       const ms = sel.main.sel, sp = Math.max(...ms.surplus);
       if (sp > 5) warn.push(`Bazı shift’lerde ${tr(sp)} m fazla basınç var (kot farkı / sabit kaynak basıncı): shift vanalarında basınç düşürücü (regülatör) gerekir.`);
       if (sel.pump.Pshut != null && sel.pump.Pshut > ms.pn * 10.2) warn.push(`Seçilen pompanın kapama basıncı (${tr(sel.pump.Pshut)} m, en alçak noktada) ana hat PN${ms.pn} sınıfını aşıyor: emniyet (tahliye) vanası veya bir üst PN gerekir.`);
+      if (ms.secim === 'kullanici') {
+        if (!ms.hizUygun) warn.push(`Seçilen ana hat borusunda (${boruAdi(ms.pipe)}) akış hızı ${tr(ms.v, 2)} m/s; 2,0 m/s sınırını aşıyor. Bu seçim uygunsuz: daha büyük çap seçin.`);
+        if (!ms.pnYeterli) warn.push(`Seçilen ana hat borusu (${boruAdi(ms.pipe)}) basınç sınıfı yetersiz: gereken ${tr(Math.max(1.25 * ms.Pop, ms.Pshut), 1)} m, PN${ms.pn} sınırı ${tr(ms.pn * 10.2, 1)} m. Bu seçim uygunsuz: daha yüksek PN (daha küçük SDR) seçin.`);
+      }
       const pe = units.filter(u => u.hInMax * 1.25 > u.pipe.pn * 10.2);
       if (pe.length) warn.push(`${pe.length} manifoldun giriş basıncı PN${pe[0].pipe.pn} sınıfı için yüksek; bir üst PN veya regülatör gerekir.`);
     }
@@ -387,6 +413,10 @@
     const Pline = Math.max(0, m.Pop);
     return { a, dH, Tc, tClose: Math.max(5, Math.ceil(5 * Tc)), E, Pline, peak: Pline + dH, pnH: m.pn * 10.2, exceeds: Pline + dH > m.pn * 10.2 };
   }
+
+  // Ana hat boru fiyat anahtarı: eski PVC kayıtları için bugünkü anahtar aynen; kütüphane borusu için ayrı anahtar
+  function fiyatAnahtari(p) { return p && p.kutuphane ? `kutuphane:${p.malzeme}:${p.od}:${p.sdr}` : `pvc:${p.od}:${p.pn}`; }
+  function boruAdi(p) { return p && p.kutuphane ? `${p.malzeme} Ø${p.od} SDR${p.sdr} PN${p.pn}` : `PVC-U Ø${p.od} PN${p.pn}`; }
 
   function tipAd(t) { return { dalgic: 'dalgıç pompa', santrifuj: 'yatay santrifüj pompa', booster: 'hat üstü (booster) pompa', dikey: 'dikey türbin pompa' }[t] || t; }
 
@@ -457,7 +487,7 @@
     const m = r.main.sel;
     // Ana hat: çap/PN başına net uzunluk (kademeli çap)
     const byD = new Map(); for (const sg of r.main.net) { const k = `${sg.od}:${sg.pn}`; const o = byD.get(k) || { pipe: sg.pipe, L: 0 }; o.L += sg.L; byD.set(k, o); }
-    [...byD.values()].sort((a, b) => b.pipe.od - a.pipe.od).forEach(({ pipe, L }) => add(`pvc:${pipe.od}:${pipe.pn}`, 'Ana hat', `PVC-U boru Ø${pipe.od} PN${pipe.pn}`, Math.ceil(L * 1.02), 'm', pipe));
+    [...byD.values()].sort((a, b) => b.pipe.od - a.pipe.od).forEach(({ pipe, L }) => add(fiyatAnahtari(pipe), 'Ana hat', `${pipe.kutuphane ? pipe.malzeme : 'PVC-U'} boru Ø${pipe.od} ${pipe.kutuphane ? `SDR${pipe.sdr} ` : ''}PN${pipe.pn}`, Math.ceil(L * 1.02), 'm', pipe));
     const red = new Map(); for (const sg of r.main.net) { const pa = sg.parent >= 0 ? r.main.net[sg.parent] : null; if (pa && pa.od > sg.od) { const k = `${pa.od}x${sg.od}`; red.set(k, (red.get(k) || 0) + 1); } }
     for (const [k, n] of red) add(`fitting:pvc-red:${k}`, 'Ana hat', `PVC redüksiyon Ø${k.replace('x', '×Ø')}`, n, 'adet');
     add(`fitting:pvc-dirsek:${m.od}`, 'Ana hat', `PVC dirsek Ø${m.od}`, 2 + r.layout.nB, 'adet');

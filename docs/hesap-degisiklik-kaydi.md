@@ -61,3 +61,17 @@ Her girdi şunları içerir:
 - **Değişiklik:** yeni bağımsız modül `www/js/auto.js` ve `test/auto.test.js`. Modül motoru çağırmaz, motor sonucunu ve projeleri değiştirmez; `index.html` yüklemez (test A1-14).
 - **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `engine.js`, `layout.js`, `catalog.js`, `assess.js`, `app.js` bu PR'da değiştirilmedi.
 - **Doğrulama:** `test/dogrulama.test.js`, `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
+
+## 2026-11-19 — PN-3a: Kullanıcının seçtiği ana hat borusu hesap motoruna aktarıldı (seçimsiz projelerde sonuç değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi. 19 senaryonun hepsi bit bit aynı (test P3-01 ayrıca `boruSecimi: { ana: null }` ve alan yokken eşitliği denetler).
+- **Değişiklik (`www/js/engine.js`, `www/js/validate.js`):**
+  - Yeni isteğe bağlı girdi `inp.boruSecimi = { ana: { malzeme, od, sdr } }`. Yalnız PN-1 kütüphanesinin **etkin, doğrulanmış** satırları kabul edilir (`IrriPipes.bul`); aksi hâlde hesap yapılmaz ve gerekçe yazılır. Yapısal olarak hatalı seçim alan hatası verir.
+  - Seçim varsa ana hat bu boruyla, **tüm uzunlukta tek çap** olarak hesaplanır: iç çap = dış çap − 2 × en küçük et; hız, Hazen-Williams kaybı (C = 150, %10 yerel kayıp payı), shift basınçları, pompa seçimi ve enerji, malzeme listesi ve su darbesi ön değerlendirmesi (PE için E = 1 GPa) aynı `design()` akışında yeniden hesaplanır.
+  - Seçim reddedilmez; hız (> 2,0 m/s) veya PN yetersizliği (1,25 × işletme veya kapama basıncı > PN × 10,2) varsa sonuç hesaplanır ve "Bu seçim uygunsuz" uyarısı yazılır.
+  - Otomatik seçimin kod yolu yeniden düzenlendi (aynı ifadeler bir işleve taşındı); sayısal sonuç değişmedi.
+  - Kütüphane borusunun fiyat anahtarı `kutuphane:<malzeme>:<od>:<sdr>`; eski `pvc:<od>:<pn>` anahtarları aynen.
+- **Formül, katsayı, eşik değişmedi.** Seçim yokken otomatik çap/PN seçim kuralı aynı.
+- **Doğrulama:** `test/pn3a.test.js` P3-01…P3-07 — bağımsız hız ve Hazen-Williams hesabı, seçilen boruyla ana hat ağının **EPANET 2.3** (Hazen-Williams) çözümü (4 durum, bütün shift'ler, ≤ max(0,10 m; %0,2)). `test/dogrulama.test.js`, `test/golden.test.js`, `tools/audit.js` (38/38), arayüz (226 + 54), web (110) ve masaüstü (132) takımları aynı sonuçla geçiyor. Kasıtlı hata denemeleri (iç çap yerine dış çap, kademenin kapatılmaması, doğrulanmamış satırın kabulü) testlerce yakalandı.
+- **Bilinen sınırlar:** manifold boru seçimi ve arayüz PN-3b'de; `index.html` kütüphaneyi henüz yüklemiyor (tarayıcıda seçim yapılamaz; seçim içeren bir yedek açılırsa "Boru kütüphanesi yüklü değil" gerekçesiyle hesap yapılmaz). Ekran ve rapor etiketlerinin malzemeye göre güncellenmesi PN-3b/PN-4'te.
+
