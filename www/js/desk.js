@@ -143,7 +143,7 @@
           <div class="dk-links"><button type="button" data-go="lateral">${esc(t('Lateral bölümünde aç'))} ›</button></div></div>`;
       } else if (s && s.type === 'anahat' && r.main.net[s.i]) {
         const sg = r.main.net[s.i];
-        body = head('Ana boru şebekesi', `${esc(sg.id)} · PVC-U Ø${sg.od} PN${sg.pn}`) + `<div class="dk-body">
+        body = head('Ana boru şebekesi', `${esc(sg.id)} · ${sg.pipe && sg.pipe.kutuphane ? `${esc(sg.pipe.malzeme)} Ø${sg.od} SDR${sg.pipe.sdr}` : `PVC-U Ø${sg.od}`} PN${sg.pn}`) + `<div class="dk-body">
           <div class="dk-kpis">${kpi('Uzunluk', N(sg.L, 1), 'm')}${kpi('Debi (en büyük shift)', N(sg.Qmax, 1), 'm³/h')}${kpi('Hız', N(sg.v, 2), 'm/s')}${kpi('Sürtünme kaybı', N(sg.hf, 2), 'm')}</div>
           ${kv([['İç çap', N(sg.ic, 1), 'mm'], ['Ana hat toplam uzunluğu', N(r.main.Lmain, 0), 'm'], ['Gerekli basma yüksekliği (en büyük)', N(r.main.sel.Hmax, 2), 'm']])}
           <h4>${esc(t('Mühendislik uyarıları'))}</h4>${findingsFor(A, x => x.ekran && (x.ekran.sekme === 'anahat' || x.ekran.sekme === 'basinc'))}
