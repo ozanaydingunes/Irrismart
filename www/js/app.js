@@ -41,7 +41,9 @@
   function safely(fn, where) { try { return fn(); } catch (e) { console.error(e); toast(`${where}: ${t('beklenmeyen hata')} (${e.message})`); } }
 
   // ---------- Gezinme ----------
+  let kmlSonuc = null, kmlKatman = null, kmlGecici = null, kmlYeni = false;   // MH-KML durumu (show() kullandığı için burada)
   function show(v) {
+    if (v !== 'arazi') kmlGeciciSil();
     if (v !== 'projeler' && v !== 'ayarlar' && !cur) { toast(t('Önce bir proje açın veya oluşturun')); v = 'projeler'; }
     if (v !== 'arazi') document.body.classList.remove('mapfull');
     document.querySelectorAll('.view').forEach(e => e.classList.toggle('on', e.id === 'v-' + v));
@@ -145,6 +147,7 @@
     extra.push(m); return m;
   }
   function drawPoly(fit) {
+    kmlGeriDurum();
     if (poly) map.removeLayer(poly); poly = null;
     [...markers, ...extra].forEach(m => map.removeLayer(m)); markers = []; extra = [];
     const pts = cur.poly;
@@ -312,6 +315,115 @@
     } catch (e) { toast(t('Eğim alınamadı (internet?) — Veriler ekranından elle girin.')); }
     setTimeout(() => show('veri'), 1400);
   };
+  // ---------- MH-KML: KML/KMZ ile arazi sınırı (K-4) ----------
+  // Akış: dosya → önizleme (proje değişmez) → parsel seçimi → onay (mevcut parsel varsa) → revizyon + uygula →
+  // "Uygula" ile aynı alan/eğim adımları. "İçe aktarmayı geri al" önceki hâle döner. Yükseklikler kot sayılmaz.
+  // "KML/KMZ dosyasından yeni proje": önizleme için boş geçici proje açılır; parsel uygulanmazsa (İptal, ekrandan çıkış) silinir.
+  function kmlGeciciSil() {
+    if (!kmlGecici) return;
+    const id = kmlGecici; kmlGecici = null; kmlSonuc = null; kmlPanel();
+    const p = projects.find(x => x.id === id);
+    if (p && !(p.poly && p.poly.length)) { projects = projects.filter(x => x !== p); if (cur === p) { cur = null; $('#projName').textContent = t('Proje seçilmedi'); } persist(); }
+  }
+  const kmlMetin = (m, p) => t(m, p);
+  async function kmlAc(f) {
+    try {
+      const K = window.IrriKml; if (!K) throw new Error(t('KML okuyucu yüklenemedi.'));
+      if (f.size > K.SINIR.dosyaBayt) throw Object.assign(new Error('Dosya çok büyük ({n} MB; en çok {m} MB).'), { kod: 'dosya-buyuk', p: { n: Math.round(f.size / 1048576), m: K.SINIR.dosyaBayt / 1048576 } });
+      const buf = new Uint8Array(await f.arrayBuffer());
+      const sonuc = K.oku(buf, f.name);
+      if (kmlYeni || !cur) {
+        kmlGeciciSil();
+        const np = { id: Date.now().toString(36), name: (String(f.name).replace(/\.(kml|kmz)$/i, '').trim() || t('KML projesi')).slice(0, 80), created: Date.now(), updated: Date.now(), poly: [], src: null, inp: { crop: 'domates', srcType: 'kuyu', region: 'akdeniz', soil: 'tinli', rowDir: 'uzun', emitter: 'normal', geom: 'dikdortgen' } };
+        projects.unshift(np); persist(); openProject(np.id); kmlGecici = np.id;
+      }
+      kmlSonuc = sonuc;
+      show('arazi'); setTimeout(kmlPanel, 50);
+    } catch (e) { kmlSonuc = null; kmlPanel(); kmlGeciciSil(); alert(t('KML/KMZ açılamadı: ') + (e.kod ? kmlMetin(e.message, e.p) : e.message)); }
+  }
+  function kmlOnizle(sec) {
+    if (!map) return;
+    if (kmlKatman) { map.removeLayer(kmlKatman); kmlKatman = null; }
+    if (!kmlSonuc) return;
+    kmlKatman = L.layerGroup().addTo(map);
+    const hep = [];
+    kmlSonuc.parseller.filter(p => p.halka && p.halka.length >= 3).forEach(p => {
+      const on = sec && p.id === sec.id;
+      L.polygon(p.halka, { color: on ? '#ff6f00' : '#9e9e9e', weight: on ? 3 : 1.5, dashArray: on ? null : '6 4', fillOpacity: on ? 0.15 : 0.04, interactive: false }).addTo(kmlKatman);
+      hep.push(...p.halka);
+    });
+    const b = sec && sec.halka ? sec.halka : hep;
+    if (b.length) map.fitBounds(L.latLngBounds(b), { padding: [24, 24] });
+  }
+  function kmlPanel() {
+    const P = $('#kmlPanel'); if (!P) return;
+    const s = kmlSonuc;
+    if (!s) { P.style.display = 'none'; P.innerHTML = ''; kmlOnizle(null); return; }
+    const satir = p => {
+      const not = [];
+      if (p.hata) not.push(`<span class="warn">${esc(kmlMetin(p.hata, p.hataP))}</span>`);
+      if ((p.uyarilar || []).includes('kapanmamis')) not.push(esc(t('kapanmamış sınır kapatıldı')));
+      if ((p.uyarilar || []).includes('yinelenen')) not.push(esc(t('yinelenen köşeler temizlendi')));
+      if (p.yukseklikler) not.push(esc(t('yükseklik değerleri saklanacak; hidrolik kot verisi sayılmaz')));
+      return `<label class="kml-row" style="display:block;padding:4px 0;${p.hesaplanabilir ? '' : 'opacity:.7'}"><input type="radio" name="kmlP" value="${esc(p.id)}" ${p.hesaplanabilir ? '' : 'disabled'}> <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da · ${t('çevre')} ${fmt(p.cevre_m, 0)} m · ${p.halka.length} ${t('köşe')}` : ''}${not.length ? `<br><span class="small">${not.join(' · ')}</span>` : ''}</label>`;
+    };
+    P.innerHTML = `<b>${t('KML/KMZ içe aktarma')}</b> <span class="small muted">${esc(s.kaynak.dosya)}</span>
+      <p class="small muted" style="margin:4px 0">${t('Önizleme — proje henüz değişmedi. Parseli seçip “Projeye uygula” deyin.')}</p>
+      <div id="kmlListe">${s.parseller.map(satir).join('')}</div>
+      ${s.notlar.map(n => `<p class="small muted" style="margin:2px 0">${esc(kmlMetin(n.mesaj, n.p))}</p>`).join('')}
+      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" id="kmlIptal">${t('İptal')}</button><button class="btn sm primary" id="kmlUygula" disabled>${t('Projeye uygula')}</button></div>`;
+    P.style.display = 'block';
+    const secilen = () => { const r = P.querySelector('input[name=kmlP]:checked'); return r ? s.parseller.find(x => x.id === r.value) : null; };
+    P.querySelectorAll('input[name=kmlP]').forEach(r => r.onchange = () => { $('#kmlUygula').disabled = !secilen(); kmlOnizle(secilen()); });
+    const uygunlar = s.parseller.filter(p => p.hesaplanabilir);
+    if (uygunlar.length === 1) { const r = P.querySelector(`input[name=kmlP][value="${uygunlar[0].id}"]`); r.checked = true; $('#kmlUygula').disabled = false; kmlOnizle(uygunlar[0]); }
+    else kmlOnizle(null);
+    if (!uygunlar.length) P.insertAdjacentHTML('beforeend', `<p class="warn small">${t('Dosyada hesaplanabilir parsel yok.')}</p>`);
+    $('#kmlIptal').onclick = () => { const gec = !!kmlGecici; kmlSonuc = null; kmlPanel(); if (gec) { kmlGeciciSil(); show('projeler'); } toast(t('İçe aktarma iptal edildi; hiçbir şey değişmedi')); };
+    $('#kmlUygula').onclick = () => { const p = secilen(); if (p && p.hesaplanabilir) kmlUygula(p); };
+  }
+  function kmlUygula(p) {
+    if (!cur) return;
+    if (cur.poly && cur.poly.length >= 3 && !confirm(t('Bu projede çizilmiş bir parsel var. KML/KMZ parseli ile değiştirilsin mi? Önceki parsel revizyon olarak saklanır ve “İçe aktarmayı geri al” ile geri getirilebilir.'))) return;
+    if (kmlGecici === cur.id) { kmlGecici = null; if (p.ad) { cur.name = String(p.ad).slice(0, 80); $('#projName').textContent = cur.name; } }
+    St.snapshot(cur, 'KML/KMZ öncesi');
+    const geri = { rev: cur.rev, geoKaynak: cur.geoKaynak || null, elev: cur.elev || null, t: Date.now() };
+    cur.poly = p.halka.map(x => [x[0], x[1]]);
+    cur.geoKaynak = window.IrriKml.geoKaynak(kmlSonuc, p);
+    cur.kmlGeriAl = geri;
+    delete cur.inp.grad; delete cur.elev;            // önceki parselin eğimi bu parsele ait değil; "Uygula" yeniden ölçer
+    invalidateDesign(); persist();
+    kmlSonuc = null; kmlPanel(); drawPoly(true);
+    toast(t('Parsel içe aktarıldı: {a} ({b} da)', { a: p.ad, b: fmt(p.alan_m2 / 1000, 2) }));
+    $('#mApply').onclick();
+  }
+  function kmlGeriDurum() { const b = $('#mKmlGeri'); if (b) b.style.display = cur && cur.kmlGeriAl ? '' : 'none'; }
+  $('#mKml').onclick = () => { kmlYeni = false; $('#kmlFile').click(); };
+  $('#btnKmlYeni').onclick = () => { kmlYeni = true; $('#kmlFile').click(); };
+  // Android'de accept MIME filtresine çevrilir; KML'ler çoğu zaman application/octet-stream görünür ve seçilemez olur.
+  // İçerik okunurken zaten denetlendiği için Android'de bütün dosyalar gösterilir.
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) $('#kmlFile').removeAttribute('accept');   // platform.js app.js’ten sonra yüklenir
+  $('#kmlFile').onchange = async ev => { const f = ev.target.files[0]; ev.target.value = ''; if (f) await kmlAc(f); kmlYeni = false; };
+  $('#mKmlGeri').onclick = () => {
+    const g0 = cur && cur.kmlGeriAl; if (!g0) return;
+    if (!confirm(t('KML/KMZ içe aktarması geri alınsın mı? Proje içe aktarmadan önceki hâline döner.'))) return;
+    St.restoreRev(cur, g0.rev);
+    if (g0.geoKaynak) cur.geoKaynak = g0.geoKaynak; else delete cur.geoKaynak;
+    if (g0.elev) cur.elev = g0.elev; else delete cur.elev;
+    delete cur.kmlGeriAl; invalidateDesign(); persist(); drawPoly(true); toast(t('İçe aktarma geri alındı'));
+  };
+  {
+    const me = $('#map');
+    if (me) {
+      me.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+      me.addEventListener('drop', async e => {
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
+        e.preventDefault();
+        if (/\.(kml|kmz)$/i.test(f.name)) await kmlAc(f); else toast(t('Haritaya yalnız KML veya KMZ dosyası bırakılabilir'));
+      });
+    }
+  }
+
   async function measureSlope(pts, deg) {
     const lats = pts.map(p => p[0]), lngs = pts.map(p => p[1]);
     const inside = (x, y) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [yi, xi] = pts[i], [yj, xj] = pts[j]; if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) c = !c; } return c; };
