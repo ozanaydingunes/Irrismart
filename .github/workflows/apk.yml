@@ -133,7 +133,9 @@ jobs:
           SCHEME=$("$BT/apksigner" verify --verbose "$APK")
           echo "$SCHEME" | grep -E "^Verified using v[0-9]+ scheme"
           echo "$SCHEME" | grep -q "^Verified using v2 scheme (APK Signature Scheme v2): true" || { echo "HATA: v2 imza şeması yok"; exit 1; }
-          "$BT/apksigner" verify --print-certs "$APK" | grep -q "CN=Android Debug" && echo "İmza türü: DEBUG anahtarı (yalnız test/sürüm adayı; Play Store için yükleme anahtarı gerekir)" || echo "İmza türü: debug olmayan sertifika"
+          # Sertifika yukarıda depodaki debug anahtarının SHA-256 özetiyle eşleşti → imza türü debug (CN=IrriSmart Debug)
+          DN=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate DN: //p')
+          echo "İmza türü: DEBUG — depodaki irrismart-debug.keystore ($DN); yalnız test ve sürüm adayı içindir, Play Store için yükleme anahtarı gerekir"
           test "$MIN" = "$EXPECT_MIN_SDK" || { echo "HATA: minSdk $MIN (beklenen $EXPECT_MIN_SDK)"; exit 1; }
           test "$TGT" = "$EXPECT_TARGET_SDK" || { echo "HATA: targetSdk $TGT (beklenen $EXPECT_TARGET_SDK)"; exit 1; }
           echo "APK doğrulandı: $PKG, sürüm $VN (versionCode $VC), minSdk $MIN, targetSdk $TGT; sertifika depodaki debug keystore ile aynı"
