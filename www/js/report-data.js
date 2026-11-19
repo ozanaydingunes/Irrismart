@@ -54,7 +54,7 @@
       [T('Maks. manifold debisi'), r.manifold.Qmax, 'm³/h', 2], [T('Maks. manifold hızı'), r.manifold.vMax, 'm/s', 2],
       [T('Maks. manifold basınç farkı'), r.manifold.varMax, 'm', 2], [T('Manifold için izin'), r.emitter.allowMan, 'm', 2],
       [T('Manifold giriş basıncı (maks.)'), r.inlet.hManIn, 'm', 2],
-      [T('Ana hat'), `PVC-U Ø${m.od} PN${m.pn}`, '', null], [T('Ana hat iç çapı'), m.ic, 'mm', 1], [T('Ana hat uzunluğu'), r.main.Lmain, 'm', 0], [T('Kritik yol'), r.main.Lcrit, 'm', 0],
+      [T('Ana hat'), m.pipe && m.pipe.kutuphane ? `${m.pipe.malzeme} Ø${m.od} SDR${m.pipe.sdr} PN${m.pn} (${T('elle seçildi')})` : `PVC-U Ø${m.od} PN${m.pn}`, '', null], [T('Ana hat iç çapı'), m.ic, 'mm', 1], [T('Ana hat uzunluğu'), r.main.Lmain, 'm', 0], [T('Kritik yol'), r.main.Lcrit, 'm', 0],
       [T('Ana hat hızı (en büyük shift)'), m.v, 'm/s', 2], [T('Ana hat kaybı (kritik yol)'), m.hf, 'm', 2],
       [T('Kuyu seviyesi / emme'), r.head.depth, 'm', 1], [T('Kaynak-arazi kot farkı'), r.head.dZ, 'm', 1], [T('Arazi içi maks. yükselme'), r.head.riseMax, 'm', 2],
       [T('Filtre kaybı (kirlenme payı dahil)'), r.head.filter, 'm', 2], [T('Shift vanası kaybı'), r.head.valve, 'm', 2], [T('Gübreleme + sayaç + vanalar'), 2, 'm', 1],

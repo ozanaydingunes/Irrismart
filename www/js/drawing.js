@@ -48,7 +48,7 @@
     // Lateraller (yerel ENU)
     const laterals = Ly.laterals.map(l => [E([l.ax, l.y]), E([l.ax + l.side * l.len, l.y])]);
     // Ana hat segmentleri
-    const main = r.main.net.map(sg => ({ id: sg.id, kind: sg.kind, a: E(sg.a), b: E(sg.b), L: sg.L, od: sg.od, pn: sg.pn, ic: sg.ic, Qmax: sg.Qmax, v: sg.v, hf: sg.hf, parent: sg.parent, virtual: sg.kind === 'kaynak' }));
+    const main = r.main.net.map(sg => ({ ...(sg.pipe && sg.pipe.kutuphane ? { mat: sg.pipe.malzeme, sdr: sg.pipe.sdr } : {}), id: sg.id, kind: sg.kind, a: E(sg.a), b: E(sg.b), L: sg.L, od: sg.od, pn: sg.pn, ic: sg.ic, Qmax: sg.Qmax, v: sg.v, hf: sg.hf, parent: sg.parent, virtual: sg.kind === 'kaynak' }));
     // Bağlantı elemanları: redüksiyon (çap değişimi), te (kol ayrımı), dirsek (güzergâh kırılması)
     const fittings = [];
     main.forEach((sg, i) => {
@@ -98,7 +98,7 @@
   function bboxOf(pts) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const [x, y] of pts) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 }; }
 
   // ---------- Etiket metinleri (hesaptan) ----------
-  function pipeLabel(sg) { return `${sg.id} PVC-U Ø${sg.od} PN${sg.pn} — ${f(sg.L, 0)} m`; }
+  function pipeLabel(sg) { return `${sg.id} ${sg.mat || 'PVC-U'} Ø${sg.od}${sg.sdr ? ` SDR${sg.sdr}` : ''} PN${sg.pn} — ${f(sg.L, 0)} m`; }
   function manLabel(u) { return `${u.code} ${u.mat} Ø${u.od} PN${u.pn} — ${f(u.L, 0)} m`; }
   function latLabel(M) { return `LATERAL Ø${M.lateral.d} — ${f(M.lateral.q, 1)} l/h — ${Math.round(M.lateral.Se * 100)} cm${M.lateral.pc ? ' PC' : ''}`; }
   function shiftLines(M, sh, T) {
@@ -202,7 +202,7 @@
     blocks.push(table(T('PROJE PARAMETRELERİ'), [T('Parametre'), T('Birim'), 'FIELD 1'], params, [0.55, 0.15, 0.3]));
     const sumRows = M.shifts.map(sh => [`SHIFT ${sh.no}`, f(sh.A, 2), f(sh.Q, 2), f(sh.t, 2), f(sh.H, 1)]);
     blocks.push(table(T('SHIFT ÖZETİ'), ['Shift', 'da', 'm³/h', T('saat'), 'mSS'], sumRows, [0.28, 0.18, 0.2, 0.16, 0.18]));
-    const byD = new Map(); M.main.forEach(sg => { const k = `PVC-U Ø${sg.od} PN${sg.pn}`; byD.set(k, (byD.get(k) || 0) + sg.L); });
+    const byD = new Map(); M.main.forEach(sg => { const k = `${sg.mat || 'PVC-U'} Ø${sg.od}${sg.sdr ? ` SDR${sg.sdr}` : ''} PN${sg.pn}`; byD.set(k, (byD.get(k) || 0) + sg.L); });
     const byM = new Map(); M.units.forEach(u => { const k = `${u.mat} Ø${u.od} PN${u.pn}`; byM.set(k, (byM.get(k) || 0) + u.L); });
     const pipeRows = [...[...byD].map(([k, l]) => [T('Ana hat'), k, f(l, 0) + ' m']), ...[...byM].map(([k, l]) => ['Manifold', k, f(l, 0) + ' m']), ['Lateral', `Ø${L.d}`, f(L.len, 0) + ' m']];
     blocks.push(table(T('BORU ÖZETİ'), null, pipeRows, [0.25, 0.5, 0.25]));

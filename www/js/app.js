@@ -210,7 +210,7 @@
       if (sg.kind === 'kaynak') return;
       L.polyline([ll(sg.a), ll(sg.b)], { renderer: rend, color: COL.main, weight: sg.od >= 160 ? 7 : sg.od >= 110 ? 6 : 5, interactive: mapMode !== 'shift' }).addTo(g)
         .on('click', e => deskPick(e, { type: 'anahat', i: si }))
-        .bindPopup(() => `<b>${sg.id} · ${t('Ana hat')} PVC-U Ø${sg.od} PN${sg.pn}</b>` + tbl([[t('İç çap'), fmt(sg.ic, 1) + ' mm'], [t('Uzunluk'), fmt(sg.L, 1) + ' m'], [t('Debi (en büyük shift)'), fmt(sg.Qmax, 1) + ' m³/h'], [t('Hız'), fmt(sg.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(sg.hf, 2) + ' m'], [t('Malzeme'), 'PVC-U']]) + `<div class="small muted">Hazen-Williams C=150, +%10 ${t('yerel kayıp')}</div>`);
+        .bindPopup(() => `<b>${sg.id} · ${t('Ana hat')} ${sg.pipe && sg.pipe.kutuphane ? `${sg.pipe.malzeme} Ø${sg.od} SDR${sg.pipe.sdr}` : `PVC-U Ø${sg.od}`} PN${sg.pn}</b>` + tbl([[t('İç çap'), fmt(sg.ic, 1) + ' mm'], [t('Uzunluk'), fmt(sg.L, 1) + ' m'], [t('Debi (en büyük shift)'), fmt(sg.Qmax, 1) + ' m³/h'], [t('Hız'), fmt(sg.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(sg.hf, 2) + ' m'], [t('Malzeme'), 'PVC-U']]) + `<div class="small muted">Hazen-Williams C=150, +%10 ${t('yerel kayıp')}</div>`);
     });
     const M = drawModel(r);
     // Shift bilgi kutuları (sürüklenebilir; başlık shift rengiyle)
@@ -487,7 +487,7 @@
       <div>${t('Manifold maks. debi / hız')}</div><div>${fmt(r.manifold.Qmax, 1)} m³/h · ${fmt(r.manifold.vMax, 2)} m/s</div>
       <div>${t('Manifold basınç farkı')}</div><div>${fmt(r.manifold.varMax, 2)} / ${fmt(r.emitter.allowMan, 2)} m</div>
       <div>${t('Lateral / manifold giriş')}</div><div>${fmt(r.inlet.hLatIn, 1)} / ${fmt(r.inlet.hManIn, 1)} m</div>
-      <div>${t('Ana hat')}</div><div>PVC ${mainSizes(r)} · ${fmt(r.main.Lmain, 0)} m</div>
+      <div>${t('Ana hat')}</div><div>${r.main.sel.pipe && r.main.sel.pipe.kutuphane ? r.main.sel.pipe.malzeme + ' SDR' + r.main.sel.pipe.sdr : 'PVC'} ${mainSizes(r)} · ${fmt(r.main.Lmain, 0)} m</div>
       ${r.layout.route ? `<div>${t('Çizilen güzergâh')}</div><div>${fmt(r.layout.routeLen, 0)} m</div>` : ''}
       <div>${t('Ana hat hız / kayıp')}</div><div>${fmt(m.v, 2)} m/s · ${fmt(m.hf, 1)} m</div>
       <div>${t('Filtre / vana kaybı')}</div><div>${fmt(r.head.filter, 1)} / ${fmt(r.head.valve, 1)} m</div>
@@ -665,14 +665,60 @@
     const r = lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null);
     const vm = r && r.ok ? HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) }) : (r ? { ok: false, err: r.err } : { ok: false, err: [t('Su kaynağı debisi (m³/h) girilmedi — shift, boru çapı ve pompa hesaplanamaz.')] });
     h.ptab = h.ptab || 'ozet';
-    el.innerHTML = HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
+    el.innerHTML = boruKarti(r) + HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
     el.classList.add('hp');
+    baglaBoruKarti();
     const go = (tab, j) => { h.ptab = tab; if (j != null) h.pshift = j; persist(); renderHydro(); const v = $('#v-hidrolik'); if (v) v.scrollTop = 0; };
     el.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => go(b.dataset.ptab));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     el.querySelectorAll('[data-kod]').forEach(b => b.onclick = () => { pendingFocus = b.dataset.kod; show('sonuc'); });
     el.querySelectorAll('[data-shift]').forEach(b => b.onclick = () => go('shift', +b.dataset.shift));
     if (h.ptab === 'tablo') renderHydroTable(h, r);
+  }
+  // ---------- K-3: Ana hat borusu seçimi (malzeme, çap, SDR/PN) ----------
+  // Yalnız doğrulanmış kütüphane satırları seçilebilir. PVC-U ve PN6 (SDR26) doğrulanmış katalog olmadığı için
+  // gösterilir ama SEÇİLEMEZ (veri eksik). Seçim değişince hesap aynı design() çağrısıyla yenilenir.
+  function boruKarti(r) {
+    const P = window.IrriPipes, sec = cur.inp.boruSecimi && cur.inp.boruSecimi.ana;
+    const kart = icerik => `<div class="card" id="boruKarti" style="margin-bottom:12px"><h3 style="margin:0 0 8px">${t('Ana hat borusu')}</h3>${icerik}</div>`;
+    if (!P) return kart(`<p class="warn">${t('Boru kütüphanesi yüklenemedi; elle boru seçimi kullanılamıyor.')}</p>`
+      + (sec ? `<p class="warn">${t('Projede elle seçilmiş boru var; kütüphane yüklenmeden hesap yapılamaz.')}</p>` : ''));
+    const malz = sec ? sec.malzeme : (r && r.ok && r.main.sel.pipe.kutuphane ? r.main.sel.pipe.malzeme : 'PE100');
+    const satir = P.liste({ malzeme: malz, hatTuru: 'ana' });
+    const odlar = [...new Set(satir.map(x => x.od))].sort((a, b) => a - b);
+    const od = sec && odlar.includes(sec.od) ? sec.od : (r && r.ok ? (odlar.find(o => o >= r.main.sel.od) || odlar[odlar.length - 1]) : odlar[0]);
+    const sdrler = satir.filter(x => x.od === od);
+    const eksik = [];
+    if (!P.liste({ malzeme: 'PVC-U' }).length) eksik.push(t('PVC-U: doğrulanmış katalog verisi yok — seçilemez'));
+    if (malz === 'PE100' && !satir.some(x => x.sdr === 26)) eksik.push(t('PE100 PN6 (SDR26): iki bağımsız kaynakla doğrulanmadı — seçilemez'));
+    const ms = r && r.ok ? r.main.sel : null;
+    const durum = ms && ms.secim === 'kullanici'
+      ? `<p class="small">${t('Seçili')}: <b>${esc(ms.pipe.malzeme)} Ø${ms.od} SDR${ms.pipe.sdr} PN${ms.pn}</b> · ${t('et')} ${fmt(ms.pipe.et, 1)} mm · ${t('iç çap')} ${fmt(ms.ic, 1)} mm · ${t('hız')} ${fmt(ms.v, 2)} m/s</p>`
+        + (!ms.hizUygun || !ms.pnYeterli ? `<p class="warn" id="boruUygunsuz">${!ms.hizUygun ? t('Akış hızı 2,0 m/s sınırını aşıyor.') + ' ' : ''}${!ms.pnYeterli ? t('Basınç sınıfı (PN) işletme basıncı için yetersiz.') + ' ' : ''}${t('Bu seçim uygunsuz; seçiminiz silinmedi, hesap bu boruyla yapıldı.')}</p>` : '')
+      : ms ? `<p class="small">${t('Otomatik seçim')}: <b>${ms.pipe.kutuphane ? esc(ms.pipe.malzeme) : 'PVC-U'} Ø${ms.od} PN${ms.pn}</b> · ${t('iç çap')} ${fmt(ms.ic, 1)} mm</p>` : '';
+    const opt = (v, txt, on, dis) => `<option value="${v}" ${on ? 'selected' : ''} ${dis ? 'disabled' : ''}>${txt}</option>`;
+    return kart(`<div class="seg" style="margin-bottom:8px"><button data-boru="oto" class="${sec ? '' : 'on'}">${t('Otomatik (önerilen)')}</button><button data-boru="elle" class="${sec ? 'on' : ''}">${t('Elle seçim')}</button></div>
+      <div class="f" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+        <label>${t('Malzeme')}<select id="boruMalz">${['PE100', 'PE80', 'PVC-U'].map(m => opt(m, m + (P.liste({ malzeme: m }).length ? '' : ' — ' + t('veri eksik')), m === malz, !P.liste({ malzeme: m }).length)).join('')}</select></label>
+        <label>${t('Dış çap')}<select id="boruOd">${odlar.map(o => opt(o, 'Ø' + o, o === od)).join('')}</select></label>
+        <label>${t('SDR / PN')}<select id="boruSdr">${sdrler.map(x => opt(x.sdr, `SDR${String(x.sdr).replace('.', ',')} · PN${String(x.pn).replace('.', ',')} · ${t('iç çap')} ${fmt(P.icCap(x), 1)} mm`, sec ? x.sdr === sec.sdr : false)).join('')}</select></label>
+      </div>
+      <p class="small" style="margin:6px 0 0"><button class="btn sm primary" id="boruUygula">${t('Bu boruyu uygula')}</button></p>
+      ${durum}
+      ${eksik.map(x => `<p class="small muted">${x}</p>`).join('')}
+      <p class="small muted">${t('Kaynak: iki bağımsız üretici kataloğu (EN 12201-2 atıflı); standart metniyle doğrudan doğrulanmadı. İç çap = dış çap − 2 × en küçük et.')}</p>`);
+  }
+  function baglaBoruKarti() {
+    const k = $('#boruKarti'); if (!k || !window.IrriPipes) return;
+    const yenile = () => { invalidateDesign(); persist(); renderHydro(); };
+    const secim = () => ({ malzeme: $('#boruMalz').value, od: Number($('#boruOd').value), sdr: Number($('#boruSdr').value) });
+    k.querySelector('[data-boru=oto]').onclick = () => { if (!cur.inp.boruSecimi) return; if (!confirm(t('Elle seçilen boru kaldırılıp otomatik seçime dönülsün mü?'))) return; delete cur.inp.boruSecimi; yenile(); };
+    k.querySelector('[data-boru=elle]').onclick = () => { cur.inp.boruSecimi = { ana: secim() }; yenile(); };
+    $('#boruUygula').onclick = () => { cur.inp.boruSecimi = { ana: secim() }; yenile(); toast(t('Boru seçimi uygulandı; hesap yenilendi')); };
+    $('#boruMalz').onchange = () => { const P = window.IrriPipes, m = $('#boruMalz').value, ods = [...new Set(P.liste({ malzeme: m, hatTuru: 'ana' }).map(x => x.od))].sort((a, b) => a - b);
+      $('#boruOd').innerHTML = ods.map(o => `<option value="${o}">Ø${o}</option>`).join(''); $('#boruOd').onchange(); };
+    $('#boruOd').onchange = () => { const P = window.IrriPipes, rows = P.liste({ malzeme: $('#boruMalz').value, od: Number($('#boruOd').value), hatTuru: 'ana' });
+      $('#boruSdr').innerHTML = rows.map(x => `<option value="${x.sdr}">SDR${String(x.sdr).replace('.', ',')} · PN${String(x.pn).replace('.', ',')} · ${t('iç çap')} ${fmt(P.icCap(x), 1)} mm</option>`).join(''); };
   }
   function renderHydroTable(h, r) {
     const el = $('#hpTable');
