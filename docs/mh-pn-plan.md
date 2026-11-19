@@ -1,6 +1,6 @@
 # MH-PN — Boru basınç sınıfı (PN) yönetimi ve MH-AKIL-5 bağlantısı
 
-Durum: **teknik plan onaylandı (19.11.2026; kararlar §0). Kodlama PN-1'den başlayarak kontrollü aşamalarla.**
+Durum: **teknik plan onaylandı ve `main`'e alındı (PR #15, 19.11.2026; kararlar §0). Kodlama PN-1'den başlayarak kontrollü aşamalarla; PN-1 uygulama planı `docs/pn-1-uygulama.md`. Katalog ilk aşamada üreticiden bağımsız, standart tabanlı; üretici katalogları sonradan eklenebilir (proje sahibi kararı, 19.11.2026).**
 Her geliştirme ayrı dal ve ayrı PR; onay olmadan `main`'e birleştirilmez. MH-2A, MH-MANUEL-1A,
 MH-KML, T-08 ve MH-AKIL-5 planları bu belgeyle değişmez; yalnız bağımlılıklar eklenir.
 `docs/yol-haritasi.md` ve `docs/teknik-inceleme.md`, PR #14 ile çakışmamak için PR #14'ün
