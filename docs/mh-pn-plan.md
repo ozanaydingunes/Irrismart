@@ -1,10 +1,28 @@
 # MH-PN — Boru basınç sınıfı (PN) yönetimi ve MH-AKIL-5 bağlantısı
 
-Durum: **teknik plan — proje sahibinin onayını bekliyor (19.11.2026). Kodlama yok.**
+Durum: **teknik plan onaylandı (19.11.2026; kararlar §0). Kodlama PN-1'den başlayarak kontrollü aşamalarla.**
 Her geliştirme ayrı dal ve ayrı PR; onay olmadan `main`'e birleştirilmez. MH-2A, MH-MANUEL-1A,
 MH-KML, T-08 ve MH-AKIL-5 planları bu belgeyle değişmez; yalnız bağımlılıklar eklenir.
 `docs/yol-haritasi.md` ve `docs/teknik-inceleme.md`, PR #14 ile çakışmamak için PR #14'ün
 kararından sonra güncellenecek (bu belge yalnız yeni dosyadır).
+
+## 0. Proje sahibinin kararları (19.11.2026)
+
+| No | Karar |
+|---|---|
+| D-1 | PN-0 (bu plan) ayrı belge PR'ı olarak açılır; onaysız birleştirilmez |
+| D-2 | Sıra: PN-0 → PN-1 → PN-2 → PN-3 → PN-4 → PN-5. MH-2A ve MH-3 bağımlılıkları §11.1'de. PR #8 ve PR #14 bozulmaz |
+| D-3 | **Mevcut otomatik seçim algoritması başlangıçta değişmez.** PVC-U, PE80 ve PE100'ün yeni çap/SDR/PN kombinasyonları önce yalnız **elle seçimde** kullanılır. Kullanıcının açabileceği gelişmiş otomatik seçim modu ileride (MH-AUTO-3, `docs/mh-auto-plan.md`) |
+| D-4 | Katalog esası: PVC-U **EN ISO 1452-2**; PE **ISO 4427** ve **EN 12201**. Güncel ve uygulanabilir sürümler doğrulanır (§1.3); çap, et, SDR ve PN eşleşmeleri üretici kataloglarıyla karşılaştırılır. **Doğrulanmamış kombinasyon hesap motoruna eklenmez** |
+| D-5 | Manifoldlar koşulsuz PN6 seçilmez: normal işletme basıncı yetersizse uygun alternatifler gösterilir. Kullanıcı istediği boruyu seçebilir; uygunsuzluk açıkça bildirilir (§5.3) |
+| D-6 | `kGecici = 1,0` yalnız "geçici basınç için ek dayanım payı tanınmadı" anlamındadır; evrensel bir standart güvenlik katsayısı olarak sunulmaz. Sürekli (PFA) ve geçici (PMA) izin verilen basınçlar ayrı hesaplanır; standart veya üretici tarafından doğrulanmış tolerans varsa ayrıca uygulanır (§5.1) |
+| D-7 | Normal işletme uygunken yalnız Joukowsky üst sınırı aşılıyorsa kesin "Uygunsuz" yazılmaz; "Geçici rejim analizi gerekli" gösterilir. Gerçek en yüksek ve en düşük basınç MH-AKIL-5'te (§5.2, §7) |
+| D-8 | Malzemeye göre HW C ilke olarak kabul; **önce C = 150 korunur.** Yeni değerler için kaynaklı, kullanıcının doğrulayabileceği katalog ve boru durumu (yeni/eski) bilgisi hazırlanır. Yöntem değişirse ayrı PR ve regresyon testleri |
+| D-9 | MH-2A kot verisi okunabilir; MH-3'te hidrolik entegrasyon yapılana kadar sonuçlarda **"Kot verisi hidrolik hesaba dahil edilmedi"** uyarısı (§8) |
+| D-10 | Geriye uyum korunur: PN seçimi yapılmamış projelerin sonuçları değişmez; mevcut modelin sınırlamaları gizlenmez (§2, ekranda "Model sınırlamaları") |
+| D-11 | 66 da domates: depodaki JSON kayıtları incelendi; proje bulunamadı (§1.2). Ekran görüntüsü yalnız regresyon referansı |
+| D-12 | MH-AKIL-5 ayrı teknik plan olarak korunur: pompa duruşu, elektrik kesintisi, vana kapanması, negatif basınç, kolon ayrılması, hava/vakum vanaları, MOC (§7) |
+| D-13 | Akıllı Otomatik Tasarım Modu (MH-AUTO) aktif geliştirme kapsamında; ayrı plan `docs/mh-auto-plan.md`. PN paketi MH-AUTO'nun boru verisi ve PN değerlendirmesi altyapısıdır |
 
 ## 1. Bugünkü durum (kod incelemesi, `main` ef28f45)
 
@@ -40,9 +58,34 @@ kaydı ve onay gerekir.
 Ekran görüntüsündeki değerler: işletme 31,1 m, teorik su darbesi ≈ 54 m, tepe ≈ 86 m.
 Bugünkü formülle tutarlı: `tepe = Pop + ΔH` (31,1 + 54,x ≈ 85–86, yuvarlama). ΔH ≈ 54 m ve
 a ≈ 300 m/s için ana hat hızı ≈ 1,75 m/s. Bu değerler **regresyon referansıdır, doğrulanmış
-fiziksel sonuç değildir.** Testte kullanmak için projenin tam girdisi gerekir: Ayarlar → Yedek
-(JSON) dışa aktarımı veya parsel, kaynak, güzergâh ve girdi değerleri (§12, K-1). Senaryo
-`test/golden/scenarios.js`'e **yeni** senaryo olarak eklenir; mevcut senaryolar değişmez.
+fiziksel sonuç değildir.**
+
+**Depo incelemesi (19.11.2026):** 66 da domates projesi depoda yok. İncelenenler:
+`test/fixtures/localstorage-v0.6.0.json` (tek proje: "Eski sürüm projesi", 50 da, Q 45, kuyu 40 m),
+`test/golden/scenarios.js` ve `test/golden/kayit/*.json` (S01–S19; 66 da yok). Projeler kullanıcının
+cihazında (`localStorage`) tutulduğu için depoya gelmez. Ayrıca 66 da, parsel çizilmeden
+dikdörtgen kabulüyle çalıştırıldığında (Q 40–80 m³/h) Pop 27–30 m ve ΔH 36–44 m çıkıyor; ekran
+değerleri yeniden üretilemiyor. Bu da projenin parsel, güzergâh ve kaynak noktası gibi ek
+girdilerle hesaplandığını gösteriyor.
+
+Eksik veriler: (1) parsel köşeleri, kaynak, istasyon ve güzergâh noktaları, (2) kaynak debisi,
+kaynak türü ve derinlik, (3) bölge, damlatıcı, lateral çapı ve sıra yönü, (4) elle değiştirilmiş
+shift sayısı veya ana hat çapı, (5) uygulama sürümü. En kolay yol: Ayarlar → Yedek dışa aktar
+(JSON). Dosya kişisel konum bilgisi içerir; depoya yalnız proje sahibinin izniyle ve gerekirse
+koordinatları kaydırılmış olarak eklenir. Senaryo `test/golden/scenarios.js`'e **yeni** senaryo
+olarak eklenir; mevcut senaryolar değişmez.
+
+### 1.3 Standart sürümleri (ön inceleme; PN-1'de satın alınmış veya erişilen asıl metinle teyit)
+
+| Malzeme | Esas | Ön inceleme bulgusu |
+|---|---|---|
+| PVC-U | EN ISO 1452-2:2009 (TS EN ISO 1452-2) | Ulusal kabullerde yürürlükte; revizyon taslağı (prEN ISO 1452-2) 2026'da başlatılmış. Boyut tabloları C = 2,5 ve C = 2,0 için ayrı bloklar içeriyor; hangi çapta hangisinin uygulanacağı asıl metinden alınacak |
+| PE | ISO 4427-2:2019 (+ Amd 1:2023 kaydı görülüyor) | Referans sıcaklık 20 °C; sıcaklık düşürme rehberi ISO 4427-1:2019 Ek A'da; PN–MRS–S–SDR ilişkisi Ek C'de. Daha yeni bir baskının yayımlanıp yayımlanmadığı kaynaklarda çelişkili — teyit edilecek |
+| PE | EN 12201-2 | Güncel baskı ve sıcaklık düşürme tablosu ön incelemede bulunamadı; CEN/TSE kaydından teyit edilecek |
+
+Ön incelemede kullanılan ikincil kaynaklar (yalnız yönlendirme amaçlı, değer kaynağı değil):
+standards.ie, genorma.com, iteh.ai örnek sayfaları, engineeringtoolbox.com, bir üretici
+basınç–sıcaklık diyagramı.
 
 ## 2. Eksik giriş verileri ve motorun sınırları
 
@@ -125,9 +168,13 @@ PMA (geçici dahil izin verilen en yüksek)  = kGecici × PFA
   önce EN 12201-1 (PE), EN 1452-2 (PVC-U) ve tedarikçi kataloğundan doğrulanır; doğrulanmayan
   değer ekranda "doğrulanmamış" etiketiyle gösterilir.
 - `fUretici`: üretici veya bileşen sınırı (ek parça, vana PN'i); yoksa 1,0.
-- `kGecici`: geçici basınç payı. Standartlara göre değişir (ör. EN 805'te bileşenler için
-  PMA = 1,2 × PFA; bazı PE ürün standartlarında ara sıra oluşan darbe için daha yüksek paylar).
-  **Varsayılan 1,0 (en temkinli)**; başka bir değer yalnız kullanıcı kaynağıyla seçilir (§12, K-4).
+- `kGecici`: geçici basınç için izin verilen ek dayanım payı. **Varsayılan 1,0 = ek pay
+  tanınmadı** (bu bir standart güvenlik katsayısı değildir ve ekranda öyle sunulmaz). Standart
+  (ör. EN 805'teki PMA tanımı) veya üretici tarafından doğrulanmış bir tolerans varsa, kaynağıyla
+  birlikte ayrıca uygulanır ve ekranda "kaynak: …" olarak yazılır. Doğrulanmamış tolerans
+  uygulanmaz.
+- PFA ve PMA **ayrı satırlarda** hesaplanır ve gösterilir; geçici değerlendirme PFA ile değil
+  PMA ile yapılır.
 
 ### 5.2 İki ayrı kontrol
 
@@ -155,7 +202,7 @@ Joukowsky değeri hiçbir ekranda "en yüksek basınç" olarak yazılmaz; etiket
 | Hat | Kontrol |
 |---|---|
 | Ana hat (ve teleskop kolları) | N + G, segment bazında (her segmentin kendi PN'i ve en yüksek basıncı) |
-| Manifold | N (giriş basıncı, her shift); G yalnız bilgi (manifold vanası kapanması MH-AKIL-5) |
+| Manifold | N (giriş basıncı, her shift); G yalnız bilgi (manifold vanası kapanması MH-AKIL-5). Bugünkü otomatik seçim (en düşük PN) **değişmez** (D-3), ama N kontrolü yetersizse sonuç "uygunsuz" olur ve aynı çapta uygun SDR/PN alternatifleri (doğrulanmış katalogdan) listelenir. Kullanıcı istediği boruyu seçebilir; uygunsuz seçim kırmızı durum ve açık metinle bildirilir (D-5) |
 | Lateral / damla bandı | `maxH` ile N; PN uygulanmaz |
 
 ## 6. Vana kapanma süresi (D)
@@ -209,6 +256,10 @@ yalnız "risk var" göstergesi.
 - Her sonuçta kot verisinin türü yazılır: "ölçülmüş", "DEM (GLO-90, ±2–4 m LE90)", "kullanıcı
   eğimi", "örnek/varsayılan". DEM ile negatif basınç değerlendirmesi yapılırsa doğruluk sınırı
   (MH-2A §3) yanında gösterilir. Kot verisi yoksa "Kot verisi yok — tek düzlem kabulü" yazılır.
+- **MH-3 tamamlanana kadar** kot verisi olan her projede sonuç ekranında, PDF ve Excel'de:
+  **"Kot verisi hidrolik hesaba dahil edilmedi"** uyarısı gösterilir (D-9).
+- **Model sınırlamaları** kutusu (D-10): tek düzlem kot, sürtünmesiz en alçak nokta basıncı,
+  bütün borularda C = 150, Joukowsky tek hız/tek uzunluk, jenerik pompa eğrileri.
 
 ## 9. Arayüz ve raporlar (G)
 
@@ -254,11 +305,29 @@ yalnız "risk var" göstergesi.
 | **PN-5** | 66 da regresyon senaryosu (P-09), telefon testi listesi | Değişmez | Girdinin alınması (K-1) | Yok |
 | **MH-AKIL-5** | §7, ayrı plan belgesi ve onay | Motor dışı yeni modül | PN-1…3, MH-2A, MH-3, pompa eylemsizlik verisi | — |
 
-**Önerilen yerleşim** (onaylı sırayı bozmadan): PN-0 hemen (belge). PN-1, MH-KML ile paralel
-yapılabilir; yeni dosya olduğu için çakışmaz. PN-2, PR #8'den hemen sonra ve küçük olduğu için
-1A'dan önce de olabilir. PN-3 ve PN-4, MH-MANUEL-1A'dan sonra; tercihen MH-2A'dan sonra ve
-MH-MANUEL-2 (gerçek yeniden hesaplama) ile birlikte planlanır. MH-AKIL-5, MH-2A ve MH-3'ten sonra.
-Kesin yer proje sahibinin kararıdır (K-2).
+Kabul edilen iç sıra (D-2): PN-0 → PN-1 → PN-2 → PN-3 → PN-4 → PN-5.
+
+### 11.1 MH-2A ve MH-3 bağımlılıkları
+
+| Aşama | MH-2A'ya bağımlılık | MH-3'e bağımlılık |
+|---|---|---|
+| PN-1 | Yok | Yok |
+| PN-2 | Yok (kot verisi yoksa bugünkü düzlem/eğim kabulü) | Yok; MH-3'e kadar "Kot verisi hidrolik hesaba dahil edilmedi" uyarısı |
+| PN-3 | Yok | Yok |
+| PN-4 | Var (yumuşak): harita etiketleri MH-2A katman yapısıyla uyumlu; profil ekranında PN gösterimi MH-2A profili gelince | Yok |
+| PN-5 | Yok | Yok |
+| MH-AKIL-5 | **Var (zorunlu):** ana boru boyuna profili, yüksek noktalar | **Var (zorunlu):** kotun hidrolik motora girmesi, en yüksek/en düşük nokta basınçları |
+
+### 11.2 Diğer işlerle yerleşim
+
+- PN-1 yeni dosyadır; MH-KML ile paralel yapılabilir.
+- PN-2, PR #8 birleştikten sonra başlar (`assess.js`).
+- PN-3, MH-MANUEL-1A'dan sonra (`boruSecimi` alanı revizyon/yedekte korunmalı; elle seçim izinsiz
+  geri alınmaz — MH-MANUEL V-20 ilkesi boru seçimine de uygulanır).
+- PN-4, MH-SHIFT-1 harita etiket yapısını kullanır.
+- MH-AUTO ile ilişki: `docs/mh-auto-plan.md` §6.
+- Onaylı genel sıraya yerleşimin kesin yeri, PR #14 kararından sonra `docs/yol-haritasi.md`'ye
+  işlenir.
 
 Korunanlar: hesap motoru formülleri, MH-0 altın kayıtları, 38 hidrolik denetim, EPANET
 doğrulamaları ve eski projeler. Bulut eşitlemesi ima edilmez. Çalışmayan özellik etkin gösterilmez.
@@ -267,16 +336,16 @@ doğrulamaları ve eski projeler. Bulut eşitlemesi ima edilmez. Çalışmayan �
 
 | No | Karar |
 |---|---|
-| K-1 | 66 da domates projesinin girdisi (JSON yedek veya parsel/kaynak/güzergâh/girdiler) |
-| K-2 | PN-1…PN-4'ün onaylı sıradaki yeri (§11 önerisi) |
-| K-3 | Yeni kombinasyonlar (PVC PN8, PN12,5; PE80; PE ana hat) otomatik seçime katılsın mı? Katılırsa altın kayıtlar değişir; ayrı hesap değişikliği |
-| K-4 | Geçici basınç payı `kGecici` için hangi standart esas alınacak (varsayılan 1,0) |
-| K-5 | §1.1 PVC-U SDR/PN bulgusu: hangi standart sürümü ve tedarikçi kataloğu esas alınacak |
-| K-6 | Malzemeye göre HW C katsayısı (bugün hepsi 150): değiştirilsin mi? (hesap değişikliği) |
+| K-1 | **Açık:** 66 da domates projesinin JSON yedeği (§1.2) |
+| K-2 | Karara bağlandı (D-2) |
+| K-3 | Karara bağlandı (D-3): önce elle seçim; gelişmiş otomatik mod MH-AUTO-3 |
+| K-4 | Karara bağlandı (D-6): 1,0 = ek pay yok; doğrulanmış tolerans kaynağıyla ayrıca |
+| K-5 | Karara bağlandı (D-4): EN ISO 1452-2, ISO 4427, EN 12201; sürüm teyidi PN-1'de. **Açık:** esas alınacak üretici katalog(lar)ı |
+| K-6 | Karara bağlandı (D-8): önce C = 150; yöntem değişikliği ayrı PR |
 
 ## Kaynaklar (kodlamadan önce asıl metinlerden doğrulanacak)
 
 - EN 12201-1/-2 (PE su boruları: MRS, C = 1,25, SDR–PN tabloları, sıcaklık düşürme katsayıları)
-- EN 1452-1/-2 (PVC-U su boruları: tasarım katsayısı, SDR–PN tabloları, sıcaklık katsayıları)
-- ISO 4427 (PE su boruları), EN 805 (su temini: PFA/PMA/PEA tanımları)
+- EN ISO 1452-1/-2:2009 (PVC-U su boruları: tasarım katsayısı, SDR–PN tabloları, sıcaklık katsayıları)
+- ISO 4427-1/-2:2019 (PE su boruları; Ek A sıcaklık, Ek C PN–MRS–S–SDR), EN 805 (su temini: PFA/PMA/PEA tanımları)
 - Wylie & Streeter, *Fluid Transients in Systems* (MOC); Chaudhry, *Applied Hydraulic Transients*
