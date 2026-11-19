@@ -119,7 +119,9 @@
     tbl(sn('Malzeme (fiyatlı)'), TB.bomP, TB.bomDec, [12, 56, 10, 8, 16, 16, 14]);
     tbl(sn('Malzeme (fiyatsız)'), TB.bomU, TB.bomDec, [12, 56, 10, 8]);
     kv(sn('Maliyet'), TB.toplam);
-    sheet(sn('Varsayımlar'), [['#', T('Varsayım / uyarı')]].concat(r.asm.map((a, i) => [i + 1, a]), r.warn.map(w => [T('Uyarı'), w])), [7, 110], () => 0);
+    // K-5: kot/parsel kaynağı ve sınırları yalnız haritadan kot alınmış veya KML/KMZ ile içe aktarılmış projelerde
+    const kaynak = g.IrriKaynak ? g.IrriKaynak.projeSatirlari(p, T, nfmt) : [];
+    sheet(sn('Varsayımlar'), [['#', T('Varsayım / uyarı')]].concat(r.asm.map((a, i) => [i + 1, a]), r.warn.map(w => [T('Uyarı'), w]), kaynak.map(k => [T('Veri kaynağı'), k])), [7, 110], () => 0);
     if (p.hydro) hydroSheets(XLSX, wb, p.hydro);
     return wb;
   }

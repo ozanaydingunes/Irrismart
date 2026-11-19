@@ -103,7 +103,7 @@
   function openMap() {
     if (!map) {
       map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([38.5, 33.5], 6);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri, Maxar' }).addTo(map);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: window.IrriKaynak ? IrriKaynak.haritaAtif(t) : 'Esri, Maxar' }).addTo(map);   // K-5: uydu ve kot atfı
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: .8 }).addTo(map);
       map.on('click', e => {
         const ll = [e.latlng.lat, e.latlng.lng];
@@ -172,7 +172,9 @@
     if (hint) { el.textContent = hint + ((cur.route || []).length && mapMode === 'anahat' ? ' · ' + t('{n} nokta', { n: cur.route.length }) : ''); return; }
     if (pts.length >= 3) {
       const f = Gm.fieldFromPolygon(pts);
-      el.innerHTML = `<b>${fmt(f.A / 1000, 2)} ${t('dekar')}</b> (${fmt(f.A / 10000, 2)} ha) · ${t('{n} köşe', { n: pts.length })}${cur.src ? ' · ' + t('kaynak işaretli') : ''}${f.selfX ? ' · <span class="bad">' + t('sınır kendini kesiyor') + '</span>' : f.fill < 0.8 ? ' · ' + t('düzensiz şekil') : ''}`;
+      el.innerHTML = `<b>${fmt(f.A / 1000, 2)} ${t('dekar')}</b> (${fmt(f.A / 10000, 2)} ha) · ${t('{n} köşe', { n: pts.length })}${cur.src ? ' · ' + t('kaynak işaretli') : ''}${f.selfX ? ' · <span class="bad">' + t('sınır kendini kesiyor') + '</span>' : f.fill < 0.8 ? ' · ' + t('düzensiz şekil') : ''}`
+        + (cur.elev ? `<br><span class="small muted" id="kotNotu">${t('Kot: {a} (≈ 90 m) — ön inceleme, ölçülmüş kot değil', { a: 'Copernicus DEM' })} · <a href="#" id="kotBilgi">${t('ayrıntı')}</a></span>` : '');
+      const kb = $('#kotBilgi'); if (kb) kb.onclick = ev => { ev.preventDefault(); show('ayarlar'); setTimeout(() => { const c = $('#kaynakKarti'); if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); } }, 60); };
     } else el.textContent = pts.length ? t('{n} köşe — en az 3 köşe gerekli.', { n: pts.length }) : t('Haritada arazinin köşelerine sırayla dokunun. Köşeler sürüklenebilir.');
   }
   const tbl = rows => `<table>${rows.map(([a, b]) => `<tr><td>${a}</td><td><b>${b}</b></td></tr>`).join('')}</table>`;
@@ -1001,6 +1003,16 @@
     run('#tDxf', () => { if (!M.geo) toast(t('DXF yerel koordinatlarla (m) üretildi; gerçek koordinat için parsel modunu kullanın.')); return window.IrriReport.dxf(cur, M); });
   }
 
+  // K-5: veri kaynakları, atıflar ve kot verisinin sınırları (Ayarlar)
+  function kaynakKarti() {
+    const K = window.IrriKaynak; if (!K) return '';
+    const li = a => `<li>${esc(a)}</li>`;
+    return `<details class="card" id="kaynakKarti"><summary><b>${t('Veri kaynakları ve sınırlamalar')}</b></summary>
+      <p class="small"><b>${t(K.KAYNAK.uydu.ad)}:</b> ${esc(K.KAYNAK.uydu.saglayici)}<br><span class="muted">${esc(K.KAYNAK.uydu.atif)}</span></p>
+      <p class="small"><b>${t(K.KAYNAK.kot.ad)}:</b> ${esc(K.KAYNAK.kot.saglayici)} — ${esc(K.KAYNAK.kot.model)} (≈ ${K.KAYNAK.kot.cozunurluk_m} m)<br><span class="muted">${esc(K.KAYNAK.kot.atif)}</span></p>
+      <p class="small"><b>${t('Kot verisinin sınırları')}</b></p><ul class="small">${K.KOT_SINIRLARI.map(s => li(t(s))).join('')}${li(t(K.KML_NOTU))}</ul>
+      <p class="small muted">${esc(t(K.GIZLILIK))}</p></details>`;
+  }
   function renderSettings() {
     const s = settings, inp = (k, v, lab) => `<label>${lab}<input data-k="${k}" type="text" inputmode="decimal" value="${String(v ?? '').replace('.', ',')}">${s.edited[k] ? '' : `<span class="muted small">${t('örnek değer')}</span>`}</label>`;
     const cnt = (a, f) => t('{n} kayıt ({m} doğrulanmış)', { n: a.length, m: a.filter(f || (x => x.dogrulandi)).length });
@@ -1020,6 +1032,7 @@
         <p class="muted small">${t('Varsayılan pompa/filtre/vana kayıtları jeneriktir (gerçek ürün değil). Üretici verilerini aynı JSON yapısında yükleyin; "dogrulandi": true kayıtlar raporda doğrulanmış görünür. "yalnizKullanici": {"pompa": true} jenerik pompaları devre dışı bırakır.')}</p>
         <div class="row wrap"><label class="btn sm" style="flex-direction:row">${t('Katalog yükle (JSON)')}<input type="file" id="catFile" accept=".json,application/json" style="display:none"></label>
         <button class="btn sm" id="catTpl">${t('Şablon indir')}</button>${userCat ? `<button class="btn sm danger" id="catDel">${t('Kullanıcı kataloğunu kaldır')}</button>` : ''}</div></div>
+      ${kaynakKarti()}
       <div class="card small muted"><b>IrriGrow v0.6.1</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
     bindLang('langSet');
     $('#themeSet').onchange = ev => { setTheme(ev.target.value); };
