@@ -73,3 +73,78 @@ kataloglardaki atıflardan ve ulusal standart kuruluşlarının listeleme sayfal
 | PE80 SDR13,6/17/21 ve Ø75 üstü SDR11 | PE80 belgeleri yalnız Ø63'e kadar SDR11 içeriyor | PE80 için iki bağımsız boyut tablosu |
 | **Sıcaklık katsayıları** — PE100 | Tek kaynak (`pl-ll` Table 4, EN 12201-1:2024 atıflı: 20 °C 1,00; 25 °C 0,92; 30 °C 0,85; 35 °C 0,79; 40 °C 0,73; 45 °C 0,67; 50 °C 0,62). İkinci bağımsız kaynak (PE100+ Derneği sayfası) bu ortamdan okunamadı; ISO 4427-1:2019 Ek A metni okunamadı | İkinci kaynak veya standart metni. O zamana kadar `sicaklikKatsayisi()` **null** döner ("veri eksik") |
 | Sıcaklık katsayıları — PE80, PVC-U | Kaynak yok | PE için ISO 4427-1/EN 12201-1 Ek A; PVC-U için EN ISO 1452-2 Ek A (Şekil A.1) |
+
+## 7. PE80 Ø32 SDR11 çelişkisinin incelenmesi (19.11.2026)
+
+| Kaynak | Değer | Ölçü tanımı (belgede yazan) |
+|---|---|---|
+| `upo-pe80` (Uponor veri sayfası, 09/2020) | **2,9 mm** | "Wall thickness" — en küçük mü, anma mı belirtilmemiş |
+| `ali-pe80` (Aliaxis) | **3,0 mm** (en büyük 3,4 mm) | "Min t" — en küçük et; BS EN 12201-2 |
+| `pl-ll` (Pipelife) | **3,0 mm** | "Minimum wall thickness … in accordance with EN 12201-2" |
+
+Değerlendirme:
+- EN 12201-2'de anma et kalınlığı en küçük et kalınlığına eşittir (e_n = e_min). Bu yüzden fark
+  **"anma / en küçük" tanım farkıyla açıklanamaz**.
+- 32 / 11 = 2,91 mm. Uponor değeri, SDR tanımından yuvarlamasız hesaplanmış değere (2,9) karşılık
+  geliyor. Standart tablosu ise 3,0 mm veriyor. Bu bir **yuvarlama ya da veri sayfası hatası**
+  olabilir. Aynı veri sayfasının diğer PE80 satırları (Ø25, 40, 50, 63) standartla uyumlu.
+- Arama sonuçlarında Uponor'un kendi ürün sayfalarının bu boruyu **"32X3 … SDR11 PE80"** olarak
+  listelediği görüldü. Bu sayfalar bu çalışmada açılıp okunmadı.
+- Farklı ürün serisi olasılığı: Uponor'un PE80 (PEM) ürünleri Kuzey Avrupa onaylı (DK-VAND, FI,
+  NPM). Aynı aramada bazı Kuzey Avrupa ürünlerinin SDR11 PE80'i **PN10** olarak sattığı görüldü
+  (C = 1,6). Bu, PN eşleşmesinin tasarım katsayısına bağlı olduğunu gösterir; et kalınlığı farkını
+  açıklamaz.
+- **Sonuç: çelişki çözülmedi.** Satır etkinleştirilmedi. Çözüm için gereken: Uponor'un güncel PE80
+  veri sayfası veya ürün belgesi (32 × 3,0 olduğunu yazılı gösteren) ya da standart tablosu.
+
+## 8. PE100 sıcaklık katsayıları: 0,85 / 0,73 ile 0,87 / 0,74 karşılaştırması
+
+| Değer kümesi | 30 °C | 40 °C | Kaynak | Durum |
+|---|---|---|---|---|
+| A | 0,85 | 0,73 | `pl-ll` Table 4, "EN 12201-1:2024 ve ISO 13761:1996"; 20–50 °C, 5 °C adım | Okundu, **tek kaynak** |
+| B | 0,87 | 0,74 | Sıkça EN 12201-1:2011 / ISO 4427-1 Ek A'ya atfedilir | **Hiçbir belgede okunamadı** (önceki rapordaki "yaygın değer" ifadesi doğrulanmamış bir bilgiydi) |
+
+Karşılaştırma ölçütleri:
+- **Malzeme:** A, PE100 (PE100-RC ve HT dahil) için. B'nin malzeme kapsamı (PE80/PE100) doğrulanamadı.
+- **Standart baskısı:** EN 12201-1:2011, 31.01.2024'te geri çekildi; 2024 baskısının Ek A'sı
+  50 °C'ye kadar genişletildi (listeleme özetlerinden). A ile B'nin farkı bu baskı değişikliğinden
+  kaynaklanıyor olabilir. **Doğrulanmadı.**
+- **Referans ve tasarım koşulu:** A: 20 °C referansı, sabit işletme sıcaklığı, uzun süre (50 yıl).
+  B'nin koşulları okunamadı.
+- **Sonuç:** Katsayı üretilmiyor (`sicaklikKatsayisi()` → `null`). Belirsizlik `sicaklikDurumu()`
+  ile kullanıcıya gösterilecek: "Sıcaklık katsayısı doğrulanmadı" ve iki değer kümesi (PN-2 ekranı).
+- Çözüm için gereken: EN 12201-1:2024 Ek A veya ISO 4427-1:2019 Ek A metni ya da ikinci bağımsız
+  üretici tablosu.
+
+## 9. PVC-U için gereken belgeler ve doğrulama planı
+
+### 9.1 Proje sahibinin temin edip yükleyebileceği belgeler (öncelik sırasıyla)
+
+| No | Belge | Yayımcı | Nerede | Not |
+|---|---|---|---|---|
+| V-1 | **EN ISO 1452-2:2009** (veya TS EN ISO 1452-2) tam metni | CEN / TSE / ISO | TSE e-mağaza, ISO, DIN Media, BSI | Tek başına en güçlü doğrulama (`standart-metni` düzeyi). Tablo 1–2 (boyutlar), Ek A Şekil A.1 (25–45 °C katsayıları) |
+| V-2 | ISO 1452-2:2009 resmî önizlemesi | SIS (İsveç Standart Enstitüsü) | `https://www.sis.se/api/document/preview/911827/` | Resmî önizleme; boyut tablosunu içerip içermediği bilinmiyor |
+| V-3 | GF Piping Systems — PVC-U basınçlı boru teknik el kitabı / boru boyut tablosu (EN ISO 1452 atıflı) | Georg Fischer | gfps.com indirme merkezi; üçüncü taraf kopya: `https://steelsoft.rs/wp-content/uploads/2024/11/Katalog-GF.pdf` | Arama özeti: Ø110 için PN6 2,7 / PN8 3,4 / PN10 4,2 / PN12,5 5,3 / PN16 6,6 mm (C = 2,0) — **okunmadı, doğrulanmadı** |
+| V-4 | FIP (Aliaxis) — "PVC-U PRESSURE PIPE" ve "PIPE ISO-UNI" katalogları | FIP / Aliaxis | `https://pdf.directindustry.com/pdf/fip-formatura-iniezione-polimeri/pvc-u-pressure-pipe/28091-1002162.html`; Aliaxis Çekya: `https://www.aliaxis.cz/_default_upload_bucket/PVC_U_tvarovky.pdf` | Boru tablosu içeriği doğrulanmadı |
+| V-5 | Pipelife — PVC-U basınçlı boru (EN ISO 1452-2) ürün kataloğu | Pipelife | catalog.pipelife.com (ülke sayfası, ör. TR/PL) | PDF indirme bu ortamda 403 verdi |
+| V-6 | Wavin — PVC-U basınçlı boru teknik kataloğu (EN ISO 1452-2) | Wavin | wavin.com | Erişilmedi |
+| V-7 | Durapipe (Aliaxis) — PVC-U şartnamesi | Durapipe | `https://cdn.shopify.com/s/files/1/0816/2541/6009/files/Durapipe-PVC-U-Specification.pdf` | BS (inç) ölçüleri içerebilir; FIP ile aynı grup (Aliaxis) — **FIP ile birlikte bağımsız iki kaynak sayılmaz** |
+| V-8 | Türk üreticilerin TS EN ISO 1452-2 atıflı katalogları (ör. Fırat, Pilsa, Kalde, Egeplast) | Üreticiler | Üretici siteleri | Yerel pazarda kullanılan ürünler; iki farklı üretici seçilmeli |
+
+Bağımsızlık kuralı: FIP ve Durapipe aynı gruptandır (Aliaxis). En az iki **farklı grup**
+gerekir; ör. GF + Pipelife, GF + FIP, Pipelife + bir Türk üretici.
+
+### 9.2 Doğrulama planı (belgeler gelince)
+
+1. Her belgeden PVC-U boyut tablosu satır satır okunur: dış çap, her PN/SDR sütunu için en küçük
+   (anma) et, tasarım katsayısı C (2,0 veya 2,5) ve hangi çap aralığına uygulandığı.
+2. **C katsayısı ayrı alan olarak tutulur.** C = 2,0 ve C = 2,5 tabloları aynı satırda
+   karıştırılmaz; aynı (Ø, PN) için iki farklı et kalınlığı olabilir (`docs/mh-pn-plan.md` §1.1).
+3. İki farklı gruptan üretici aynı (Ø, SDR, C) için aynı eti ve aynı PN'i veriyorsa satır
+   `iki-uretici-katalogu` düzeyiyle etkinleşir. Aksi hâlde aday listesinde kalır.
+4. Eski katalogdaki 33 PVC-U kaydı (`catalog-data.js`) yeni tabloyla karşılaştırılır. Farklar
+   `docs/pn-1-karsilastirma.md`'de raporlanır; **otomatik seçim ve eski kayıtlar değişmez.**
+5. PVC-U sıcaklık katsayıları (EN ISO 1452-2 Ek A, 25–45 °C) PE'den ayrı kaynaktan doğrulanır;
+   doğrulanamazsa "veri eksik".
+6. Testler: P1-01…P1-14'ün PVC-U karşılıkları, C katsayısına göre PN çapraz denetimi
+   (`PN = 20·σs/(SDR−1)`, σs = MRS/C, MRS = 25 MPa), sınır çaplar.

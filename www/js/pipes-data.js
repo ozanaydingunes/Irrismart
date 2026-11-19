@@ -7,7 +7,9 @@
   const T = '2026-11-19';
   const SURUM_PE = 'EN 12201-2 (Pipelife: EN 12201-2:2024; Uponor: EN 12201, sürüm belirtilmemiş; Aliaxis: BS EN 12201-2, sürüm belirtilmemiş)';
   const S = (malzeme, od, sdr, enMin, pn, kaynaklar, pnKaynak) => ({ malzeme, standart: 'EN 12201-2', standartSurum: SURUM_PE, od, sdr, enMin, pn,
-    mrs: malzeme === 'PE100' ? 10 : 8, cTasarim: 1.25, hatTurleri: ['ana', 'dagitim', 'manifold'], kaynaklar, pnKaynak, dogrulama: 'iki-uretici-katalogu', dogrulamaTarihi: T });
+    mrs: malzeme === 'PE100' ? 10 : 8, cTasarim: 1.25, hatTurleri: ['ana', 'dagitim', 'manifold'], kaynaklar, pnKaynak, dogrulama: 'iki-uretici-katalogu', dogrulamaTarihi: T,
+    // Uluslararası kullanım için genişletilebilir alanlar. Standart tabanlı satırda üretici/seri/katalog yoktur (üreticiden bağımsız).
+    standartBolgesi: 'EN', esdegerStandart: 'ISO 4427-2', ulke: null, uretici: null, urunSerisi: null, katalogKodu: null, katalogSurum: null });
   // kaynaklar: boyut (en küçük et) kaynakları; pnKaynak: SDR → PN eşleşmesini veren kaynaklar. mrs/cTasarim yalnız çapraz denetim içindir.
   const SATIRLAR = [
     S('PE100', 32, 17, 2, 10, ['pl-ll', 'upo-pe100'], ['pl-ll', 'upo-pe100']),
@@ -107,12 +109,20 @@
   // kaynak ve ISO 4427-1:2019 Ek A metni erişilemedi. PE80 ve PVC-U için kaynak yok.
   const SICAKLIK = { PE100: null, PE80: null, 'PVC-U': null };
   const SICAKLIK_ADAY = {
-    PE100: { kaynak: 'pl-ll', atif: 'EN 12201-1:2024, ISO 13761:1996', noktalar: [[20, 1.00], [25, 0.92], [30, 0.85], [35, 0.79], [40, 0.73], [45, 0.67], [50, 0.62]], neden: 'tek-kaynak' },
+    PE100: { kaynak: 'pl-ll', atif: 'EN 12201-1:2024, ISO 13761:1996', noktalar: [[20, 1.00], [25, 0.92], [30, 0.85], [35, 0.79], [40, 0.73], [45, 0.67], [50, 0.62]], neden: 'tek-kaynak',
+      // Kullanıcıya gösterilecek belirsizlik: başka kaynaklarda farklı değerler dolaşıyor; hangisinin hangi baskıya ait olduğu doğrulanamadı.
+      belirsizlik: [
+        '30 °C 0,87 ve 40 °C 0,74 değerleri sıkça EN 12201-1:2011 / ISO 4427-1 Ek A’ya atfedilir; bu çalışmada bunu gösteren bir belge okunamadı (doğrulanmadı)',
+        'EN 12201-1:2024 (Pipelife Table 4 atfı): 30 °C 0,85, 40 °C 0,73, 50 °C 0,62; PE100+ Derneği sayfasının 50 °C için 0,63 verdiği ve 2024 baskısının 0,62 verdiğini not ettiği arama özetinde görüldü (sayfa okunamadı)',
+        'Değerler sabit işletme sıcaklığı, 50 yıl ve 20 °C referansı içindir; kısa süreli sıcaklık artışları için geçerli değildir',
+      ] },
   };
   const EKSIK = [
     'PVC-U: EN ISO 1452-2 tablolarını içeren iki bağımsız üretici kataloğuna erişilemedi — etkin PVC-U satırı yok',
     'PE100 SDR26, SDR21, SDR13,6: yalnız tek üretici tablosunda (Pipelife) — etkin değil',
     'PE80 SDR13,6/17/21 ve Ø75 üstü SDR11: PE80 için iki bağımsız boyut tablosu yok — etkin değil',
+    'PE80 Ø32 SDR11: Uponor veri sayfası 2,9 mm; Aliaxis (en küçük et) ve Pipelife (EN 12201-2 en küçük et) 3,0 mm — çözülene kadar etkin değil',
+    'Tasarım katsayısı: bazı Kuzey Avrupa ürünlerinde PE80 SDR11 "PN10" olarak satılıyor (C = 1,6); kütüphane C = 1,25 (PN12,5) kullanır — farklı C ile satır karıştırılmaz',
     'Sıcaklık katsayıları (PE100, PE80, PVC-U): iki bağımsız kaynakla doğrulanamadı; ISO 4427-1:2019 Ek A metnine erişilemedi',
     'ISO ve EN resmî kayıt sayfaları (iso.org) bu ortamdan okunamadı (HTTP 403); sürüm bilgisi kataloglardaki atıflardan',
   ];

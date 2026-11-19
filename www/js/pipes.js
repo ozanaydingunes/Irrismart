@@ -8,6 +8,9 @@
   const DUZEYLER = ['iki-uretici-katalogu', 'standart-metni'];   // etkin kütüphane yalnız bu düzeyleri kabul eder
   const PN_MERDIVEN = [4, 5, 6, 8, 10, 12.5, 16, 20, 25];
   const r1 = x => Math.round(x * 10) / 10;
+  // Veri değiştirilemez: çağıran kod (ekran, rapor) kütüphane satırlarını yanlışlıkla bozamaz
+  const dondur = o => { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.values(o).forEach(dondur); Object.freeze(o); } return o; };
+  if (D) ['SATIRLAR', 'ADAYLAR', 'KAYNAKLAR', 'SICAKLIK', 'SICAKLIK_ADAY', 'EKSIK'].forEach(k => dondur(D[k]));
 
   // Geçerli (doğrulanmış) kombinasyonlar
   function liste(f = {}) {
@@ -19,6 +22,7 @@
   }
   // Tek satır veya null (geçersiz / doğrulanmamış kombinasyon)
   function bul(malzeme, od, sdr) {
+    if (!MALZEMELER.includes(malzeme) || !Number.isFinite(od) || !Number.isFinite(sdr)) return null;   // eksik girdi filtre sayılmaz
     return liste({ malzeme, od }).find(s => s.sdr === sdr) || null;
   }
   // İç çap: nominal dış çap − 2 × en küçük et (bugünkü katalogla aynı yöntem). Bu değer gerçek borudan
@@ -45,9 +49,12 @@
     }
     return n[n.length - 1][1];
   }
+  // Ekranda gösterilecek durum: doğrulanmış tablo yoksa 'veri-eksik' + (varsa) tek kaynaklı aday ve belirsizlik notları
   function sicaklikDurumu(malzeme) {
     if (D.SICAKLIK[malzeme]) return { durum: 'dogrulandi' };
-    return { durum: 'veri-eksik', aday: D.SICAKLIK_ADAY[malzeme] || null };
+    const aday = D.SICAKLIK_ADAY[malzeme] || null;
+    return { durum: 'veri-eksik', aday, belirsizlik: aday && aday.belirsizlik ? aday.belirsizlik : [],
+      mesaj: 'Sıcaklık katsayısı doğrulanmadı — 20 °C değeri dışında izin verilen basınç düzeltilemez' };
   }
 
   const MALZEME_ESKI = { pe: 'PE100', pvc: 'PVC-U' };
@@ -80,6 +87,7 @@
       const k = `kutuphane[${i}]`;
       if (!MALZEMELER.includes(s.malzeme)) e.push(`${k}.malzeme ${MALZEMELER.join('/')} olmalı`);
       for (const f of ['od', 'sdr', 'enMin', 'pn']) if (!pos(s[f])) e.push(`${k}.${f} pozitif sayı olmalı`);
+      if (pos(s.sdr) && s.sdr <= 2) e.push(`${k}.sdr 2'den büyük olmalı`);
       if (pos(s.od) && pos(s.enMin) && 2 * s.enMin >= s.od) e.push(`${k} et kalınlığı dış çapın yarısından küçük olmalı`);
       if (pos(s.pn) && !PN_MERDIVEN.includes(s.pn)) e.push(`${k}.pn standart PN değeri değil`);
       if (!DUZEYLER.includes(s.dogrulama)) e.push(`${k}.dogrulama ${DUZEYLER.join('/')} olmalı (doğrulanmamış satır etkin kütüphaneye giremez)`);
@@ -93,6 +101,11 @@
         if ((s.pnKaynak || []).filter(id => kaynaklar[id]).length < 2) e.push(`${k} PN için iki kaynak gerekli`);
       }
       for (const id of [...kk, ...(s.pnKaynak || [])]) if (!kaynaklar[id]) e.push(`${k} bilinmeyen kaynak: ${id}`);
+      // Genişletilebilir alanlar: varsa metin (veya null) olmalı; üretici kaydı üretici ve katalog sürümü taşımalı
+      for (const f of ['standartBolgesi', 'esdegerStandart', 'ulke', 'uretici', 'urunSerisi', 'katalogKodu', 'katalogSurum'])
+        if (s[f] !== undefined && s[f] !== null && (typeof s[f] !== 'string' || !s[f].trim())) e.push(`${k}.${f} boş olmayan metin veya null olmalı`);
+      if (s.ulke != null && !/^[A-Z]{2}$/.test(s.ulke)) e.push(`${k}.ulke ISO 3166-1 iki harfli kod olmalı (ör. TR)`);
+      if (s.uretici && !s.katalogSurum) e.push(`${k} üretici kaydında katalogSurum gerekli`);
     });
     const seen = new Set();
     (satirlar || []).forEach((s, i) => { const key = `${s.malzeme}|${s.od}|${s.sdr}`; if (seen.has(key)) e.push(`kutuphane[${i}] yinelenen kombinasyon ${key}`); seen.add(key); });

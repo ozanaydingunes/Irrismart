@@ -113,3 +113,47 @@ test('P1-10 Motor ve arayüz bu modülü kullanmaz (PN-1 kapsamı)', () => {
     ok(!/IrriPipes|IRRI_PIPES_DATA|pipes(-data)?\.js/.test(src(f)), `${f} kütüphaneyi kullanmamalı`);
   ok(!/pipes(-data)?\.js/.test(src('index.html')), 'index.html henüz yüklememeli (PN-2)');
 });
+
+test('P1-11 Sınır değerleri: en küçük ve en büyük çaplar var; kapsam dışı çaplar ve SDR’ler yok', () => {
+  ok(P.bul('PE100', 32, 17) && P.bul('PE100', 315, 11), 'Ø32 ve Ø315 var');
+  for (const od of [16, 20, 25, 355, 400]) ok(P.bul('PE100', od, 17) === null && P.bul('PE100', od, 11) === null, `Ø${od} kapsam dışı`);
+  ok(P.bul('PE80', 40, 11) && P.bul('PE80', 63, 11) && !P.bul('PE80', 75, 11) && !P.bul('PE80', 25, 11), 'PE80 yalnız Ø40–63');
+  for (const sdr of [0, -11, 11.0001, '11', NaN, null, undefined]) ok(P.bul('PE100', 110, sdr) === null, `SDR ${String(sdr)}`);
+  for (const od of [0, -110, 110.5, '110', NaN, null]) ok(P.bul('PE100', od, 17) === null, `Ø ${String(od)}`);
+  ok(P.bul('pe100', 110, 17) === null && P.bul('PVC', 110, 17) === null, 'malzeme adı birebir');
+  ok(P.liste({ malzeme: 'PE100', pn: 12.5 }).length === 0 && P.liste({ malzeme: 'PE80', pn: 16 }).length === 0, 'PN12,5 PE100 ve PN16 PE80 yok');
+  ok(P.sicaklikKatsayisi('PE100', NaN) === null && P.sicaklikKatsayisi('Bilinmeyen', 20) === null, 'sıcaklık geçersiz girdi');
+});
+
+test('P1-12 Geçersiz kayıtlar ve uluslararası alanlar doğrulanır', () => {
+  const ok1 = Object.assign({}, D.SATIRLAR[0]);
+  ok(P.dogrula([ok1]).length === 0, 'geçerli satır');
+  const varyant = (fark, beklenen) => { const e = P.dogrula([Object.assign({}, ok1, fark)]); ok(e.some(x => x.includes(beklenen)), `${JSON.stringify(fark)} → ${beklenen}: ${e.join('; ')}`); };
+  varyant({ sdr: 1 }, "2'den büyük"); varyant({ sdr: 0 }, 'pozitif'); varyant({ od: NaN }, 'pozitif'); varyant({ enMin: '2' }, 'pozitif');
+  varyant({ pn: 7 }, 'standart PN'); varyant({ dogrulama: 'standart-metni-degil' }, 'dogrulama'); varyant({ hatTurleri: [] }, 'hatTurleri');
+  varyant({ ulke: 'Türkiye' }, 'ISO 3166-1'); varyant({ uretici: 'Firma' }, 'katalogSurum'); varyant({ urunSerisi: '' }, 'boş olmayan');
+  ok(P.dogrula([Object.assign({}, ok1, { ulke: 'TR', uretici: 'Firma', urunSerisi: 'Seri A', katalogKodu: 'X1', katalogSurum: '2026/1' })]).length === 0, 'üretici kaydı geçerli');
+  for (const s of D.SATIRLAR) ok(s.standartBolgesi === 'EN' && s.esdegerStandart === 'ISO 4427-2' && s.uretici === null && s.ulke === null, 'standart tabanlı satır üreticiden bağımsız');
+});
+
+test('P1-13 Eski kayıtlar değişmeden kalır: katalog parmak izi, sayılar ve seçim listeleri', () => {
+  const crypto = require('crypto');
+  const h = crypto.createHash('sha256').update(JSON.stringify(CAT.borular)).digest('hex');
+  ok(h === 'd092d1ee2e042d91319a9e4488f531ff28dc13ef09e9e364d8b41dc6e53b9021', `eski boru kataloğu değişti: ${h}`);
+  ok(CAT.borular.pe.length === 28 && CAT.borular.pvc.length === 33 && CAT.borular.lateral.length === 2, 'kayıt sayıları');
+  // Kütüphane yüklenmesi ve karşılaştırma eski kayıtları değiştirmez
+  P.karsilastir(CAT); P.liste(); P.dogrula(D.SATIRLAR);
+  ok(crypto.createHash('sha256').update(JSON.stringify(CAT.borular)).digest('hex') === h, 'işlemlerden sonra aynı');
+  // Kütüphane verisi değiştirilemez (dondurulmuş): çağıran kod satırları bozamaz
+  const s0 = P.liste()[0], et0 = s0.enMin;
+  try { s0.enMin = 99; } catch (e) { /* katı kipte TypeError beklenir */ }
+  ok(P.liste()[0].enMin === et0 && Object.isFrozen(s0) && Object.isFrozen(s0.kaynaklar) && Object.isFrozen(D.SATIRLAR), 'veri dondurulmuş');
+});
+
+test('P1-14 Sıcaklık belirsizliği kullanıcıya gösterilebilir; katsayı üretilmez', () => {
+  const d = P.sicaklikDurumu('PE100');
+  ok(d.durum === 'veri-eksik' && d.mesaj && d.belirsizlik.length >= 2, 'PE100 belirsizlik notları');
+  ok(d.belirsizlik.some(x => x.includes('0,87')) && d.belirsizlik.some(x => x.includes('0,85')), 'iki değer kümesi de görünür');
+  ok(P.sicaklikDurumu('PVC-U').belirsizlik.length === 0 && P.sicaklikDurumu('PVC-U').mesaj, 'PVC-U yalnız eksik veri mesajı');
+  for (const T of [20, 25, 30, 40, 50]) ok(P.sicaklikKatsayisi('PE100', T) === null, `PE100 ${T} °C null`);
+});
