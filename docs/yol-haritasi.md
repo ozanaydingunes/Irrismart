@@ -72,6 +72,8 @@ Onaylanan geliştirme sırası (proje sahibi, 18.11.2026 — son hâli):
 | sonra | MH-AKIL-5 (su darbesi), MH-MANUEL-5 | Yol haritasında |
 | ayrı | MH-MOTOR-1/2/3 — PN sınıfı, boru malzemesi, pompa modeli, değişken devir, regülatör (yeni motor girdileri) | Her biri ayrı plan, PR, bağımsız doğrulama ve hesap değişiklik kaydı |
 | ayrı (küçük) | T-08 — kot verisi kaynak atfı ([plan](t08-atif-plan.md)); 1A koduna karıştırılmaz | Plan onay bekliyor |
+| aktif | MH-PN — boru PN/SDR/malzeme yönetimi ([plan](mh-pn-plan.md)): PN-1 → PN-2 → PN-3 → PN-4 → PN-5; PN-1 [uygulama planı](pn-1-uygulama.md) | Plan onaylı; PN-1 başlatma onayı bekliyor |
+| aktif | MH-AUTO — Akıllı Otomatik Tasarım Modu ([plan](mh-auto-plan.md)): MH-AUTO-1…7; ayrı, kullanıcı seçimli mod | Plan onaylı |
 | karar | T-09 — Open-Meteo ücretsiz API ticari olmayan kullanım şartı | Proje sahibinin kararı |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-2B ve sonrası (kot/eğim), MH-3 (kot–hidrolik) | Onaylı |
 
@@ -160,4 +162,6 @@ aşama olarak planlanacak:
 - MH-MANUEL-1A uygulama planı: [docs/mh-manuel-1a-uygulama.md](mh-manuel-1a-uygulama.md)
 - MH-SHIFT: [docs/mh-shift-plan.md](mh-shift-plan.md) (mimari onaylandı)
 - MH-KML: [docs/mh-kml-plan.md](mh-kml-plan.md) (onaylandı)
+- MH-PN (boru basınç sınıfı): [docs/mh-pn-plan.md](mh-pn-plan.md) (onaylandı); PN-1 uygulama planı: [docs/pn-1-uygulama.md](pn-1-uygulama.md)
+- MH-AUTO (Akıllı Otomatik Tasarım): [docs/mh-auto-plan.md](mh-auto-plan.md) (onaylandı)
 - Tasarım önizlemeleri (masaüstü/mobil): proje sahibine iletilen tasarım tuvali.

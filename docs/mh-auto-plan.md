@@ -1,6 +1,6 @@
 # MH-AUTO — Akıllı Otomatik Tasarım Modu
 
-Durum: **teknik plan — proje sahibinin onayını bekliyor (19.11.2026). Kodlama yok.**
+Durum: **teknik plan onaylandı ve `main`'e alındı (PR #16, 19.11.2026); açık kararlar AK-1…AK-4 karara bağlandı (§0, A-9…A-14). Kodlama kontrollü aşamalarla.**
 Aktif geliştirme kapsamındadır (proje sahibi kararı, 19.11.2026). Her aşama ayrı dal ve ayrı PR;
 onay olmadan `main`'e birleştirilmez. Hesap motoru ve mühendislik doğrulaması tamamlanmadan
 kullanıcıya tamamlanmış ya da güvenli olduğu izlenimi verilmez.
@@ -21,6 +21,12 @@ kullanıcıya tamamlanmış ya da güvenli olduğu izlenimi verilmez.
 | A-6 | Yalnız Joukowsky üst sınırı aşılıyorsa sonuç "uygunsuz" değil, "Geçici rejim analizi gerekli" (`docs/mh-pn-plan.md` D-7) |
 | A-7 | Gerçek kot hidrolik hesaba girene kadar (MH-3) topografik sınırlamalar açıkça yazılır |
 | A-8 | Aşamalar MH-AUTO-1…7 (§6); PN ve MH-2A ile uyumlu sıra (§7) |
+| A-9 | **AK-1 — sıra:** önce PN-1 ve PN-2 (boru veri modeli, basınç kontrolü), sonra PN-3 (elle boru seçimi). MH-AUTO-1 (veri modeli ve kurallar) bağımsız hazırlanabilir. Tam otomatik optimizasyon, gerekli hidrolik bileşenler tamamlandıkça etkinleştirilir. Çalışan hesap motoru gereksiz yere yeniden yazılmaz |
+| A-10 | **AK-2 — Dengeli puan:** başlangıç ağırlıkları ilk yatırım %35, enerji %30, bakım %20, hidrolik performans %15; kullanıcı değiştirebilir. Teknik uygunluk ve güvenlik koşulları puanlamadan **önce zorunlu filtre** (§4.1) |
+| A-11 | **AK-3 — bakım maliyeti:** kullanıcı girer; doğrulanmış katalog veya geçmiş işletme verisi varsa kullanılabilir. Veri yoksa tahmin uydurulmaz: **"Bakım maliyeti hesaplanmadı"**. Ekonomik karşılaştırmada maliyet kapsamı ve eksik veriler açıkça yazılır |
+| A-12 | **AK-4 — güzergâh:** ilk aşamada parsel geometrisi, su kaynağı, mevcut bağlantı noktaları ve shift yerleşimine göre **taslak** güzergâh önerisi; MH-2A ve MH-3 sonrasında gerçek kot, boyuna profil ve hidrolik kayıplarla güzergâh optimizasyonu. Kullanıcı güzergâhı haritada elle değiştirebilir |
+| A-13 | Uygun tasarım yoksa uygunsuz alternatif önerilmez: **"Uygun tasarım bulunamadı"** ve sağlanamayan koşullar. Üç alternatif aynı zorunlu kriterleri sağlar. MH-3 ve MH-AKIL-5 tamamlanmadan kesin mühendislik uygunluğu bildirilmez |
+| A-14 | Mevcut otomatik tasarım davranışı ve kayıtlı projeler korunur; Akıllı Otomatik Tasarım **kullanıcının seçtiği ayrı bir mod**dur. Elle seçimler kilitlenebilir ve izinsiz değiştirilmez |
 
 ## 1. Bugün var olan otomatik tasarım yetenekleri (kod incelemesi, `main` ef28f45)
 
@@ -132,7 +138,7 @@ kotu dikkate almıyor.
 | Alternatif | Amaç | Ölçüt |
 |---|---|---|
 | **Ekonomik** | En düşük tahmini toplam maliyet | Yıllık toplam = yatırım × CRF + yıllık enerji (+ bakım payı varsa). Fiyatlar örnekse "tahmini (örnek fiyat)"; eksikse metraj vekil ölçüt ve "sıralama kesin değil" |
-| **Dengeli** | Yatırım, enerji, hidrolik pay ve işletmeyi birlikte | Normalize çok ölçütlü puan; ağırlıklar ekranda yazılı ve kullanıcı tarafından görülebilir (bugünkü formül: yatırım/min + enerji/min + 0,2 × basınç payı oranı) |
+| **Dengeli** | Yatırım, enerji, bakım ve hidrolik performansı birlikte | Normalize çok ölçütlü puan (her ölçüt havuzdaki en iyiye bölünür): **ilk yatırım %35, enerji %30, bakım %20, hidrolik performans %15** (A-10); kullanıcı değiştirebilir, toplam %100. Hidrolik performans: tekdüzelik payı, en yüksek H ve hız payından birleşik gösterge (tanımı MH-AUTO-5'te belgelenir). Bakım verisi yoksa bakım ağırlığı **puana katılmaz**, kalan ağırlıklar oransal ölçeklenir ve kartta "Bakım maliyeti hesaplanmadı — puan bakım hariç" yazar. Bugünkü `layoutAlternatives` "dengeli" formülü değişmez; yeni puan yalnız Akıllı Otomatik modda |
 | **Performans** | Kayıp, enerji ve işletme riskini azaltmak | Öncelik sırası: en düşük enerji, en düşük toplam kayıp, en geniş tekdüzelik payı, en düşük ana hat hızı (daha düşük Joukowsky ΔH). Maliyet yalnız eşitlik bozucu |
 
 - Ağırlıklar ve öncelikler `docs/` ve ekranda açıkça yazılır; değişiklik ayrı karar.
@@ -153,9 +159,11 @@ kotu dikkate almıyor.
 | **MH-AUTO-6** | Harita: shift renkleri, ana hat ve manifold güzergâhı, Ø/PN/uzunluk etiketleri, pompa/filtre/vana simgeleri; güzergâh veya shift değişince yeniden hesap; PDF/Excel'de alternatif ve durumlar | Değişmez | MH-SHIFT-1/3, PN-4, MH-MANUEL-2/4, MH-2A (katmanlar) |
 | **MH-AUTO-7** | Testler, doğrulama, Android entegrasyonu ve telefon testi listesi | — | Her aşamada sürekli; son entegrasyon |
 
-**Otomatik ana hat güzergâhı** (istek 2.3) bu pakette yalnız **öneri** düzeyindedir (kaynak →
-araziye en kısa yol, parsel sınırı boyunca). Kot ve engel verisi olmadan kesin güzergâh
-önerilmez; kot destekli güzergâh MH-3'ten sonra ayrı karar.
+**Otomatik ana hat güzergâhı** (A-12): ilk aşamada (MH-AUTO-6) parsel geometrisi, su kaynağı,
+mevcut bağlantı noktaları (istasyon, hidrant) ve shift yerleşimine göre **taslak** güzergâh
+önerilir ve "taslak — kot ve engeller dikkate alınmadı" etiketiyle gösterilir. Kullanıcı haritada
+düzeltebilir; elle düzeltilen güzergâh kilitlenir. MH-2A ve MH-3'ten sonra gerçek kot, boyuna
+profil ve hidrolik kayıplarla güzergâh optimizasyonu ayrı aşama olarak eklenir.
 
 ## 7. Bağımlılıklar ve önerilen sıra
 
@@ -202,7 +210,7 @@ sırayla), `app.js` (1A, 1B, SHIFT ve AUTO aynı dosya — her PR küçük ve s�
 
 | No | Karar |
 |---|---|
-| AK-1 | §7 yerleşimi |
-| AK-2 | Dengeli puanın ağırlıkları ve Performans önceliği (§5) |
-| AK-3 | Bakım ve işletme gideri (yıllık %) ekonomik ölçüte eklensin mi; eklenirse varsayılan değer ve kaynağı |
-| AK-4 | Otomatik ana hat güzergâh önerisi MH-AUTO'da yalnız öneri düzeyinde mi kalsın (§6) |
+| AK-1 | Karara bağlandı (A-9) |
+| AK-2 | Karara bağlandı (A-10); Performans önceliği §5'teki gibi |
+| AK-3 | Karara bağlandı (A-11) |
+| AK-4 | Karara bağlandı (A-12) |
