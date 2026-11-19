@@ -1688,14 +1688,14 @@
     ],
     [
      "W-SD-01",
-     "Uygunsuz",
-     "Su darbesi üst sınırı PN sınıfını aşabilir",
+     "Ön değerlendirme",
+     "Geçici rejim analizi gerekli",
      43.58040245486256,
      61.199999999999996,
      "m",
      "",
      "",
-     "Ani kapanma için Joukowsky üst sınırı ΔH ≈ 44 m (dalga hızı 303 m/s); işletme 24,8 m + ΔH = 68 m, PN6 sınırı 61,2 m. Ayrıntılı geçici rejim analizi yapılmadı.",
+     "Teorik su darbesi üst sınırı PN sınıfını aşabilir. Ayrıntılı geçici rejim analizi gereklidir. Ani kapanma için Joukowsky üst sınırı ΔH ≈ 44 m (dalga hızı 303 m/s); işletme 24,8 m + ΔH = 68 m, PN6 sınırı 61,2 m.",
      ""
     ],
     [

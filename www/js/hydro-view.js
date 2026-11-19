@@ -124,11 +124,13 @@
     const node = i => i < 0 ? 'K0' : 'D' + String(i + 1).padStart(2, '0');
     const KIND = { guzergah: 'güzergâh', kaynak: 'kaynak hattı', baglanti: 'bağlantı', baslik: 'başlık', kol: 'kol' };
     const critSet = new Set(critPath ? critPath.segs : []);
-    const sizes = new Map(); net.forEach(x => { const k = `PVC-U Ø${x.od} PN${x.pn}`; sizes.set(k, (sizes.get(k) || 0) + x.L); });
+    // K-3: malzemeye göre etiket (kütüphane borusu: malzeme + SDR; eski PVC kayıtları aynen)
+    const boruEt = x => { const p = x.pipe || {}; return `${p.kutuphane ? p.malzeme : 'PVC-U'} Ø${x.od}${p.kutuphane ? ` SDR${p.sdr}` : ''} PN${x.pn}`; };
+    const sizes = new Map(); net.forEach(x => { const k = boruEt(x); sizes.set(k, (sizes.get(k) || 0) + x.L); });
     const anahat = {
       summary: [
         row('Toplam uzunluk', r.field.Lmain, 0, 'm'), row('Kesit sayısı', net.length, 0, 'adet'),
-        row('Ana çap', `PVC-U Ø${ms.od} PN${ms.pn}`, null, '', given(inp, 'mainOd') ? 'girdi' : 'otomatik'),
+        row('Ana çap', boruEt(ms), null, '', ms.secim === 'kullanici' || given(inp, 'mainOd') ? 'girdi' : 'otomatik'),
         row('Kademeli çap', T(r.main.teleskop ? 'Evet' : 'Hayır'), null, '', srcOf(inp, 'teleskop')),
         row('En büyük hız', vMain, 2, 'm/s', 'hesap', { status: vMainSt }),
         row('En uzun yol (kritik)', r.main.Lcrit, 0, 'm'),
@@ -137,7 +139,7 @@
       critPath,
       table: { cols: [['Kod', '', null], ['Tür', '', null], ['Düğüm', '', null], ['Uzunluk', 'm', 1], ['Boru', '', null], ['İç çap', 'mm', 1], ['Debi (en büyük)', 'm³/h', 2], ['Hız', 'm/s', 2], ['Kayıp (HW ×1,10)', 'm', 2], ['Açık olduğu shift', '', null]],
         rows: net.map((x, i) => ({ id: x.id, crit: critSet.has(x.id), status: vStatus(x.v),
-          cells: [x.id, KIND[x.kind] ? T(KIND[x.kind]) : x.kind, `${node(x.parent)} → ${node(i)}`, x.L, `PVC-U Ø${x.od} PN${x.pn}`, x.ic, x.Qmax, x.v, x.hf, x.Q.map((q, j) => q > 0 ? j + 1 : null).filter(Boolean).join(', ')] })) },
+          cells: [x.id, KIND[x.kind] ? T(KIND[x.kind]) : x.kind, `${node(x.parent)} → ${node(i)}`, x.L, boruEt(x), x.ic, x.Qmax, x.v, x.hf, x.Q.map((q, j) => q > 0 ? j + 1 : null).filter(Boolean).join(', ')] })) },
       alts: r.main.alts.map(a => ({ sel: a === ms, od: a.od, pn: a.pn, v: a.v, Hmax: a.Hmax, kWh: a.kWh, pipeCost: a.pipeCost, annual: a.annual, tags: a.tags })),
       allPriced: r.main.allPriced,
     };
@@ -212,7 +214,7 @@
       surge: [
         row('Dalga hızı a', r.surge.a, 0, 'm/s'), row('Joukowsky ΔH', r.surge.dH, 1, 'm'),
         row('Kritik kapanma süresi 2L/a', r.surge.Tc, 1, 's'), row('Pratik kural 5 × 2L/a (gerekli, yeterli değil)', r.surge.tClose, 0, 's'),
-        row('Tepe basınç', r.surge.peak, 1, 'm', 'hesap', { status: r.surge.exceeds ? 'bad' : 'ok', bar: r.surge.peak / BAR }),
+        row('Teorik tepe basınç (üst sınır)', r.surge.peak, 1, 'm', 'hesap', { status: r.surge.exceeds ? 'warn' : 'ok', bar: r.surge.peak / BAR }),   // K-2: aşım → 'Geçici rejim analizi gerekli', kesin uygunsuz değil
       ],
       energy: [
         row('Sezonluk pompa enerjisi', p.kWh || 0, 0, 'kWh'),

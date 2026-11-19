@@ -87,8 +87,8 @@
     try {
       let j; try { j = St.readBackup(await f.text()); } catch (e) { throw new Error(e.i18n ? t(e.message) : e.message); }
       const valid = j.valid;
-      const same = valid.filter(p => projects.some(x => x.id === p.id)).length;
-      if (!confirm(t('{n} proje yüklenecek.', { n: valid.length }) + (same ? ' ' + t('{n} tanesi mevcut projelerin üzerine yazılacak.', { n: same }) : '') + ' ' + t('Devam edilsin mi?'))) return;
+      const plan = St.planBackup(projects, valid);
+      if (!confirm(t('{n} proje yüklenecek.', { n: valid.length }) + (plan.farkli ? ' ' + t('{n} tanesi mevcut projelerle aynı kimlikte ama farklı: mevcut projeler korunacak, yedektekiler “(yedekten)” adıyla ayrı proje olarak eklenecek.', { n: plan.farkli }) : '') + (plan.ayni ? ' ' + t('{n} tanesi zaten aynı; değişmeyecek.', { n: plan.ayni }) : '') + ' ' + t('Devam edilsin mi?'))) return;
       St.mergeBackup(projects, valid);
       if (j.settings && confirm(t('Yedekteki fiyat ayarları da yüklensin mi?'))) { settings = Object.assign(JSON.parse(JSON.stringify(D.DEFAULT_PRICES)), { items: {}, edited: {} }, j.settings); saveSettings(); }
       if (j.catalog && !Ct.checkCatalog(j.catalog).length) { userCat = j.catalog; save(CKEY, userCat); catalog = Ct.mergeCatalog(window.IRRI_CATALOG, userCat); }
@@ -131,10 +131,11 @@
       const r = overlayRes && overlayRes.ok ? overlayRes : null;
       const n = r ? r.sel.groups.length : 0;
       bar.style.display = 'flex';
-      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} <button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>`
+      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} <button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>${cur.shiftEditYedek ? ` <button class="btn sm" id="mGeri" style="flex:none">${t('Elle atamayı geri getir')}</button>` : ''}`
         : `<span class="small">${t('Önce “Uygula” ile parsel planını oluşturun.')}</span>`;
       bar.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { brush = +x.dataset.b; setMode('shift'); });
-      const au = $('#mAuto'); if (au) au.onclick = () => { delete cur.shiftEdit; invalidateDesign(); persist(); compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
+      const au = $('#mAuto'); if (au) au.onclick = () => { if (!otomatigeDon()) return; compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
+      const gg = $('#mGeri'); if (gg) gg.onclick = () => { elleAtamayiGeriGetir(); compute(); setMode('shift'); drawPoly(); };
     } else bar.style.display = 'none';
     document.documentElement.style.setProperty('--mapbar', (m === 'shift' ? 196 : 150) + 'px');
     if (map) setTimeout(() => map.invalidateSize(), 30);
@@ -213,7 +214,7 @@
       if (sg.kind === 'kaynak') return;
       L.polyline([ll(sg.a), ll(sg.b)], { renderer: rend, color: COL.main, weight: sg.od >= 160 ? 7 : sg.od >= 110 ? 6 : 5, interactive: mapMode !== 'shift' }).addTo(g)
         .on('click', e => deskPick(e, { type: 'anahat', i: si }))
-        .bindPopup(() => `<b>${sg.id} · ${t('Ana hat')} PVC-U Ø${sg.od} PN${sg.pn}</b>` + tbl([[t('İç çap'), fmt(sg.ic, 1) + ' mm'], [t('Uzunluk'), fmt(sg.L, 1) + ' m'], [t('Debi (en büyük shift)'), fmt(sg.Qmax, 1) + ' m³/h'], [t('Hız'), fmt(sg.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(sg.hf, 2) + ' m'], [t('Malzeme'), 'PVC-U']]) + `<div class="small muted">Hazen-Williams C=150, +%10 ${t('yerel kayıp')}</div>`);
+        .bindPopup(() => `<b>${sg.id} · ${t('Ana hat')} ${sg.pipe && sg.pipe.kutuphane ? `${sg.pipe.malzeme} Ø${sg.od} SDR${sg.pipe.sdr}` : `PVC-U Ø${sg.od}`} PN${sg.pn}</b>` + tbl([[t('İç çap'), fmt(sg.ic, 1) + ' mm'], [t('Uzunluk'), fmt(sg.L, 1) + ' m'], [t('Debi (en büyük shift)'), fmt(sg.Qmax, 1) + ' m³/h'], [t('Hız'), fmt(sg.v, 2) + ' m/s'], [t('Sürtünme kaybı'), fmt(sg.hf, 2) + ' m'], [t('Malzeme'), 'PVC-U']]) + `<div class="small muted">Hazen-Williams C=150, +%10 ${t('yerel kayıp')}</div>`);
     });
     const M = drawModel(r);
     // Shift bilgi kutuları (sürüklenebilir; başlık shift rengiyle)
@@ -284,7 +285,7 @@
   $('#mUndo').onclick = () => { if (mapMode === 'anahat') (cur.route || []).pop(); else if (mapMode === 'istasyon') cur.station = null; else cur.poly.pop(); invalidateDesign(); persist(); drawPoly(); };
   $('#mClear').onclick = () => {
     if (mapMode === 'anahat') { if (confirm(t('Ana hat güzergâhı silinsin mi?'))) { cur.route = []; invalidateDesign(); persist(); drawPoly(); } return; }
-    if (confirm(t('Sınır ve kaynak noktası silinsin mi?'))) { cur.poly = []; cur.src = null; cur.station = null; cur.route = []; delete cur.shiftEdit; delete cur.inp.grad; invalidateDesign(); persist(); drawPoly(); }
+    if (confirm(t('Sınır ve kaynak noktası silinsin mi?') + (cur.shiftEdit ? ' ' + t('Elle yapılan shift ataması da kaldırılacak.') : '') + ' ' + t('Önceki hâl revizyon olarak saklanır.'))) { St.snapshot(cur, 'temizleme öncesi'); cur.poly = []; cur.src = null; cur.station = null; cur.route = []; delete cur.shiftEdit; delete cur.inp.grad; invalidateDesign(); persist(); drawPoly(); }
   };
   $('#mFull').onclick = () => { document.body.classList.toggle('mapfull'); setTimeout(() => map && map.invalidateSize(), 60); };
   $('#mPlan').onclick = () => { showPlan = !showPlan; if (showPlan) { const r = overlayRes || compute(); if (!r.ok) toast(t('Plan çizilemedi: ') + r.err[0]); else if (r.layout.mode !== 'parsel') toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)')); } $('#mPlan').classList.toggle('primary', showPlan && !!overlayRes); drawPoly(); };
@@ -510,12 +511,29 @@
     $('#btnCalc').onclick = () => show('sonuc');
   }
 
+  // K-1: "Otomatiğe dön" onay ister; elle atama 'shiftEditYedek' olarak saklanır ve geri getirilebilir
+  function otomatigeDon() {
+    const e = cur.shiftEdit || cur.shiftEditEski;
+    if (e && !confirm(t('Elle yapılan shift ataması kaldırılıp otomatik shift’lere dönülsün mü? Atama saklanır; “Elle atamayı geri getir” ile geri alabilirsiniz.'))) return false;
+    if (e) cur.shiftEditYedek = Object.assign({}, e, { t: Date.now() });
+    delete cur.shiftEdit; delete cur.shiftEditEski; invalidateDesign(); persist();
+    return true;
+  }
+  function elleAtamayiGeriGetir() {
+    if (!cur.shiftEditYedek) return;
+    cur.shiftEdit = cur.shiftEditYedek; delete cur.shiftEditYedek; invalidateDesign(); persist();
+    toast(t('Elle yapılan shift ataması geri getirildi'));
+  }
+
   // ---------- Hesap ----------
   function compute() {
     const opt = designOpt();
-    const r = E.design(cur.inp, settings, Object.assign({ manual: cur.shiftEdit || null }, opt));
+    // K-1: elle shift ataması hiçbir zaman uyarısız silinmez. Yerleşim değişirse 'shiftEditEski' olarak saklanır;
+    // yerleşim aynı imzaya dönerse kendiliğinden geri gelir.
+    const r = E.design(cur.inp, settings, Object.assign({ manual: cur.shiftEdit || cur.shiftEditEski || null }, opt));
+    if (r.ok && !cur.shiftEdit && cur.shiftEditEski && cur.shiftEditEski.sig === r.layout.sig) { cur.shiftEdit = cur.shiftEditEski; delete cur.shiftEditEski; persist(); toast(t('Elle yapılan shift ataması geri yüklendi')); }
+    if (r.ok && cur.shiftEdit && cur.shiftEdit.sig !== r.layout.sig) { cur.shiftEditEski = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; persist(); toast(t('Yerleşim değiştiği için elle shift ataması şu an uygulanamıyor; atama saklandı (yerleşim eski hâline dönerse geri gelir).')); }
     if (r.ok) { const before = cur.rev; St.snapshot(cur, 'hesap'); if (cur.rev !== before) save(KEY, projects); }
-    if (r.ok && cur.shiftEdit && cur.shiftEdit.sig !== r.layout.sig) { delete cur.shiftEdit; persist(); }
     // Kayıtlı shift sayısı artık mümkün değilse (veriler değişti) seçimi sıfırla
     if (r.ok && cur.inp.Ns && !r.sectorAlts.some(a => a.Ns === Number(V.parseNum(cur.inp.Ns)))) { delete cur.inp.Ns; persist(); return compute(); }
     lastRes = r; overlayRes = r; return r;
@@ -562,7 +580,7 @@
   }
   function bindAlt(el) {
     const b = $('#bAlt'); if (b) b.onclick = () => { b.disabled = true; b.textContent = t('Hesaplanıyor…'); setTimeout(() => safely(() => { altCache = E.layoutAlternatives(cur.inp, settings, designOpt()); $('#altBody').innerHTML = altHtml(altCache); bindAlt(el); }, t('Alternatifler')), 30); };
-    el.querySelectorAll('tr[data-alt]').forEach(x => x.onclick = () => { const v = altCache.list[+x.dataset.alt]; const keep = altCache; cur.inp.rowDir = v.rowDir; cur.inp.latD = v.latD; delete cur.inp.Ns; delete cur.inp.mainOd; delete cur.shiftEdit; invalidateDesign(); altCache = keep; persist(); renderResult(); toast(t('Yerleşim uygulandı')); });
+    el.querySelectorAll('tr[data-alt]').forEach(x => x.onclick = () => { const v = altCache.list[+x.dataset.alt]; const keep = altCache; cur.inp.rowDir = v.rowDir; cur.inp.latD = v.latD; delete cur.inp.Ns; delete cur.inp.mainOd; if (cur.shiftEdit) { cur.shiftEditEski = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; } invalidateDesign(); altCache = keep; persist(); renderResult(); toast(t('Yerleşim uygulandı')); });
   }
 
   function renderResult() {
@@ -599,7 +617,7 @@
       <div>${t('Manifold maks. debi / hız')}</div><div>${fmt(r.manifold.Qmax, 1)} m³/h · ${fmt(r.manifold.vMax, 2)} m/s</div>
       <div>${t('Manifold basınç farkı')}</div><div>${fmt(r.manifold.varMax, 2)} / ${fmt(r.emitter.allowMan, 2)} m</div>
       <div>${t('Lateral / manifold giriş')}</div><div>${fmt(r.inlet.hLatIn, 1)} / ${fmt(r.inlet.hManIn, 1)} m</div>
-      <div>${t('Ana hat')}</div><div>PVC ${mainSizes(r)} · ${fmt(r.main.Lmain, 0)} m</div>
+      <div>${t('Ana hat')}</div><div>${r.main.sel.pipe && r.main.sel.pipe.kutuphane ? r.main.sel.pipe.malzeme + ' SDR' + r.main.sel.pipe.sdr : 'PVC'} ${mainSizes(r)} · ${fmt(r.main.Lmain, 0)} m</div>
       ${r.layout.route ? `<div>${t('Çizilen güzergâh')}</div><div>${fmt(r.layout.routeLen, 0)} m</div>` : ''}
       <div>${t('Ana hat hız / kayıp')}</div><div>${fmt(m.v, 2)} m/s · ${fmt(m.hf, 1)} m</div>
       <div>${t('Filtre / vana kaybı')}</div><div>${fmt(r.head.filter, 1)} / ${fmt(r.head.valve, 1)} m</div>
@@ -638,7 +656,7 @@
       cur.shiftEdit = { sig: r.layout.sig, assign: assign.map(v => mp.get(v)) }; invalidateDesign(); persist(); renderResult();
     });
     $('#bShiftMap').onclick = () => { if (r.layout.mode !== 'parsel') return toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)')); show('arazi'); setMode('shift'); drawPoly(); };
-    const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { delete cur.shiftEdit; invalidateDesign(); persist(); renderResult(); };
+    const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { if (otomatigeDon()) renderResult(); };
     $('#toHydro').onclick = e => { e.preventDefault(); show('hidrolik'); };
     bindExport('#bPdf', '#bXls', r);
     el.querySelectorAll('select[data-onay]').forEach(x => x.onchange = () => {
@@ -777,14 +795,60 @@
     const r = lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null);
     const vm = r && r.ok ? HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) }) : (r ? { ok: false, err: r.err } : { ok: false, err: [t('Su kaynağı debisi (m³/h) girilmedi — shift, boru çapı ve pompa hesaplanamaz.')] });
     h.ptab = h.ptab || 'ozet';
-    el.innerHTML = HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
+    el.innerHTML = boruKarti(r) + HP.make({ t, locale: I.locale }).render(vm, { tab: h.ptab, shift: h.pshift || 0 });
     el.classList.add('hp');
+    baglaBoruKarti();
     const go = (tab, j) => { h.ptab = tab; if (j != null) h.pshift = j; persist(); renderHydro(); const v = $('#v-hidrolik'); if (v) v.scrollTop = 0; };
     el.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => go(b.dataset.ptab));
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
     el.querySelectorAll('[data-kod]').forEach(b => b.onclick = () => { pendingFocus = b.dataset.kod; show('sonuc'); });
     el.querySelectorAll('[data-shift]').forEach(b => b.onclick = () => go('shift', +b.dataset.shift));
     if (h.ptab === 'tablo') renderHydroTable(h, r);
+  }
+  // ---------- K-3: Ana hat borusu seçimi (malzeme, çap, SDR/PN) ----------
+  // Yalnız doğrulanmış kütüphane satırları seçilebilir. PVC-U ve PN6 (SDR26) doğrulanmış katalog olmadığı için
+  // gösterilir ama SEÇİLEMEZ (veri eksik). Seçim değişince hesap aynı design() çağrısıyla yenilenir.
+  function boruKarti(r) {
+    const P = window.IrriPipes, sec = cur.inp.boruSecimi && cur.inp.boruSecimi.ana;
+    const kart = icerik => `<div class="card" id="boruKarti" style="margin-bottom:12px"><h3 style="margin:0 0 8px">${t('Ana hat borusu')}</h3>${icerik}</div>`;
+    if (!P) return kart(`<p class="warn">${t('Boru kütüphanesi yüklenemedi; elle boru seçimi kullanılamıyor.')}</p>`
+      + (sec ? `<p class="warn">${t('Projede elle seçilmiş boru var; kütüphane yüklenmeden hesap yapılamaz.')}</p>` : ''));
+    const malz = sec ? sec.malzeme : (r && r.ok && r.main.sel.pipe.kutuphane ? r.main.sel.pipe.malzeme : 'PE100');
+    const satir = P.liste({ malzeme: malz, hatTuru: 'ana' });
+    const odlar = [...new Set(satir.map(x => x.od))].sort((a, b) => a - b);
+    const od = sec && odlar.includes(sec.od) ? sec.od : (r && r.ok ? (odlar.find(o => o >= r.main.sel.od) || odlar[odlar.length - 1]) : odlar[0]);
+    const sdrler = satir.filter(x => x.od === od);
+    const eksik = [];
+    if (!P.liste({ malzeme: 'PVC-U' }).length) eksik.push(t('PVC-U: doğrulanmış katalog verisi yok — seçilemez'));
+    if (malz === 'PE100' && !satir.some(x => x.sdr === 26)) eksik.push(t('PE100 PN6 (SDR26): iki bağımsız kaynakla doğrulanmadı — seçilemez'));
+    const ms = r && r.ok ? r.main.sel : null;
+    const durum = ms && ms.secim === 'kullanici'
+      ? `<p class="small">${t('Seçili')}: <b>${esc(ms.pipe.malzeme)} Ø${ms.od} SDR${ms.pipe.sdr} PN${ms.pn}</b> · ${t('et')} ${fmt(ms.pipe.et, 1)} mm · ${t('iç çap')} ${fmt(ms.ic, 1)} mm · ${t('hız')} ${fmt(ms.v, 2)} m/s</p>`
+        + (!ms.hizUygun || !ms.pnYeterli ? `<p class="warn" id="boruUygunsuz">${!ms.hizUygun ? t('Akış hızı 2,0 m/s sınırını aşıyor.') + ' ' : ''}${!ms.pnYeterli ? t('Basınç sınıfı (PN) işletme basıncı için yetersiz.') + ' ' : ''}${t('Bu seçim uygunsuz; seçiminiz silinmedi, hesap bu boruyla yapıldı.')}</p>` : '')
+      : ms ? `<p class="small">${t('Otomatik seçim')}: <b>${ms.pipe.kutuphane ? esc(ms.pipe.malzeme) : 'PVC-U'} Ø${ms.od} PN${ms.pn}</b> · ${t('iç çap')} ${fmt(ms.ic, 1)} mm</p>` : '';
+    const opt = (v, txt, on, dis) => `<option value="${v}" ${on ? 'selected' : ''} ${dis ? 'disabled' : ''}>${txt}</option>`;
+    return kart(`<div class="seg" style="margin-bottom:8px"><button data-boru="oto" class="${sec ? '' : 'on'}">${t('Otomatik (önerilen)')}</button><button data-boru="elle" class="${sec ? 'on' : ''}">${t('Elle seçim')}</button></div>
+      <div class="f" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+        <label>${t('Malzeme')}<select id="boruMalz">${['PE100', 'PE80', 'PVC-U'].map(m => opt(m, m + (P.liste({ malzeme: m }).length ? '' : ' — ' + t('veri eksik')), m === malz, !P.liste({ malzeme: m }).length)).join('')}</select></label>
+        <label>${t('Dış çap')}<select id="boruOd">${odlar.map(o => opt(o, 'Ø' + o, o === od)).join('')}</select></label>
+        <label>${t('SDR / PN')}<select id="boruSdr">${sdrler.map(x => opt(x.sdr, `SDR${String(x.sdr).replace('.', ',')} · PN${String(x.pn).replace('.', ',')} · ${t('iç çap')} ${fmt(P.icCap(x), 1)} mm`, sec ? x.sdr === sec.sdr : false)).join('')}</select></label>
+      </div>
+      <p class="small" style="margin:6px 0 0"><button class="btn sm primary" id="boruUygula">${t('Bu boruyu uygula')}</button></p>
+      ${durum}
+      ${eksik.map(x => `<p class="small muted">${x}</p>`).join('')}
+      <p class="small muted">${t('Kaynak: iki bağımsız üretici kataloğu (EN 12201-2 atıflı); standart metniyle doğrudan doğrulanmadı. İç çap = dış çap − 2 × en küçük et.')}</p>`);
+  }
+  function baglaBoruKarti() {
+    const k = $('#boruKarti'); if (!k || !window.IrriPipes) return;
+    const yenile = () => { invalidateDesign(); persist(); renderHydro(); };
+    const secim = () => ({ malzeme: $('#boruMalz').value, od: Number($('#boruOd').value), sdr: Number($('#boruSdr').value) });
+    k.querySelector('[data-boru=oto]').onclick = () => { if (!cur.inp.boruSecimi) return; if (!confirm(t('Elle seçilen boru kaldırılıp otomatik seçime dönülsün mü?'))) return; delete cur.inp.boruSecimi; yenile(); };
+    k.querySelector('[data-boru=elle]').onclick = () => { cur.inp.boruSecimi = { ana: secim() }; yenile(); };
+    $('#boruUygula').onclick = () => { cur.inp.boruSecimi = { ana: secim() }; yenile(); toast(t('Boru seçimi uygulandı; hesap yenilendi')); };
+    $('#boruMalz').onchange = () => { const P = window.IrriPipes, m = $('#boruMalz').value, ods = [...new Set(P.liste({ malzeme: m, hatTuru: 'ana' }).map(x => x.od))].sort((a, b) => a - b);
+      $('#boruOd').innerHTML = ods.map(o => `<option value="${o}">Ø${o}</option>`).join(''); $('#boruOd').onchange(); };
+    $('#boruOd').onchange = () => { const P = window.IrriPipes, rows = P.liste({ malzeme: $('#boruMalz').value, od: Number($('#boruOd').value), hatTuru: 'ana' });
+      $('#boruSdr').innerHTML = rows.map(x => `<option value="${x.sdr}">SDR${String(x.sdr).replace('.', ',')} · PN${String(x.pn).replace('.', ',')} · ${t('iç çap')} ${fmt(P.icCap(x), 1)} mm</option>`).join(''); };
   }
   function renderHydroTable(h, r) {
     const el = $('#hpTable');
