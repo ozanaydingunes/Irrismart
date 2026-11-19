@@ -284,13 +284,14 @@ Onaylanan sıra (proje sahibi, 18.11.2026):
 | 1 | **PR #8 — MH-AKIL-2** | Android kabul testi ve birleştirme kararı |
 | 2 | **MH-MANUEL-1A** | Proje, revizyon ve yedekleme güvenliği (V-01…V-19); KML için `geoKaynak` alanı ve güvenli geometri değişimi |
 | 3 | **MH-KML** | KML/KMZ ile gerçek arazi yükleme (`docs/mh-kml-plan.md`) |
-| 4 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
-| 5 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
-| 6 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
-| 7 | **MH-SHIFT-2** | Manuel shift sayısı |
-| 8 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
-| 9 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
-| 10 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
+| 4 | **MH-2A** | Eğim, kot ve izohips görselleştirme (`docs/mh-2a-plan.md`); hesap motoru değişmez |
+| 5 | **MH-MANUEL-1B** | Manuel düzenleme ve taslak sistemi |
+| 6 | **MH-SHIFT-1** | Harita etiketleri ve shift analiz ekranı |
+| 7 | **MH-MANUEL-2** | Gerçek yeniden hesaplama |
+| 8 | **MH-SHIFT-2** | Manuel shift sayısı |
+| 9 | **MH-MANUEL-3** | Karşılaştırma ve revizyon |
+| 10 | **MH-SHIFT-3** | Haritadan manuel shift düzenleme |
+| 11 | **MH-MANUEL-4** | Harita ve rapor entegrasyonu |
 | korunur | MH-AKIL-3 (akıllı arazi bölme), MH-AKIL-4, MH-AKIL-5 (su darbesi), MH-MANUEL-5, MH-2 (kot/eğim), MH-3 (kot–hidrolik), MH-MOTOR-1/2/3 | Yol haritasında; her biri ayrı plan ve onay |
 
 **Önceki değerlendirme (geçmiş kayıt).** Aşağıdaki öneriler uygulandı: PR #10 PR #8'den önce birleştirildi; MH-MANUEL-1 1A/1B olarak bölündü; MH-KML 1A'nın hemen arkasına alındı.
@@ -353,7 +354,7 @@ karşılaştırıldı. Plan geçerli; aşağıdaki eksikler ve netleştirmeler 1
 |---|---|---|
 | G-1 | **Proje silme geri alınamıyor.** Projeler ekranındaki "Sil" yalnız onay sorar ve projeyi kalıcı siler. | Yeni kriter **V-17**. "Silinenler" alanı: silinen proje revizyonlarıyla birlikte saklanır, geri alınabilir; kalıcı silme ayrı onayla. JSON yedek bu alanı da taşır. |
 | G-2 | **Birden fazla sekme/pencere** (WEB-2 ile masaüstünde olası): iki sekme aynı depoya yazınca son yazan kazanır; diğerindeki değişiklik sessizce kaybolur. Bugün `storage` olayı dinlenmiyor. | Yeni kriter **V-18**. Başka sekmede değişiklik algılanınca uyarı ve yeniden yükleme; eski sekmenin üzerine yazması engellenir. |
-| G-3 | **Göç güvenlik ağı yok.** Şema 3'e geçişten önce ham verinin bir kopyası alınmıyor. | Yeni kriter **V-19**. İlk göçten önce ham depolama metni ayrı anahtara bir kez kopyalanır (kurtarma için); kopya ancak kullanıcı isteyince silinir. |
+| G-3 | **Göç güvenlik ağı eksik (düzeltildi, 18.11.2026).** İlk göçte ham veri `irrigrow.premigration.v1` anahtarına kopyalanıyor; ancak anahtar adı sabit olduğu için şema 3 göçünde **yeni** ham yedek alınmaz. (İlk sürümde "hiç alınmıyor" yazılmıştı; yanlıştı.) | Yeni kriter **V-19**. İlk göçten önce ham depolama metni ayrı anahtara bir kez kopyalanır (kurtarma için); kopya ancak kullanıcı isteyince silinir. |
 | G-4 | `hydro` alanı karışık: elle girilen hidrolik tablo değerleri (`fields`) **mühendislik verisi**, `ptab`/`tab`/`pshift` ise **ekran durumu**. | `STATE_FIELDS` iki gruba ayrılır: mühendislik durumu (revizyona girer, değişiklik sayılır) ve görünüm durumu (revizyona girer ama yalnız onun değişmesi yeni revizyon oluşturmaz). V-01 testi bu ayrımı da denetler. |
 | G-5 | V-01'in yalnız `cur.<alan>` metin taraması yetmez: projeye `p.…`, `projects[i] = …`, `Object.assign(p, …)` ve PR #8'in `cur.akil` yazımlarıyla da dokunuluyor. | V-01 iki yöntemle: (a) statik tarama genişletilir; (b) arayüz testlerinde proje nesnesi `Proxy` ile izlenir ve yazılan her anahtarın listede olduğu doğrulanır. |
 | G-6 | Revizyonlar tam kopya; ölçüm: test2 ≈ 0,3 KB, 60 köşeli parsel sınırı tek başına ≈ 2,3 KB. Güzergâh, elle shift atamaları ve hidrolik tablo eklenince proje başına 20 revizyon ≈ 50–100 KB olabilir; çok projeli kullanımda tarayıcı sınırına (≈ 5 MB) yaklaşılabilir. | Revizyonda yalnız değişen alanlar saklanır (ilk revizyon tam, sonrakiler fark) **veya** boyut bütçesi; V-13 eşiği somutlaştırılır: %70'te bilgi, %85'te uyarı + yedek önerisi, %95'te yeni revizyon için onay. Hesapla türetilen veriler (ör. `akil.alternatifler`) revizyona girmez; yalnız kararlar (`akil.onay`) girer. |

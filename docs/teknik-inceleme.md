@@ -13,6 +13,8 @@ onayıyla ele alınır.
 | T-04 | `inp.Ns` kaynak sınırının altındaysa motor düzeni seçiyor; motor uyarı listesinde kaynak aşımı satırı yok | Açık — MH-MOTOR-1 (M-1) | W-KAP-03 "Uygunsuz" ile yakalanıyor; motor metni eksik | 18.11.2026 |
 | T-05 | Yerleşim imzası değişince elle shift ataması sorulmadan siliniyor (`app.js:406`); fırça atamaları doğrudan projeye yazılıyor | Açık — MH-MANUEL-1A | Veri kaybı riski | 18.11.2026 |
 | T-06 | Harita shift etiketleri yakınlaştırmaya göre seyrelmiyor, üst üste biniyor; etikette sabit "FIELD 1" metni | Açık — MH-SHIFT-1 | Okunabilirlik | 18.11.2026 |
+| T-08 | Open-Meteo/Copernicus kot verisi için zorunlu atıf ekranda ve raporda yok; kot kaynağının düşey referansı (EGM2008) ve DSM olduğu kaydedilmiyor | Açık — küçük bağımsız PR (`docs/t08-atif-plan.md`); referans/DSM bilgisi MH-2A | Kullanım şartı; yanlış yorum riski | 18.11.2026 |
+| T-09 | Open-Meteo ücretsiz API'si yalnız ticari olmayan kullanım için (çağrı sınırlarıyla); ticari kullanım abonelik ister | Açık — proje sahibinin kararı | Kullanım şartı | 18.11.2026 |
 | T-07 | Motor parsel içi boşlukları (KML `innerBoundaryIs`) desteklemiyor; tek dış halka | Açık — MH-MOTOR (E-7) | Boşluklu parselde sulanan alan fazla görünür; MH-KML'de açık uyarı ve onaysız alınmaz | 18.11.2026 |
 
 ## T-01 — Motor ↔ DXF uzunluk farkı

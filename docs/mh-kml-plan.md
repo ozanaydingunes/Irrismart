@@ -110,8 +110,8 @@ aynı ayrıştırıcı, aynı geometri, aynı proje alanları.
 
 ## 8. Yol haritası
 
-Onaylanan sıra (18.11.2026): PR #8 → MH-MANUEL-1A → **MH-KML** → MH-MANUEL-1B → MH-SHIFT-1 →
-MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3 → MH-MANUEL-4.
+Onaylanan sıra (18.11.2026): PR #8 → MH-MANUEL-1A → **MH-KML** → MH-2A → MH-MANUEL-1B → MH-SHIFT-1 →
+MH-MANUEL-2 → MH-SHIFT-2 → MH-MANUEL-3 → MH-SHIFT-3 → MH-MANUEL-4. KML parselleri MH-2A'da çizilmiş parsellerle aynı kot analiz ekranını kullanır.
 
 MH-KML, 1A'nın sağladığı `geoKaynak` alanını (köşe yükseklikleri dahil), güvenli geometri değişimini ve "yeni proje"
 yolunu kullanır (MH-MANUEL §14.0). MH-KML'de ayrıca motor değişikliği yoktur. MH-AKIL-3 (arazi
