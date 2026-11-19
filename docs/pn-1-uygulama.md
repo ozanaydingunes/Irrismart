@@ -1,6 +1,6 @@
 # PN-1 — Boru veri modeli ve standart tabanlı katalog: uygulama planı
 
-Durum: **kodlama öncesi uygulama planı (19.11.2026); başlatma onayı bekliyor.** Ana plan:
+Durum: **uygulama planı onaylandı; PN-1 kodlaması başlatıldı (19.11.2026).** Ana plan:
 `docs/mh-pn-plan.md` (D-1…D-13). Ayrı dal, ayrı kod PR'ı; onaysız birleştirilmez.
 
 ## 1. Kapsam
@@ -36,7 +36,8 @@ yüklenmez; PN-2'de eklenir), altın kayıtlar.
   enMin: 6.6,            // en küçük et kalınlığı (mm), standart tablosundan
   pn: 10,                // tablonun verdiği PN (C katsayısıyla birlikte)
   cTasarim: 1.25, mrs: 10,
-  kaynak: 'pn-kaynaklar.md#pe100-sdr17', dogrulama: 'iki-kaynak' | 'standart-metni' | 'dogrulanmadi' }
+  kaynak: 'pn-kaynaklar.md#pe100-sdr17', standartSurum: 'EN ISO 1452-2:2009', dogrulamaTarihi: '2026-11-19',
+  dogrulama: 'iki-uretici-katalogu' | 'standart-metni' }   // çelişen/belirsiz satır dosyaya girmez
 
 // Sıcaklık katsayısı tablosu
 { malzeme: 'PE100', standart: '…', noktalar: [[20, 1.0], [30, …], [40, …]], aralik: [0, 40],
@@ -57,9 +58,11 @@ yüklenmez; PN-2'de eklenir), altın kayıtlar.
   (tutarsızlık → test hatası, satır eklenmez).
 - **Hat türü uygunluğu:** `hatTurleri` (ana, dagitim, manifold). Lateral ve damla bantları bu
   kütüphanede yoktur (`maxH` ile ayrı).
-- **Doğrulama düzeyi:** yalnız `'iki-kaynak'` veya `'standart-metni'` satırlar `liste()` ile
-  döner. `'dogrulanmadi'` satırlar dosyada tutulmaz (D-4: doğrulanmamış kombinasyon motora
-  eklenmez).
+- **Doğrulama düzeyi:** yalnız `'iki-uretici-katalogu'` veya `'standart-metni'` satırlar etkin
+  kütüphanededir. Çelişen veya kaynağı belirsiz satırlar etkin kütüphaneye **girmez**; yalnız
+  karşılaştırma raporunda listelenir (D-4). `'standart-metni'` düzeyi yalnız standardın tam metniyle
+  doğrudan karşılaştırılmış satırlarda kullanılır; iki katalog birbirini doğrulasa bile bu düzey
+  **yazılmaz**.
 
 ## 4. İşlevler (`IrriPipes`)
 
@@ -78,17 +81,23 @@ yüklenmez; PN-2'de eklenir), altın kayıtlar.
 Standart metinleri (EN ISO 1452-2, ISO 4427-2, EN 12201-2) ücretli belgelerdir ve bu çalışma
 ortamından erişilemiyor. Bu yüzden:
 
-1. **Birincil hedef:** proje sahibinin erişebildiği standart metni (TSE/kurum aboneliği) → satırlar
-   `'standart-metni'` olarak işaretlenir.
-2. **Bu sağlanana kadar:** her satır, standart tablosunu yeniden yayımlayan **en az iki bağımsız
-   kamuya açık kaynakla** (farklı üreticilerin standart atıflı katalogları, sektör birliği
-   yayınları) karşılaştırılır. İkisi aynı değeri veriyorsa `'iki-kaynak'`; farklıysa satır
-   **eklenmez** ve `pn-kaynaklar.md`'de "çelişki" olarak listelenir.
-3. Her kaynak için: belge adı, yayımcı, sürüm/tarih, sayfa/tablo no, erişim tarihi.
+1. **Standart metni** (ileride, proje sahibinin erişimiyle) → `'standart-metni'`.
+2. **Proje sahibi kararı (19.11.2026):** tam metne erişilemediği sürece her satır, **en az iki
+   bağımsız üreticinin standart atıflı teknik kataloğuyla** karşılaştırılır; ISO ve EN
+   standartlarının **resmî kayıtları** (iso.org, CEN/ulusal kurum katalog sayfaları) standart adı,
+   sürümü ve yürürlük durumu için kullanılır. İki katalog aynı değeri veriyorsa
+   `'iki-uretici-katalogu'`; farklıysa veya kaynak belirsizse satır **etkin kütüphaneye eklenmez**
+   ve `pn-kaynaklar.md`'de "çelişki / belirsiz" olarak listelenir.
+3. Her satırda: kaynak, standart sürümü, doğrulama tarihi, doğrulama düzeyi. Her kaynak için:
+   belge adı, yayımcı, sürüm/tarih, tablo no, erişim tarihi.
 4. Sıcaklık katsayıları da aynı kurala tabidir; doğrulanamazsa tablo eklenmez ve PN-2'de
    "Sıcaklık katsayısı doğrulanmadı — 20 °C değeri kullanıldı" uyarısı gösterilir.
-5. Ekranda (PN-3/PN-4) doğrulama düzeyi görünür: "standart metniyle doğrulandı" /
-   "iki bağımsız kaynakla karşılaştırıldı — standart metniyle doğrulanmadı".
+5. Ekranda (PN-3/PN-4) doğrulama düzeyi görünür: "standart metniyle doğrudan doğrulandı" /
+   "iki bağımsız üretici kataloğuyla karşılaştırıldı — standart metniyle doğrudan doğrulanmadı".
+6. Sıcaklık katsayıları PE ve PVC-U için **ayrı kaynaklardan**; PE için ISO 4427-1:2019 Ek A
+   incelenir. Doğrulanamayan katsayı eklenmez, "veri eksik" bildirilir.
+7. Eski katalog ile yeni tablo arasındaki bütün farklar ayrı karşılaştırma raporunda
+   (`docs/pn-1-karsilastirma.md`); hiçbiri izinsiz düzeltilmez.
 
 İlk kapsam (doğrulandıkça eklenir): PVC-U Ø63–315 (PN6–PN16), PE100 Ø32–315 (PN6–PN16; SDR26,
 21, 17, 13,6, 11), PE80 Ø32–160 (PN6–PN12,5). PN4 ve PN20 yalnız tabloda bulunursa.
