@@ -324,6 +324,24 @@ nav.tabs button span{font-size:10px}
 .hp .hp-kod{font-size:11.5px;color:var(--muted);font-weight:700}
 .hp .hp-acts{display:inline-flex;gap:2px;margin-inline-start:auto}
 
+/* ===== MH-AKIL-2: kapasite alternatifleri ===== */
+.ak .ak-motor{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 0 0;padding:6px 8px;border-radius:8px;background:var(--bg);font-size:12.5px;font-variant-numeric:tabular-nums}
+.ak .ak-motor small{color:var(--muted)}
+.ak .ak-h4{margin:10px 0 4px;font-size:12px;color:var(--muted);text-transform:uppercase}
+.ak .ak-prog{height:8px;border-radius:8px;background:var(--bg);overflow:hidden;margin:8px 0}
+.ak .ak-prog span{display:block;height:100%;background:var(--pri)}
+.ak .ak-alt{font-size:12.5px;font-variant-numeric:tabular-nums}
+.ak .ak-alt th,.ak .ak-alt td{white-space:nowrap;vertical-align:top}
+.ak .ak-alt td:nth-child(2){white-space:normal;min-width:170px}
+.ak .ak-alt tr.ak-ref td{background:var(--bg)}
+@media (max-width:700px){
+  .ak .ak-alt thead{display:none}
+  .ak .ak-alt,.ak .ak-alt tbody,.ak .ak-alt tr,.ak .ak-alt td{display:block;width:100%}
+  .ak .ak-alt tr{border:1px solid var(--line);border-radius:10px;margin:0 0 8px;padding:6px 8px}
+  .ak .ak-alt td{display:flex;justify-content:space-between;gap:10px;border:0;padding:3px 0;white-space:normal;min-width:0!important;text-align:end}
+  .ak .ak-alt td::before{content:attr(data-label);color:var(--muted);font-size:12px;text-align:start}
+  .ak .ak-alt td:first-child::before{content:none}
+}
 /* ===== MH-WEB-1: web sürümü bilgi notu (yalnız tarayıcıda; Android'de eklenmez) ===== */
 .note.webnote{background:var(--pri2);color:var(--ink);border:1px solid var(--line)}
 .note.webnote .small{color:var(--muted);display:inline-block;margin-top:4px}

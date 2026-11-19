@@ -153,6 +153,8 @@
       // 4) Sulama aralığı (§6.3)
       const ar = intervalEval(r, inp, kap);
       cz.push(...ar.cozumler);
+      // MH-AKIL-2: kayıtlı ve geçerli motor alternatifleri varsa kaynak/süre/aralık çözümleri motor sonucuyla güncellenir
+      if (ctx.alt && ctx.alt.rows) applyAlternatives(cz, ctx.alt, n);
       // 5) Araziyi bölmek
       cz.push(sol('bolme', T('Araziyi bölmek, aynı kaynak'), 'kanitla-uygunsuz',
         T('Bölümler aynı kaynaktan sırayla sulanırsa günlük toplam ihtiyaç ({v} m³) ve kaynak kapasitesi ({c} m³/gün) değişmez; bölmek kapasiteyi artırmaz.', { v: n(Vd, 0), c: n(cap, 0) })));
@@ -390,6 +392,45 @@
     return { surum: VER, ok: true, planOrani: k, teknikUygun, findings, checks, other, matched, count, kapasite: kap };
   }
 
+  // MH-AKIL-2 sonuçlarını W-KAP-01 çözümlerine işler. Durum kuralları:
+  //  hesaplandi-uygun   : motorla hesaplandı, kapasite uygun VE başka "uygunsuz" uyarı kalmıyor
+  //  hesaplandi-uygunsuz: motorla hesaplandı; kapasite sağlanmıyor ya da kritik uyarılar açık kalıyor
+  function applyAlternatives(cz, alt, n) {
+    const motor = x => ({ Q: x.girdi.Q, H: x.girdi.H, I: x.girdi.I, Ns: x.Ns, cycle: x.cycle, avail: x.avail, Hmax: x.Hmax, motor: x.motor, kWh: x.kWh, od: x.od, pn: x.pn, hacim: x.hacim, acik: x.acik });
+    const kalan = x => x.acik && x.acik.length ? T('Kapasite sorunu çözülüyor, ancak şu kritik uyarılar açık kalıyor: {x}. Bu nedenle kesin çözüm olarak önerilmez.', { x: x.acik.join(', ') }) : null;
+    const durumOf = x => x.durum === 'uygun' ? 'hesaplandi-uygun' : 'hesaplandi-uygunsuz';
+    const qSol = (x, baslik) => sol2('kaynak', baslik, durumOf(x),
+      x.enKucuk ? T('Motorla hesaplandı: {q} m³/h ve {h} h/gün ile {ns} shift, tur {c} h ≤ {av} h. {qa} m³/h ile tur {ca} h, sığmıyor. Bu değer motorun shift gruplama kuralı ve bu yerleşim için bulunan en küçük değerdir; mutlak teorik minimum değildir.',
+        { q: n(x.girdi.Q, 1), h: n(x.girdi.H, 1), ns: String(x.Ns), c: n(x.cycle, 2), av: n(x.avail, 1), qa: n(x.altQ, 1), ca: n(x.altCycle, 2) })
+        : T('Motorla hesaplandı: {q} m³/h ve {h} h/gün ile {ns} shift, tur {c} h ≤ {av} h. 0,1 m³/h altı da uygun çıktı; bu değer en küçük olmayabilir.', { q: n(x.girdi.Q, 1), h: n(x.girdi.H, 1), ns: String(x.Ns), c: n(x.cycle, 2), av: n(x.avail, 1) }),
+      { motor: motor(x), kalan: kalan(x), kapsam: T('Kaynak debisi ve günlük süre dışındaki bütün girdiler aynı; kuyu veriminin pompa deneyiyle doğrulanması gerekir.') });
+    const sol2 = (tur, baslik, durum, gerekce, o) => Object.assign({ tur, baslik, durum, gerekce, gerekenVeri: [], asama: null, hedef: null }, o || {});
+    const byId = id => alt.rows.find(x => x.id === id);
+    // Kaynak debisi (mevcut süre)
+    const kq = byId('kaynak'), ki = cz.findIndex(c => c.tur === 'kaynak');
+    if (kq && ki >= 0 && kq.girdi) cz[ki] = Object.assign(qSol(kq, T('Kaynak debisini {q} m³/h’e çıkarmak', { q: n(kq.girdi.Q, 1) })), { gerekenVeri: cz[ki].gerekenVeri });
+    else if (kq && ki >= 0 && (kq.imkansiz || kq.bulunamadi)) cz[ki] = sol2('kaynak', T('Kaynak debisini artırmak'), 'hesaplandi-uygunsuz', T('Motorla aranan aralıkta kapasiteyi sağlayan bir debi bulunamadı.'));
+    // Günlük süre (mevcut debi)
+    const su = byId('sure'), si = cz.findIndex(c => c.tur === 'sure');
+    if (su && su.girdi) {
+      const x = su.kanit ? sol2('sure', T('Günlük çalışmayı 24 saate kadar uzatmak'), 'kanitla-uygunsuz', T('Gereken en az {h} h/gün > 24 h. Motor 24 h/gün ile de hesapladı: tur {c} h > {av} h.', { h: n(su.hNeed, 1), c: n(su.cycle, 2), av: n(su.avail, 1) }), { motor: motor(su) })
+        : sol2('sure', T('Günlük çalışmayı {h} saate çıkarmak', { h: n(su.girdi.H, 1) }), durumOf(su), T('Motorla hesaplandı: {h} h/gün ile tur {c} h ≤ {av} h.', { h: n(su.girdi.H, 1), c: n(su.cycle, 2), av: n(su.avail, 1) }), { motor: motor(su), kalan: kalan(su) });
+      if (si >= 0) cz[si] = x; else cz.splice(ki + 1, 0, x);
+    }
+    // Kaynak + süre
+    const ks = alt.rows.filter(x => x.aile === 'kaynak-sure' && x.girdi);
+    const at = cz.findIndex(c => c.tur === 'kaynak') + 1;
+    cz.splice(at, 0, ...ks.map(x => qSol(x, T('Kaynak {q} m³/h ve günde {h} saat', { q: n(x.girdi.Q, 1), h: n(x.girdi.H, 0) }))));
+    // Sulama aralığı: motor sonucu eklenir (MH-AKIL-1 değerlendirmesi ve varsayımlar korunur)
+    for (const x of alt.rows.filter(y => y.aile === 'aralik')) {
+      const c = cz.find(y => y.tur === 'aralik' && y.baslik && y.baslik.p && y.baslik.p.i === String(x.girdi.I));
+      if (!c) continue;
+      c.durum = durumOf(x);
+      c.motor = motor(x); c.kalan = x.kapasiteUygun ? kalan(x) : null;
+      c.motorNot = T('Motorla hesaplandı: {i} gün aralıkta tur {c} h, kullanılabilir {av} h.', { i: String(x.girdi.I), c: n(x.cycle, 2), av: n(x.avail, 1) });
+    }
+  }
+
   // §6.3 Sulama aralığı değerlendirmesi: her aralık seçeneği için ayrı satır; toplu "uygunsuz" yok.
   function intervalEval(r, inp, kap) {
     const s = r.schedule, D = g.IRRI_DATA, crop = D && D.CROPS ? D.CROPS[inp.crop] : null;
@@ -457,9 +498,13 @@
   const TUR_AD = { shift: 'Shift', kaynak: 'Kaynak', sure: 'Çalışma süresi', aralik: 'Sulama aralığı', bolme: 'Arazi bölme', boru: 'Boru', pn: 'PN sınıfı', ekipman: 'Ekipman', veri: 'Veri', depolama: 'Depolama', isletme: 'İşletme' };
 
   // Proje + motor sonucu → değerlendirme. Sonuç ekranı, Hidrolik panel, PDF ve Excel bu tek çağrıyı kullanır.
-  const forProject = (p, r) => evaluate(r, { inp: p && p.inp, k: planK(p), projeId: p && p.id || null, revId: null, onay: p && p.akil && p.akil.onay || null });
+  const SV = () => g.IrriSolver || (typeof require !== 'undefined' ? require('./solver.js') : null);
+  const forProject = (p, r) => {
+    const S = SV(), alt = S && S.valid(p, r) ? p.akil.alternatifler : null;   // girdiler değiştiyse kayıtlı alternatifler kullanılmaz
+    return evaluate(r, { inp: p && p.inp, k: planK(p), projeId: p && p.id || null, revId: null, onay: p && p.akil && p.akil.onay || null, alt });
+  };
 
-  const api = { forProject, VER, K_DEF, K_MIN, K_MAX, LEVELS, LEVEL_AD, DURUM, DURUM_AD, TUR_AD, ON_DEG, TRANSIENT, COVERS, evaluate, planK, clampK, text, reportRows };
+  const api = { altChecks, forProject, VER, K_DEF, K_MIN, K_MAX, LEVELS, LEVEL_AD, DURUM, DURUM_AD, TUR_AD, ON_DEG, TRANSIENT, COVERS, evaluate, planK, clampK, text, reportRows };
   g.IrriAssess = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
