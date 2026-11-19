@@ -14,6 +14,13 @@ Her girdi şunları içerir:
 
 ---
 
+## 2026-11-19 — MH-AUTO-1: Akıllı Otomatik Tasarım veri modeli ve saf kurallar (hesap değişikliği yok)
+
+- **Altın kayıt parmak izi:** değişmedi.
+- **Değişiklik:** yeni bağımsız modül `www/js/auto.js` ve `test/auto.test.js`. Modül motoru çağırmaz, motor sonucunu ve projeleri değiştirmez; `index.html` yüklemez (test A1-14).
+- **Formül, katsayı, eşik veya seçim kuralı değişmedi.** `engine.js`, `layout.js`, `catalog.js`, `assess.js`, `app.js` bu PR'da değiştirilmedi.
+- **Doğrulama:** `test/dogrulama.test.js`, `test/golden.test.js` ve `tools/audit.js` (38/38) aynı sonuçla geçiyor.
+
 ## 2026-11-17 — MH-0: İlk altın referans kaydı
 
 - **Parmak izi:** `46f22517b152d2412fd148aa292a72d13fd7feee2078de83a74509b49268f639`
