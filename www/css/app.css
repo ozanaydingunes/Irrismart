@@ -55,8 +55,8 @@ tr.click{cursor:pointer}
 .scroll{overflow-x:auto}
 .tag{display:inline-block;font-size:11px;background:var(--pri);color:var(--onpri);border-radius:6px;padding:1px 6px;margin-left:4px}
 details summary{cursor:pointer;color:var(--pri);font-weight:600}
-#map{position:absolute;inset:0 0 var(--mapbar,150px) 0}
-.mapbar{position:absolute;left:0;right:0;bottom:0;min-height:var(--mapbar,150px);background:var(--surface);border-top:1px solid var(--line);padding:8px 10px}
+#map{position:absolute;inset:0 0 var(--mapbar,150px) 0;z-index:0}   /* Leaflet katmanları harita içinde kalsın; büyüyen alt çubuk (KML paneli) üstte */
+.mapbar{position:absolute;left:0;right:0;bottom:0;min-height:var(--mapbar,150px);background:var(--surface);border-top:1px solid var(--line);padding:8px 10px;z-index:1}
 .mapinfo{font-size:13px;margin-bottom:6px;min-height:36px}
 .vtx{background:#ffd400;border:2px solid #0f5132;border-radius:50%}
 #toast{position:fixed;left:50%;bottom:calc(var(--tab) + 18px);transform:translateX(-50%);background:#15231c;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:2000;max-width:90%}

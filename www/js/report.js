@@ -2,7 +2,21 @@
 (function () {
   const RD = window.IrriReportData;
   const n = (v, d = 1) => (v == null || (typeof v === 'number' && !Number.isFinite(v))) ? '-' : typeof v === 'number' ? v.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }) : String(v);
-  const safe = s => String(s).replace(/[^\wçğıöşüÇĞİÖŞÜ\- ]+/g, '').trim().replace(/\s+/g, '_') || 'proje';
+  // Dosya adı yalnız ASCII: Chromium/Android bazı ASCII dışı adları ("Büyük tarla") "download" olarak kaydediyor.
+  // Yalnız dosya adı sadeleşir (ü→u, ş→s, …); proje adı, PDF/Excel içeriği ve Türkçe metinler değişmez.
+  // Dönüşüm bilgi kaybederse (Türkçe harf, Kiril, İbranice, Çince…) özgün addan türetilen sabit 4 karakterlik ek
+  // eklenir: "Büyük tarla" ile "Buyuk tarla" ya da iki Rusça ad aynı dosya adına düşmez.
+  const TR_ASCII = { ç: 'c', ğ: 'g', ı: 'i', ö: 'o', ş: 's', ü: 'u', Ç: 'C', Ğ: 'G', İ: 'I', Ö: 'O', Ş: 'S', Ü: 'U' };
+  const ozet = s => { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36).slice(-4).padStart(4, '0'); };
+  function safe(s) {
+    const ham = String(s == null ? '' : s).trim();
+    const a = ham.replace(/[çğıöşüÇĞİÖŞÜ]/g, c => TR_ASCII[c]).normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9_\- ]+/g, '').trim().replace(/\s+/g, '_').slice(0, 60);
+    // Kayıpsız: yalnız tek boşluklar '_' oldu ve özgün adda '_' yoktu ("A B" ile "A_B" ayrışır)
+    const kayipsiz = ham.replace(/ /g, '_') === a && !/_|\s\s|[^\S ]/.test(ham);
+    const kok = /[A-Za-z]/.test(a) ? a : ('proje' + (a ? '_' + a : ''));   // yalnız rakam kaldıysa ("Поле 1" → "1") okunur ön ek
+    return kok + (kayipsiz || !ham ? '' : '-' + ozet(ham));
+  }
   const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   function b64FromBuf(buf) { let s = ''; const b = new Uint8Array(buf); for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); }
 
@@ -43,11 +57,21 @@
     };
   }
 
+  // Android'de aynı adlı dosyanın üzerine yazılmaz (tarayıcı kendisi yeniden adlandırır): ad_2, ad_3 …
+  async function bosAd(FS, name) {
+    const nokta = name.lastIndexOf('.'), kok = name.slice(0, nokta), uz = name.slice(nokta);
+    for (let k = 1; k < 100; k++) {
+      const ad = k === 1 ? name : `${kok}_${k}${uz}`;
+      try { await FS.stat({ path: 'IrriGrow/' + ad, directory: 'DOCUMENTS' }); } catch (e) { return ad; }   // yoksa boş
+    }
+    return `${kok}_${Date.now()}${uz}`;
+  }
   async function saveFile(base, ext, base64, mime) {
-    const name = `${base}_${stamp()}.${ext}`;
+    let name = `${base}_${stamp()}.${ext}`;
     if (isNative()) {
       const FS = plugin('Filesystem');
       if (!FS) throw new Error(T('Dosya sistemi eklentisi bulunamadı'));
+      if (FS.stat) name = await bosAd(FS, name);
       const w = await FS.writeFile({ path: name, data: base64, directory: 'CACHE' }); // açma/paylaşma için
       let saved = null;
       try { await FS.writeFile({ path: 'IrriGrow/' + name, data: base64, directory: 'DOCUMENTS', recursive: true }); saved = T('Belgeler') + ' / IrriGrow / ' + name; }
@@ -212,5 +236,5 @@
     return saveFile(`IrriGrow_${safe(p.name)}`, 'dxf', b64FromBuf(D.bytes.buffer.slice(D.bytes.byteOffset, D.bytes.byteOffset + D.bytes.byteLength)), 'application/dxf');
   }
 
-  window.IrriReport = { pdf, xlsx, hydroXlsx, json, plugin, sheetPdf, dxf, saveFile };
+  window.IrriReport = { pdf, xlsx, hydroXlsx, json, plugin, sheetPdf, dxf, saveFile, dosyaAdi: safe };
 })();
