@@ -1,5 +1,8 @@
 # IrriGrow — Play Store yayın kontrol listesi (K-7)
 
+Ayrıntılar ve hazırlanan araçlar: `docs/k7-play-store.md` (kimlik, AAB, imza, lisanslar),
+`docs/gizlilik-politikasi.md` (taslak), `docs/play-veri-guvenligi.md` (form yanıtları), `.github/workflows/aab.yml`.
+
 Bu liste 1.0.0 sürüm adayından **ayrıdır**. K-7, gerçek cihaz testleri (`docs/k6-cihaz-test-listesi.md`) tamamlandıktan
 ve proje sahibi onay verdikten sonra başlar. Hiçbir madde yapılmadan "yayına hazır" denmez.
 
