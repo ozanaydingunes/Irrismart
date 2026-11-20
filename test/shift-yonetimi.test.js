@@ -94,3 +94,31 @@ test('SY-07 "Shiftleri Düzenle" yalnız W-HIZ-01 / W-POM-01 kartlarında; seçe
   ok(btn.length && btn.every(k => k === 'W-HIZ-01' || k === 'W-POM-01') && btn.length === kodlar.filter(k => k === 'W-HIZ-01' || k === 'W-POM-01').length, 'düğmeler: ' + btn.join());
   ok(!/data-shiftyon/.test(AV.make({}).render(A)), 'seçenek yoksa düğme yok (eski çıktı)');
 });
+
+test('SY-08 Uygunluk: tur süresi, günlük süre ve kaynak kapasitesi proje verisiyle; hedef debi denetimde kullanılmaz', () => {
+  const SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
+  const ozP = (i, opt) => { const r = E.design(i, null, opt); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject({ inp: i }, r)); };
+  const o5 = ozP(s18.inp, s18.opt), L5 = SY.uygunluk(o5, s18.inp.Q, s18.inp);
+  ok(SY.uygunMu(L5) && L5.varsayilan === true, '5 shift uygun; günlük süre varsayılan (20 h)');
+  const i12 = Object.assign({}, s18.inp, { Ns: 12 }), o12 = ozP(i12, s18.opt), L12 = SY.uygunluk(o12, i12.Q, i12);
+  const by = k => L12.find(x => x.k === k);
+  near(o12.tur, 23.023, 0.01, '12 shift tur'); ok(by('tur').ok === false && by('gunluk').ok === false && by('tur').sinir === 20, '23 h tur 20 h sınırını aşar');
+  ok(by('kaynak').ok === true && !SY.uygunMu(L12), 'kaynak debisi uygun ama düzen bütünüyle uygun değil');
+  ok(o12.feasible === false && by('tur').ok === o12.feasible, 'motorun ölçütüyle aynı');
+  // Kullanıcı günlük süreyi 24 h girerse aynı 12 shift tur sınırına sığar
+  const i24 = Object.assign({}, i12, { hours: 24 }), L24 = SY.uygunluk(ozP(i24, s18.opt), i24.Q, i24);
+  ok(L24.find(x => x.k === 'tur').ok && L24.find(x => x.k === 'tur').sinir === 24 && !L24.varsayilan, '24 h girilince uygun');
+  // Kapasite: günlük gereken hacim = toplam debi × süre ÷ aralık
+  near(by('kapasite').deger, o12.Qtoplam * o12.dur / o12.aralik, 1e-9, 'günlük hacim'); near(by('kapasite').sinir, i12.Q * 20, 1e-9, 'kaynak kapasitesi');
+  // Elle düzen kaynak debisini aşarsa 'kaynak' uygunsuz
+  const r0 = E.design(s18.inp, null, s18.opt), tek = r0.units.map(() => 0);
+  const om = ozP(s18.inp, Object.assign({ manual: { sig: r0.layout.sig, assign: tek } }, s18.opt));
+  ok(SY.uygunluk(om, s18.inp.Q, s18.inp).find(x => x.k === 'kaynak').ok === false, 'tek shift kaynak debisini aşar');
+  // Hedef debi: uygunluk ve özet hedeften bağımsız (fonksiyon hedef almaz; proje alanı hesaba girmez)
+  ok(JSON.stringify(SY.uygunluk(o12, i12.Q, Object.assign({}, i12, { shiftHedef: 999 }))) === JSON.stringify(L12), 'hedef debi denetimi değiştirmez');
+  ok(JSON.stringify(ozP(Object.assign({}, i12), s18.opt)) === JSON.stringify(o12), 'özet aynı');
+  ok(SY.uygunluk(o12, null, i12).find(x => x.k === 'kaynak').ok === null, 'kaynak debisi yoksa denetim belirsiz (uygun sayılmaz/aşılmış sayılmaz)');
+  const miss = []; for (const x of L12) for (const k of [x.ad, x.not, x.birim]) for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!['h', 'm³/h'].includes(k) && !(DICT[k] && DICT[k][l])) miss.push(l + ': ' + k);
+  for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!(DICT['Günlük çalışma süresi girilmedi: varsayılan değer kullanıldı'] || {})[l]) miss.push(l);
+  ok(!miss.length, miss.join('\n'));
+});

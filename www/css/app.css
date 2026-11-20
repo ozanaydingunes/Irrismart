@@ -474,3 +474,7 @@ html.desk nav.tabs button.desk-only{display:flex}
 html.desk .sm-panel{left:auto;right:0;width:min(520px,46vw);top:var(--top);bottom:0;border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(0,0,0,.12)}
 html.desk .sm-chip{top:calc(var(--top) + 12px)}
 .ak-smbtn,.sm-shift .row .btn{min-height:44px}
+.sm-uy{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.sm-uy small{color:var(--muted)}
+.sm-uy-i{font-weight:700;min-width:16px}
+.sm-uy-ok .sm-uy-i{color:var(--pri)}.sm-uy-bad .sm-uy-i,.sm-uy-bad b{color:var(--err)}.sm-uy-na .sm-uy-i{color:var(--muted)}

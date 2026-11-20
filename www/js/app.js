@@ -889,6 +889,8 @@
   function smUygula() {
     const T = sm.taslak, I0 = sm.ilk;
     if (SY.esit(T, I0) || (sm.r1 && !sm.r1.ok)) return;
+    const oT = sm.r1 ? sm.o1 : sm.o0;
+    if (oT && !SY.uygunMu(SY.uygunluk(oT, V0(cur.inp.Q), cur.inp)) && !confirm(t('Bu shift düzeni tur süresi veya kaynak kapasitesi sınırını aşıyor. Yine de uygulansın mı?'))) return;
     St.snapshot(cur, 'shift yönetimi öncesi');
     cur.shiftGeriAl = { t: Date.now(), Ns: cur.inp.Ns ?? null, mainOd: cur.inp.mainOd ?? null, shiftEdit: cur.shiftEdit || null, shiftEditYedek: cur.shiftEditYedek || null, shiftSira: cur.shiftSira || null, shiftHedef: cur.shiftHedef ?? null };
     if (T.manual) cur.shiftEdit = { sig: T.manual.sig, assign: T.manual.assign.slice() };
@@ -939,9 +941,10 @@
     const rec = sm.r0.sectorAlts.find(a => a.recommended), recNs = rec ? rec.Ns : null;
     const nsSec = T.manual ? 'elle' : String(T.Ns ?? recNs);
     const satir = sm.o1 ? SY.karsilastir(sm.o0, sm.o1) : null;
-    const Qs = V0(cur.inp.Q);
+    const Qs = V0(cur.inp.Q), uyg = SY.uygunluk(o, Qs, cur.inp);
     const kv = rows => `<dl class="sm-kv">${rows.filter(Boolean).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
-    const sap = Q => { const x = SY.hedefSapma(Q, T.hedef); return x == null ? '' : ` <span class="sm-hedef ${Math.abs(x) > 10 ? 'warn' : ''}" title="${esc(t('Hedef debi yalnız bilgidir; hesabı değiştirmez.'))}">${t('hedef')} ${fmt(T.hedef, 1)} · ${x > 0 ? '+' : ''}${fmt(x, 0)}%</span>`; };
+    // Hedef debi: hesaplanan debiden AYRI satırda, yalnız bilgi; hiçbir hesapta ve denetimde kullanılmaz
+    const hedefSatir = Q => { const x = SY.hedefSapma(Q, T.hedef); return x == null ? null : [t('Hedef debi (kullanıcı, bilgi)'), `<span class="sm-hedef ${Math.abs(x) > 10 ? 'warn' : ''}" title="${esc(t('Hedef debi yalnız bilgidir; hesabı değiştirmez.'))}">${fmt(T.hedef, 2)} m³/h · ${t('fark')} ${x > 0 ? '+' : ''}${fmt(x, 0)}%</span>`]; };
     const kart = (j, i) => {
       const s = o.shifts[j]; if (!s) return '';
       const on = sm.sec === j, p = s.pump;
@@ -950,7 +953,8 @@
           <span class="sm-mv"><button type="button" class="btn sm" data-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="${esc(t('Sırada yukarı taşı'))}">↑</button><button type="button" class="btn sm" data-dn="${i}" ${i === n - 1 ? 'disabled' : ''} aria-label="${esc(t('Sırada aşağı taşı'))}">↓</button></span></header>
         ${kv([
           [t('Alan'), `${fmt(s.A, 2)} da`],
-          [t('Debi (hesap)'), `<span class="${s.overSource ? 'bad' : ''}">${fmt(s.Q, 2)} m³/h${s.overSource ? ' ✗' : ''}</span>${sap(s.Q)}`],
+          [t('Debi (hesap)'), `<span class="${s.overSource ? 'bad' : ''}">${fmt(s.Q, 2)} m³/h${s.overSource ? ' ✗' : ''}</span>`],
+          hedefSatir(s.Q),
           [t('Gerekli giriş basıncı'), `${fmt(s.H, 2)} m (${fmt(s.Hbar, 2)} bar)`],
           [t('Süre · hacim'), `${fmt(s.dur, 2)} h · ${fmt(s.vol, 1)} m³`],
           p ? [t('Pompa görev noktası'), `${fmt(p.Q, 2)} m³/h @ ${fmt(p.H != null ? p.H : p.Hreq, 2)} m${p.H != null ? ` (${t('gerekli')} ${fmt(p.Hreq, 2)} m)` : ''}`] : [t('Pompa'), t('Pompa gerekmez')],
@@ -975,6 +979,8 @@
         </div>
         <p class="muted small">${t('Kaynak debisi')} ${fmt(Qs, 1)} m³/h · ${t('Toplam debi')} ${fmt(o.Qtoplam, 1)} m³/h · ${t('Bir tur süresi')} ${fmt(o.tur, 1)} h${o.feasible ? '' : ' ✗'}. ${t('Hedef debi yalnız bilgidir; hesabı değiştirmez.')}</p>
         ${hata ? `<div class="note err"><b>${t('Kesin sonuç verilemiyor')}</b><ul>${hata.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}
+        <section class="sm-sec" id="smUygunluk"><h3>${t('Uygunluk sınırları')}${sm.r1 ? ` <small class="muted">(${t('taslak')})</small>` : ''}</h3>${uyg.map(x => `<div class="sm-uy sm-uy-${x.ok === false ? 'bad' : x.ok ? 'ok' : 'na'}" data-k="${x.k}"><span class="sm-uy-i" aria-hidden="true">${x.ok === false ? '✗' : x.ok ? '✓' : '?'}</span><span><b>${t(x.ad)}</b>: ${fmt(x.deger, x.d)} ${esc(t(x.birim))} ${x.sinir != null ? `/ ${t('sınır')} ${fmt(x.sinir, x.d)} ${esc(t(x.birim))}` : `(${t('kaynak debisi girilmedi')})`}<br><small>${t(x.not)}</small></span></div>`).join('')}
+          ${!SY.uygunMu(uyg) ? `<div class="note err small" id="smUygunDegil">${t('Bu düzen proje verisine göre uygun değil: tur süresi veya kaynak kapasitesi sınırı aşılıyor. Uygulamak mümkündür ama sistem bu programla tepe dönem ihtiyacını karşılayamaz; günlük çalışma süresini, sulama aralığını veya shift düzenini gözden geçirin.')}</div>` : ''}</section>
         <section class="sm-sec"><h3>${t('Önce / sonra')}</h3>${cmp}</section>
         <section class="sm-sec"><h3>${t('Shift’ler (çalışma sırasıyla)')}</h3><p class="muted small">${t('Çalışma sırası yalnız sulama programı ve rapor sırasıdır; hidrolik hesabı değiştirmez.')}</p>
           <div class="sm-list">${sira.map(kart).join('')}</div></section>

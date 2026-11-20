@@ -46,14 +46,29 @@ const PROJ = { id: 'sy1', name: 'Shift yönetimi testi', created: 1, updated: 2,
 
     // SH-2
     const kart = await pg.$$eval('#smPanel .sm-shift', a => a.map(x => x.textContent));
-    const motor = await pg.evaluate(() => { const p = JSON.parse(localStorage.getItem('irrismart.projects.v1'))[0]; const r = IrriEngine.design(p.inp, undefined, { poly: p.poly, src: p.src, station: p.station, route: p.route }); return { n: r.sel.groups.length, g0: r.sel.groups[0].length, Qj: r.sel.Qj, alts: r.sectorAlts.map(a => ({ Ns: a.Ns, Qmax: a.Qmax, rec: !!a.recommended })) }; });
+    const motor = await pg.evaluate(() => { const p = JSON.parse(localStorage.getItem('irrismart.projects.v1'))[0]; const r = IrriEngine.design(p.inp, undefined, { poly: p.poly, src: p.src, station: p.station, route: p.route }); return { n: r.sel.groups.length, g0: r.sel.groups[0].length, Qj: r.sel.Qj, alts: r.sectorAlts.map(a => ({ Ns: a.Ns, Qmax: a.Qmax, rec: !!a.recommended, feasible: a.feasible })) }; });
     check(kart.length === motor.n && kart.every(x => /da/.test(x) && /m³\/h/.test(x) && /bar/.test(x) && /M\d/.test(x)), `${ad} SH-2 shift kartları eksik (${kart.length}/${motor.n})`);
     const tasma = await pg.evaluate(() => { const e = document.querySelector('#smPanel .sm-body'); return e.scrollWidth - e.clientWidth; });
     check(tasma <= 1, `${ad} SH-2 panel yatay taşıyor (${tasma} px)`);
     check(await pg.isVisible('#smAyni') && await pg.isDisabled('#smUygula'), `${ad} SH-2 değişiklik yokken Uygula kapalı olmalı`);
 
+    // SH-3a Uygunluk: en çok shiftli seçenek (S18'de 12 shift, tur 23 h > 20 h) uygun değil olarak gösterilir;
+    // Uygula onay ister, onay reddedilirse hiçbir şey yazılmaz
+    check(await pg.isVisible('#smUygunluk') && !(await pg.isVisible('#smUygunDegil')), `${ad} SH-3a mevcut düzen uygun gösterilmeli`);
+    const enCok = motor.alts.filter(a => !a.feasible).sort((a, b) => b.Ns - a.Ns)[0];
+    check(!!enCok, `${ad} SH-3a uygun olmayan alternatif yok`);
+    if (enCok) {
+      await pg.selectOption('#smNs', { value: String(enCok.Ns) }); await pg.waitForTimeout(600);
+      const tur = await pg.$eval('#smUygunluk [data-k=tur]', e => [e.className, e.textContent]);
+      check(await pg.isVisible('#smUygunDegil') && /sm-uy-bad/.test(tur[0]) && /20/.test(tur[1]) && /varsayılan/.test(await pg.textContent('#smUygunluk [data-k=gunluk]')), `${ad} SH-3a uzun tur uygun değil gösterilmeli (${tur[1]})`);
+      pg.removeAllListeners('dialog'); let soru = '';
+      pg.once('dialog', d => { soru = d.message(); d.dismiss(); });
+      await pg.click('#smUygula'); await pg.waitForTimeout(400);
+      pg.on('dialog', d => d.accept());
+      check(/tur süresi/.test(soru) && await pg.isVisible('#smPanel') && (await P()).inp.Ns == null, `${ad} SH-3a uygun olmayan düzende onay sorulmalı ve reddedilince yazılmamalı (${soru})`);
+    }
     // SH-3
-    const yeni = motor.alts.find(a => !a.rec && a.Ns > motor.n) || motor.alts.find(a => !a.rec);
+    const yeni = motor.alts.find(a => !a.rec && a.feasible && a.Ns > motor.n) || motor.alts.find(a => !a.rec && a.feasible);
     await pg.selectOption('#smNs', { value: String(yeni.Ns) }); await pg.waitForTimeout(600);
     const qmax = await pg.$eval('#smPanel .sm-cmp tr[data-k=Qmax] td:nth-child(3)', e => e.textContent);
     check(await pg.isVisible('#smPanel .sm-cmp') && Math.abs(parseFloat(qmax.replace(/\./g, '').replace(',', '.')) - yeni.Qmax) < 0.01, `${ad} SH-3 önizleme en büyük debi ${qmax} ≠ ${yeni.Qmax}`);
@@ -69,6 +84,10 @@ const PROJ = { id: 'sy1', name: 'Shift yönetimi testi', created: 1, updated: 2,
     const cmp1 = await pg.$eval('#smPanel .sm-cmp', e => e.textContent);
     await pg.fill('#smHedef', '30'); await pg.dispatchEvent('#smHedef', 'change'); await pg.waitForTimeout(200);
     check((await pg.$$('#smPanel .sm-hedef')).length === yeni.Ns, `${ad} SH-4 hedef sapması her shiftte gösterilmeli`);
+    // Hesaplanan debi ve hedef debi ayrı satırlarda; hesap satırında hedef değeri yok
+    const satirlar = await pg.$$eval('#smPanel .sm-shift:first-child .sm-kv dt', a => a.map(x => x.textContent));
+    const hesap = await pg.$eval('#smPanel .sm-shift:first-child .sm-kv', e => { const dt = [...e.querySelectorAll('dt')].find(x => /Debi \(hesap\)/.test(x.textContent)); return dt.nextElementSibling.textContent; });
+    check(satirlar.some(x => /Debi \(hesap\)/.test(x)) && satirlar.some(x => /Hedef debi \(kullanıcı, bilgi\)/.test(x)) && !/30,00|hedef/i.test(hesap), `${ad} SH-4 hesap ve hedef debi ayrı satırda olmalı (${satirlar} / ${hesap})`);
     check(await pg.$eval('#smPanel .sm-cmp', e => e.textContent) === cmp1, `${ad} SH-4 hedef debi karşılaştırmayı değiştirmemeli`);
 
     // SH-5

@@ -66,9 +66,33 @@
       Hmax: ms.Hmax, hfKritik: shifts[jc] ? shifts[jc].hfMain : null,
       pompa: p.need ? { Q: p.Q, H: p.H, motor: p.motor, ad: p.fromCatalog ? p.ad : null } : null,
       dur: r.schedule.t, tur: r.schedule.cycleHours, kWh: r.schedule.kWh, feasible: sel.feasible !== false,
+      saatGun: r.schedule.hoursPerDay, aralik: r.schedule.interval, avail: sel.avail,
       uygunsuz: cnt.uygunsuz || 0, uyari: cnt.uyari || 0, kontrolBad: vm.count.bad, kontrolWarn: vm.count.warn, kontrolOk: vm.count.ok,
     };
   }
+
+  // Uygunluk sınırları (yalnız motor sonucundan ve proje verisinden; motorun kendi ölçütüyle aynı):
+  //  - kaynak: her shift'in hesaplanan debisi ≤ su kaynağı debisi (shift'ler ardışık çalışır)
+  //  - kapasite: günlük gereken hacim (toplam debi × shift süresi ÷ aralık) ≤ kaynak debisi × günlük çalışma süresi
+  //    (gerekli koşul; yeterli değildir)
+  //  - gunluk: günlük gereken sulama süresi (tur ÷ aralık) ≤ günlük kullanılabilir süre
+  //  - tur: tur süresi ≤ günlük süre × sulama aralığı (motorun 'feasible' ölçütü)
+  // Hedef debi bu denetimlerde KULLANILMAZ. Günlük süre girilmemişse motorun varsayılanı (20 h) kullanılır ve belirtilir.
+  function uygunluk(o, Qsrc, inp) {
+    if (!o) return [];
+    const varsayilan = !(inp && inp.hours != null && inp.hours !== '');
+    const Qs = fin(Qsrc) && Qsrc > 0 ? Qsrc : null;
+    const gerekGun = o.Qtoplam * o.dur / o.aralik, kapGun = Qs != null ? Qs * o.saatGun : null;
+    const L = [
+      { k: 'kaynak', ad: 'Kaynak debisi', deger: o.Qmax, sinir: Qs, birim: 'm³/h', d: 1, ok: Qs == null ? null : o.Qmax <= Qs + 1e-9, not: 'En büyük shift debisi ≤ su kaynağı debisi' },
+      { k: 'kapasite', ad: 'Kaynak günlük kapasitesi', deger: gerekGun, sinir: kapGun, birim: 'm³/gün', d: 0, ok: kapGun == null ? null : gerekGun <= kapGun + 1e-6, not: 'Günlük gereken hacim ≤ kaynak debisi × günlük çalışma süresi (gerekli koşul, yeterli değil)' },
+      { k: 'gunluk', ad: 'Günlük sulama süresi', deger: o.tur / o.aralik, sinir: o.saatGun, birim: 'h/gün', d: 1, ok: o.tur / o.aralik <= o.saatGun + 1e-9, not: varsayilan ? 'Günlük çalışma süresi girilmedi: varsayılan değer kullanıldı' : 'Günlük gereken süre ≤ günlük kullanılabilir süre' },
+      { k: 'tur', ad: 'Tur süresi', deger: o.tur, sinir: o.avail, birim: 'h', d: 1, ok: o.feasible, not: 'Tur süresi ≤ günlük süre × sulama aralığı' },
+    ];
+    L.varsayilan = varsayilan;
+    return L;
+  }
+  const uygunMu = L => L.every(x => x.ok !== false);
 
   // Önce/sonra satırları. iyi: 'az' → düşük değer iyidir, 'cok' → yüksek değer iyidir, null → yön yok (bilgi)
   const SATIR = [
@@ -109,7 +133,7 @@
   // Rapor sırası: geçerli sıra varsa shift dizinlerini o sırayla döndürür, yoksa null (raporlar değişmez)
   const raporSirasi = (p, r) => p && r && r.ok && siraGecerli(p.shiftSira, r.sel.groups.length) && !siraVarsayilanMi(p.shiftSira) ? p.shiftSira.slice() : null;
 
-  const api = Object.freeze({ siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  const api = Object.freeze({ uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
