@@ -149,6 +149,7 @@ body.mapfull main{top:0;bottom:0}
 .zsmall .sbox .bd div:not(.k){display:none}
 .ztiny .sbox .bd{display:none}
 .ztiny .sbox{min-width:0}
+.znobox .sboxw{display:none}   /* shift başına alan kutudan küçükse kutu gizlenir; bilgi tıklayınca ve sağ panelde */
 .eqm{background:none;border:0}
 .znoeq .eqs{display:none}
 .plab{background:none;border:0;overflow:visible}
