@@ -2,7 +2,7 @@
 (function (g) {
   const SCHEMA = 2;
   const MAX_REVS = 20;
-  const REV_EXTRA = ['station', 'route', 'shiftEdit', 'shiftEditEski', 'shiftEditYedek'];
+  const REV_EXTRA = ['station', 'route', 'shiftEdit', 'shiftEditEski', 'shiftEditYedek', 'shiftSira', 'shiftHedef'];   // 1.0.1: çalışma sırası ve hedef debi
 
   // Tek proje: eksik alanları ekler, mevcut alanlara dokunmaz. Dönüş: yeni nesne
   function migrateProject(p) {

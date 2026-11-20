@@ -61,8 +61,17 @@
       [T('Gerekli basma yüksekliği (maks.)'), m.Hmax, 'm', 2],
     ];
     if (r.head.Havail > 0) hidrolik.push([T('Mevcut şebeke basıncı'), r.head.Havail, 'm', 1]);
-    const sektor = [[T('Shift'), T('Alt ünite'), T('Debi (m³/h)'), T('Gerekli H (m)')]].concat(sel.groups.map((gr, j) => [j + 1, gr.length, sel.Qj[j], m.H[j]]));
-    const sektorDec = [0, 0, 2, 2];
+    // 1.0.1: çalışma sırası (Shift Yönetimi) varsa shift tablosu o sırayla ve "Sıra" sütunuyla yazılır; yoksa tablo değişmez
+    const SY = g.IrriShiftYonetimi || (typeof require !== 'undefined' ? require('./shift-yonetimi.js') : null);
+    const sira = SY ? SY.raporSirasi(p, r) : null;
+    const sektor = sira
+      ? [[T('Çalışma sırası'), T('Shift'), T('Alt ünite'), T('Debi (m³/h)'), T('Gerekli H (m)')]].concat(sira.map((j, i) => [i + 1, j + 1, sel.groups[j].length, sel.Qj[j], m.H[j]]))
+      : [[T('Shift'), T('Alt ünite'), T('Debi (m³/h)'), T('Gerekli H (m)')]].concat(sel.groups.map((gr, j) => [j + 1, gr.length, sel.Qj[j], m.H[j]]));
+    const sektorDec = sira ? [0, 0, 0, 2, 2] : [0, 0, 2, 2];
+    const sektorPdf = sira ? { w: [24, 22, 26, 34, 34], num: [1, 2, 3, 4] } : { w: [30, 30, 40, 40], num: [1, 2, 3] };
+    const sektorXls = sira ? [12, 10, 12, 14, 14] : [10, 12, 14, 14];
+    // Hedef shift debisi yalnız bilgidir (hesabı değiştirmez); yalnız girilmişse rapora yazılır
+    if (p && Number.isFinite(p.shiftHedef) && p.shiftHedef > 0) ozet.push([T('Hedef shift debisi (bilgi; hesabı değiştirmez)'), p.shiftHedef, 'm³/h', 2]);
     const altSek = [[T('Shift sayısı'), T('En büyük shift (m³/h)'), T('Tur süresi (h)'), T('Süreye sığar'), T('Ana hat'), T('Maks. H (m)'), T('Motor (kW)'), T('Enerji (kWh/yıl)'), T('Karşılaştırma (TL/yıl)'), T('Durum')]]
       .concat(r.sectorAlts.map(a => [a.Ns, a.Qmax, a.cycleHours, a.feasible ? T('Evet') : T('Hayır'), `Ø${a.main.sel.od} PN${a.main.sel.pn}`, a.main.sel.Hmax, a.pump.need ? a.pump.motor : 0, a.kWh, a.missing.length ? T('Fiyat eksik') : a.compare, (a === sel ? T('SEÇİLİ') + ' ' : '') + (a.recommended ? T('Önerilen') : '')]));
     const altSekDec = [0, 2, 1, null, null, 1, 1, 0, 0, null];
@@ -89,7 +98,7 @@
       [T('Fiyatı eksik zorunlu kalem'), r.cost.missing, 'adet', 0], [T('Örnek fiyatlı kalem'), r.cost.example, 'adet', 0],
       r.cost.total != null ? [T('TOPLAM MALZEME BEDELİ'), r.cost.total, 'TL', 0] : [T('TOPLAM MALZEME BEDELİ'), 'Hesaplanmadı (eksik fiyat)', '', null],
     ];
-    return { akil: akil(p, r), ozet, hidrolik, sektor, sektorDec, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
+    return { akil: akil(p, r), ozet, hidrolik, sektor, sektorDec, sektorPdf, sektorXls, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
   }
 
   // Excel çalışma kitabı (SheetJS). Sayılar gerçek sayı hücresi, ondalık biçimi ayrı.
@@ -112,7 +121,7 @@
     kv(sn('Özet'), TB.ozet);
     sheet(sn('Uyarılar'), TB.akil.sheet, [10, 16, 46, 14, 12, 8, 16, 26, 90, 40], (ri, ci) => ri && (ci === 3 || ci === 4) ? TB.akil.decs[ri] : null);
     kv(sn('Hidrolik'), TB.hidrolik);
-    tbl(sn('Shift’ler'), TB.sektor, TB.sektorDec, [10, 12, 14, 14]);
+    tbl(sn('Shift’ler'), TB.sektor, TB.sektorDec, TB.sektorXls);
     tbl(sn('Shift alternatifleri'), TB.altSek, TB.altSekDec, [13, 20, 14, 12, 16, 12, 11, 16, 20, 18]);
     tbl(sn('Ana hat alternatifleri'), TB.altHat, TB.altHatDec, [8, 6, 10, 10, 12, 16, 14, 16, 14, 30]);
     kv(sn('Su ihtiyacı'), TB.su); tbl(sn('Aylık program'), TB.prog, TB.progDec, [8, 8, 14, 14, 12, 18, 16]);

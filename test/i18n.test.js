@@ -8,7 +8,7 @@ const DYN = ['Kuyu', 'Yüzey suyu', 'Şebeke / hidrant', 'Su kaynağı', 'Göl/k
   'Parsel', 'Ekipman', 'Etiketler', 'Shift kutuları', 'Tablolar', 'Müşteri / işletme', 'İl', 'İlçe', 'Mevki', 'Proje mühendisi', 'Proje tarihi', 'Pafta no', 'Yatay', 'Dikey', 'Renkli', 'Siyah-beyaz', 'Tek pafta', 'Çoklu pafta', 'Otomatik', 'yatay', 'dikey'];
 function keys() {
   const out = new Set();
-  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js', 'platform.js', 'desk.js']) {
+  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js', 'platform.js', 'desk.js', 'shift-yonetimi.js']) {
     const s = fs.readFileSync(W(f), 'utf8');
     for (const m of s.matchAll(/\b(?:t|T|tr|sn)\(\s*'((?:[^'\\]|\\.)*)'/g)) out.add(m[1].replace(/\\'/g, "'"));
   }

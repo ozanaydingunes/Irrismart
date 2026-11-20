@@ -65,6 +65,7 @@
       <span class="dt-status dt-sync" title="${esc(t('Projeler yalnız bu tarayıcıda saklanır. Otomatik bulut eşitlemesi yoktur; telefon ile bilgisayar arasında projeleri JSON yedekle taşıyın (Yedekle / Yedekten yükle).'))}">${esc(t('Yerel kayıt · eşitleme yok'))}</span>
       <span class="dt-status ${warnBk ? 'dt-warn' : ''}" title="${esc(bkTip)}">${esc(bk)}</span>
       <span class="dt-gap"></span>
+      <button type="button" class="dt-btn" data-dt="shift" ${cur ? '' : 'disabled'}>⇄ ${esc(t('Shift Yönetimi'))}</button>
       <details class="dt-menu"><summary class="dt-btn">${esc(t('Yedek'))} ▾</summary><div class="dt-pop" role="menu">
         <button type="button" role="menuitem" data-dt="backup">⤓ ${esc(t('Yedekle'))} (JSON)</button>
         <button type="button" role="menuitem" data-dt="restore">⤒ ${esc(t('Yedekten yükle'))}</button>
@@ -74,7 +75,7 @@
       </div></details>
       <label class="dt-theme"><span class="sr">${esc(t('Görünüm'))}</span><select data-dt="theme" aria-label="${esc(t('Görünüm'))}">${[['acik', 'Açık'], ['koyu', 'Koyu'], ['sistem', 'Sistem ayarı']].map(([k, l]) => `<option value="${k}" ${api.themeOf() === k ? 'selected' : ''}>${esc(t(l))}</option>`).join('')}</select></label>`;
     const act = {
-      new: () => api.newProject(), open: () => api.show('projeler'),
+      new: () => api.newProject(), open: () => api.show('projeler'), shift: () => api.shiftYonetimi && api.shiftYonetimi(),
       backup: () => { api.backup(); }, restore: () => api.restore(),
       pdf: () => api.export('pdf'), xlsx: () => api.export('xlsx'), hxlsx: () => api.export('hxlsx'), dxf: () => api.export('dxf'), sheet: () => api.export('sheet'),
     };
@@ -126,7 +127,7 @@
             ['Açılan manifoldlar', esc(d.units.join(', ')), ''], ['Lateral sayısı', N(d.nLat, 0), ''], ['Kritik ünite', esc(d.critUnit ? d.critUnit.id : '—'), '']].filter(Boolean))}
           <h4>${esc(t('Gerekli basınç dökümü'))}</h4>${kv(d.breakdown.map(b => [b.label, N(b.v, b.d), b.unit]))}
           <h4>${esc(t('Mühendislik uyarıları'))}</h4>${findingsFor(A, x => (x.ekran && x.ekran.sekme === 'shift') || x.seviye === 'uygunsuz')}
-          <div class="dk-links"><button type="button" data-go="shift:${d.j}">${esc(t('Shift Analizi’nde aç'))} ›</button><button type="button" data-go="sonuc">${esc(t('Bütün uyarılar'))} ›</button></div></div>`;
+          <div class="dk-links"><button type="button" data-shiftyon="${d.j}">${esc(t('Shift Yönetimi'))} ›</button><button type="button" data-go="shift:${d.j}">${esc(t('Shift Analizi’nde aç'))} ›</button><button type="button" data-go="sonuc">${esc(t('Bütün uyarılar'))} ›</button></div></div>`;
       } else if (s && s.type === 'manifold' && r.units[s.k]) {
         const u = r.units[s.k], j = shiftOf(r, s.k);
         body = head('Manifold (alt ünite)', `M${s.k + 1} · PE Ø${u.pipe.od} PN${u.pipe.pn}`) + `<div class="dk-body">
@@ -173,6 +174,7 @@
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const [v, j] = b.dataset.go.split(':'); if (v === 'sonuc') api.show('sonuc'); else api.openHydro(v, j != null ? +j : null); });
     el.querySelectorAll('[data-sel]').forEach(b => b.onclick = () => { const [type, j] = b.dataset.sel.split(':'); select(type === 'shift' ? { type, j: +j } : { type }); });
     el.querySelectorAll('[data-kod]').forEach(b => b.onclick = () => api.focusFinding(b.dataset.kod));
+    el.querySelectorAll('[data-shiftyon]').forEach(b => b.onclick = () => api.shiftYonetimi && api.shiftYonetimi(+b.dataset.shiftyon));
   }
 
   // ---------- Alt panel ----------

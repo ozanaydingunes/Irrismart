@@ -164,7 +164,7 @@
     }
     if (svg) { try { const img = await svgToPng(svg, 1400); const iw = Wd - 2 * M, ih = Math.min(iw * img.ratio, 200); const iw2 = ih / img.ratio; need(ih + 14); h1(tr('Yerleşim planı')); doc.addImage(img.data, 'PNG', M + (iw - iw2) / 2, y, iw2, ih); y += ih + 6; } catch (e) { /* plan çizilemezse rapor yine üretilir */ } }
     h1(tr('Hidrolik hesaplar')); kv(T.hidrolik);
-    h1(tr('Shift’ler')); table(T.sektor, [30, 30, 40, 40], T.sektorDec, [1, 2, 3]);
+    h1(tr('Shift’ler')); table(T.sektor, T.sektorPdf.w, T.sektorDec, T.sektorPdf.num);
     h1(tr('Shift planlaması alternatifleri')); table(T.altSek, [13, 18, 15, 13, 20, 14, 13, 19, 23, 34], T.altSekDec, [0, 1, 2, 5, 6, 7, 8]);
     h1(tr('Ana hat alternatifleri')); table(T.altHat, [11, 9, 13, 13, 15, 19, 19, 19, 19, 45], T.altHatDec, [0, 1, 2, 3, 4, 5, 6, 7, 8]);
     h1(tr('Su ihtiyacı ve sulama programı')); kv(T.su); table(T.prog, [20, 18, 24, 24, 24, 38, 34], T.progDec, [1, 2, 3, 4, 5, 6]);
