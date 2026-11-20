@@ -1,7 +1,10 @@
 # IrriGrow — Play Store yayın kontrol listesi (K-7)
 
 Ayrıntılar ve hazırlanan araçlar: `docs/k7-play-store.md` (kimlik, AAB, imza, lisanslar),
-`docs/gizlilik-politikasi.md` (taslak), `docs/play-veri-guvenligi.md` (form yanıtları), `.github/workflows/aab.yml`.
+`docs/gizlilik-politikasi.md` (TR) ve `docs/privacy-policy.md` (EN), `docs/play-veri-guvenligi.md` (form yanıtları),
+`docs/k7-aab-rehberi.md` (anahtar, GitHub Secrets, Play Console adım adım), `.github/workflows/aab.yml`.
+
+**Yayın engeli (çözülmedi):** Open-Meteo ve Esri ticari kullanım koşulları — çözülene kadar üretim yayını yok.
 
 Bu liste 1.0.0 sürüm adayından **ayrıdır**. K-7, gerçek cihaz testleri (`docs/k6-cihaz-test-listesi.md`) tamamlandıktan
 ve proje sahibi onay verdikten sonra başlar. Hiçbir madde yapılmadan "yayına hazır" denmez.

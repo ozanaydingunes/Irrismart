@@ -1,55 +1,81 @@
-# IrriGrow — Gizlilik Politikası (TASLAK)
+# IrriGrow Gizlilik Politikası
 
-> **Taslak.** Yayından önce: (1) geliştirici adı ve **iletişim e-posta adresi** eklenmeli, (2) harita/kot sağlayıcısı
-> kararı (K-7 §4) sonrası §3 güncellenmeli, (3) hukuki gözden geçirme yapılmalı, (4) herkese açık bir adreste
-> yayımlanmalı (ör. GitHub Pages). Bu metin uygulamanın 1.0.0 sürümündeki gerçek davranışına göre yazılmıştır.
+> **Yayın notu (bu kutu yayımlanan sayfaya konmaz):** Yayımlamadan önce yalnız köşeli parantezli üç alan doldurulur:
+> `[GELİŞTİRİCİ ADI]`, `[İLETİŞİM E-POSTASI]`, `[YÜRÜRLÜK TARİHİ]`. Harita veya yükseklik sağlayıcısı değişirse
+> (K-7 §4) 4. bölüm güncellenir. Metin, IrriGrow 1.0.0'ın gerçek davranışına göre yazılmıştır. Hukuki gözden geçirme önerilir.
+> İngilizce sürüm: `docs/privacy-policy.md`.
 
-Son güncelleme: [tarih] · Geliştirici: [ad] · İletişim: [e-posta]
+**Yürürlük tarihi:** [YÜRÜRLÜK TARİHİ]
+**Geliştirici:** [GELİŞTİRİCİ ADI]
+**İletişim:** [İLETİŞİM E-POSTASI]
+
+Bu politika, IrriGrow Android uygulamasının ve IrriGrow web uygulamasının (birlikte "Uygulama") hangi bilgileri
+nasıl işlediğini açıklar.
 
 ## 1. Özet
-IrriGrow, damla sulama ön projelendirmesi için bir hesap uygulamasıdır. **Hesap açma, reklam, analiz/izleme aracı ve
-bulut eşitleme yoktur.** Projeleriniz cihazınızda saklanır.
+- Hesap açmanız gerekmez. Ad, e-posta veya telefon numarası istenmez.
+- Uygulamada reklam, kullanım analizi (analytics), çökme raporlama veya izleme aracı **yoktur**.
+- Projeleriniz **cihazınızda** saklanır; geliştiriciye gönderilmez. Bulut eşitleme yoktur.
+- İnternet bağlantısı varken yalnız iki dış hizmete istek yapılır: uydu görüntüsü için **Esri**, yükseklik için
+  **Open-Meteo** (ayrıntı 4. bölümde).
 
-## 2. Cihazda saklanan veriler
-- Projeler (ad, girdiler, parsel sınırı koordinatları, kaynak/istasyon noktaları, hesap seçimleri), fiyat ayarları,
-  dil/tema tercihleri ve yüklediğiniz ekipman kataloğu yalnız uygulamanın cihazdaki yerel depolamasında tutulur.
-- Bu veriler geliştiriciye **gönderilmez**.
-- **Android sistem yedeklemesi:** Telefonunuzda Google hesabıyla Android yedeklemesi açıksa, Android uygulama verilerini
-  (projeler dahil) Google'ın yedekleme hizmetine kendisi yedekleyebilir. Bu, Android'in özelliğidir ve telefon
-  ayarlarınızdan kapatılabilir.
-- Uygulamayı kaldırdığınızda veya projeyi sildiğinizde veriler cihazdan silinir. Silmeden önce **Yedekle** ile JSON yedeği alabilirsiniz.
+## 2. Cihazınızda saklanan bilgiler
+Uygulama aşağıdakileri yalnız cihazınızın yerel depolamasında (Android uygulama verisi veya tarayıcının yerel
+depolaması) tutar:
+- projeler: proje adı, girdiler (bitki, debi, toprak vb.), parsel sınırı koordinatları, kaynak/istasyon noktaları,
+  boru ve shift seçimleri, hesap sonuçları için gerekli veriler;
+- fiyat ayarları, dil ve tema tercihleri;
+- isteğe bağlı olarak yüklediğiniz ekipman kataloğu.
 
-## 3. Üçüncü taraf hizmetlere giden bilgiler (yalnız internet bağlantısı varken)
-| Hizmet | Ne zaman | Gönderilen |
-|---|---|---|
-| **Esri (World Imagery)** — uydu görüntüsü | Harita ekranı açıkken | Görüntülenen bölgenin karo koordinatları ve standart ağ bilgileri (IP adresi, tarayıcı/WebView bilgisi) |
-| **Open-Meteo (Elevation API)** — yükseklik/eğim | Parselde **Uygula**'ya bastığınızda | Parsel sınırındaki ve içindeki örnek noktaların enlem/boylamı (en çok ~80 nokta) ve standart ağ bilgileri |
+Bu bilgiler geliştiriciye veya üçüncü kişilere gönderilmez.
 
-Proje adı, bitki, debi, maliyet gibi diğer bilgiler bu hizmetlere gönderilmez. Bu hizmetlerin kendi gizlilik politikaları geçerlidir.
+**Android sistem yedeklemesi:** Telefonunuzda Google hesabınızla Android yedeklemesi açıksa, Android işletim sistemi
+uygulama verilerini (projeler dahil) Google'ın yedekleme hizmetine kendisi yedekleyebilir. Bu işlem Android'in bir
+özelliğidir, geliştirici bu yedeklere erişemez; telefonunuzun yedekleme ayarlarından (çoğu cihazda **Ayarlar → Sistem → Yedekleme** veya **Google → Yedekleme**)
+kapatabilirsiniz.
 
-## 4. Konum
-- Uygulama konum iznini **yalnız haritadaki "◎" (konumum) düğmesine bastığınızda** ve yalnız haritayı bulunduğunuz yere
-  getirmek için kullanır. Konum geliştiriciye gönderilmez; arka planda konum alınmaz.
-- Harita o bölgeye gelince ilgili karolar §3'teki gibi Esri'den istenir.
+**Web uygulaması:** Projeler tarayıcınızın yerel depolamasında kalır. Tarayıcı verilerini sildiğinizde projeler de silinir.
 
-## 5. Dosyalar
-- KML/KMZ ve JSON yedek dosyaları yalnız sizin seçtiğiniz dosyalardır ve cihazda okunur; dosya içeriği hiçbir yere gönderilmez.
-- PDF, Excel, DXF raporları cihazınıza (Belgeler/IrriGrow) kaydedilir; paylaşmak sizin seçiminizdir.
+## 3. Konum
+- Uygulama (Android ve web) konum iznini **yalnız haritadaki "◎" (konumum) düğmesine bastığınızda** ister ve kullanır.
+- Konumunuz yalnız haritayı bulunduğunuz yere getirmek için cihazda kullanılır; geliştiriciye gönderilmez, saklanmaz
+  ve arka planda konum alınmaz.
+- Harita o bölgeye geldiğinde, ilgili uydu görüntüsü 4. bölümde açıklandığı gibi Esri'den istenir.
 
-## 6. Çocuklar
-Uygulama profesyonel kullanıcılara yöneliktir; çocuklara yönelik değildir ve çocuklardan bilerek veri toplamaz.
+## 4. Üçüncü taraf hizmetler
+Aşağıdaki istekler yalnız internet bağlantısı varken ve yalnız ilgili işlevi kullandığınızda yapılır. Bağlantılar
+HTTPS ile şifrelenir. Bu hizmetler kendi gizlilik politikalarına tabidir.
 
-## 7. Güvenlik
-Üçüncü taraf hizmetlere bağlantılar HTTPS ile şifrelenir. Cihazdaki verilerin korunması cihazın kendi güvenliğine bağlıdır.
+| Hizmet | Ne zaman | Gönderilen bilgi | Amaç |
+|---|---|---|---|
+| **Esri** (World Imagery uydu görüntüsü) | Harita ekranı açıkken | Görüntülenen bölgenin harita karosu koordinatları; her internet isteğinde olduğu gibi IP adresi ve tarayıcı/WebView bilgisi | Haritada uydu görüntüsünü göstermek |
+| **Open-Meteo** (Elevation API) | Parselde **Uygula**'ya bastığınızda | Parsel sınırındaki ve içindeki örnek noktaların enlem ve boylamı (en çok yaklaşık 80 nokta); IP adresi ve tarayıcı/WebView bilgisi | Yükseklik ve eğimi hesaplamak |
 
-## 8. Değişiklikler ve iletişim
-Bu politika değişirse güncel sürüm aynı adreste yayımlanır. Sorular için: [e-posta].
+Proje adı, bitki, debi, fiyat, maliyet ve diğer proje bilgileri bu hizmetlere **gönderilmez**.
 
----
+## 5. Dosyalar ve paylaşım
+- Açtığınız KML/KMZ ve JSON yedek dosyaları yalnız sizin seçtiğiniz dosyalardır; cihazda okunur ve hiçbir yere gönderilmez.
+- PDF, Excel ve DXF raporları cihazınıza (Android'de Belgeler/IrriGrow klasörüne) kaydedilir. Bir raporu e-posta
+  veya mesajlaşma uygulamasıyla paylaşmak tamamen sizin seçiminizdir; paylaşım o uygulamanın koşullarına tabidir.
 
-# IrriGrow — Privacy Policy (DRAFT, English summary)
-No accounts, ads, analytics or cloud sync. Projects are stored only on your device (Android's own system backup may
-include app data if you enabled it). With an internet connection, map tile coordinates are requested from **Esri** and,
-when you press **Apply**, sample coordinates of your parcel (up to ~80 points) are sent to **Open-Meteo** to obtain
-elevation. Location permission is used only when you tap the "◎" button, to centre the map; it is not sent to the developer.
-Files you open (KML/KMZ, JSON) are read on the device only. Contact: [e-mail].
+## 6. Verilerin saklanması ve silinmesi
+- Projeyi uygulama içinden silebilir, uygulamayı kaldırarak bütün verileri cihazdan silebilirsiniz.
+- Geliştiricinin sunucusunda sizinle ilgili bir veri bulunmadığından, silme için ayrıca başvurmanız gerekmez.
+- Silmeden önce **Projeler → Yedekle** ile JSON yedeği alabilirsiniz.
+
+## 7. Çocuklar
+Uygulama profesyonel kullanıcılara (sulama tasarımı) yöneliktir; 13 yaşından küçük çocuklara yönelik değildir ve
+çocuklardan bilerek bilgi toplamaz.
+
+## 8. Güvenlik
+Dış hizmetlere yapılan bütün istekler HTTPS ile şifrelenir. Cihazınızdaki verilerin korunması cihazınızın kilit ve
+şifreleme ayarlarına bağlıdır.
+
+## 9. Haklarınız
+Kişisel verilerinizle ilgili sorularınız ve 6698 sayılı KVKK veya GDPR kapsamındaki talepleriniz için
+[İLETİŞİM E-POSTASI] adresine yazabilirsiniz. Geliştirici sizinle ilgili veri saklamadığından, çoğu talep cihazınızdaki
+verilerle ilgilidir ve uygulama içinden yönetilebilir.
+
+## 10. Değişiklikler
+Bu politika değişirse güncel sürüm aynı adreste yayımlanır ve yürürlük tarihi güncellenir. Önemli değişiklikler
+uygulama güncellemesi notlarında da belirtilir.
