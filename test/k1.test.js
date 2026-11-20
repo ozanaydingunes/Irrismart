@@ -47,3 +47,17 @@ test('K1-04 Uygulama: elle shift ataması yalnız saklanarak kaldırılır; geri
   ok(!korumasiz.length, 'saklamadan silen satır: ' + korumasiz.map(x => x[0].trim().slice(0, 80)).join(' | '));
   ok(/St\.planBackup\(projects, valid\)/.test(app) && !/üzerine yazılacak/.test(app), 'geri yükleme onayı yeni davranışı anlatır');
 });
+
+test('K1-05 Aynı yedek ikinci kez yüklenince "(yedekten)" kopya çoğalmaz; yedek değişmişse yeni kopya eklenir', () => {
+  const yerel = [pr('a', { name: 'Yerel', inp: { crop: 'domates', area_da: 10, Q: 77 } })];
+  const yedek = [pr('a', { name: 'Yedek', inp: { crop: 'domates', area_da: 10, Q: 10 } })];
+  St.mergeBackup(yerel, JSON.parse(JSON.stringify(yedek)));
+  ok(yerel.length === 2 && St.mergeBackup.son.kopya === 1, 'ilk yüklemede tek kopya');
+  ok(St.planBackup(yerel, yedek).ayni === 1 && St.planBackup(yerel, yedek).farkli === 0, 'özet: aynı yedek "aynı" sayılmalı');
+  St.mergeBackup(yerel, JSON.parse(JSON.stringify(yedek)));
+  ok(yerel.length === 2 && St.mergeBackup.son.ayni === 1 && St.mergeBackup.son.kopya === 0, `ikinci yüklemede kopya çoğaldı: ${yerel.length}`);
+  ok(yerel.find(x => x.id === 'a').inp.Q === 77, 'yerel proje korunmalı');
+  const degisik = [pr('a', { name: 'Yedek', inp: { crop: 'domates', area_da: 10, Q: 12 } })];
+  St.mergeBackup(yerel, degisik);
+  ok(yerel.length === 3 && St.mergeBackup.son.kopya === 1, 'farklı içerikli yedek yeni kopya eklemeli');
+});

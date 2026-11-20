@@ -104,7 +104,7 @@
   function openMap() {
     if (!map) {
       map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([38.5, 33.5], 6);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: window.IrriKaynak ? IrriKaynak.haritaAtif(t) : 'Esri, Maxar' }).addTo(map);   // K-5: uydu ve kot atfı
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: window.IrriKaynak ? IrriKaynak.haritaAtif(t) : 'Esri, Vantor, Earthstar Geographics' }).addTo(map);   // K-5: uydu ve kot atfı
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: .8 }).addTo(map);
       map.on('click', e => {
         const ll = [e.latlng.lat, e.latlng.lng];
@@ -1029,7 +1029,7 @@
     const li = a => `<li>${esc(a)}</li>`;
     return `<details class="card" id="kaynakKarti"><summary><b>${t('Veri kaynakları ve sınırlamalar')}</b></summary>
       <p class="small"><b>${t(K.KAYNAK.uydu.ad)}:</b> ${esc(K.KAYNAK.uydu.saglayici)}<br><span class="muted">${esc(K.KAYNAK.uydu.atif)}</span></p>
-      <p class="small"><b>${t(K.KAYNAK.kot.ad)}:</b> ${esc(K.KAYNAK.kot.saglayici)} — ${esc(K.KAYNAK.kot.model)} (≈ ${K.KAYNAK.kot.cozunurluk_m} m)<br><span class="muted">${esc(K.KAYNAK.kot.atif)}</span></p>
+      <p class="small"><b>${t(K.KAYNAK.kot.ad)}:</b> ${esc(K.KAYNAK.kot.saglayici)} — ${esc(K.KAYNAK.kot.model)} (≈ ${K.KAYNAK.kot.cozunurluk_m} m)<br>${K.bag(K.KAYNAK.kot.url, 'Open-Meteo.com')} · ${K.bag(K.KAYNAK.kot.lisansUrl, K.KAYNAK.kot.lisans)}<br><span class="muted">${esc(K.KAYNAK.kot.atif)}</span></p>
       <p class="small"><b>${t('Kot verisinin sınırları')}</b></p><ul class="small">${K.KOT_SINIRLARI.map(s => li(t(s))).join('')}${li(t(K.KML_NOTU))}</ul>
       <p class="small muted">${esc(t(K.GIZLILIK))}</p></details>`;
   }

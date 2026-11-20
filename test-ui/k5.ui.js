@@ -46,7 +46,7 @@ const KML = `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><D
     // K5-a, K5-b
     await pg.click('nav.tabs [data-v=arazi]'); await pg.waitForTimeout(500);
     const atif = await pg.$eval('.leaflet-control-attribution', e => e.textContent);
-    check(/Esri, Maxar, Earthstar Geographics/.test(atif) && /Open-Meteo · Copernicus DEM GLO-90/.test(atif), `${tag} K5-a harita atfı: ${atif}`);
+    check(/Esri, Vantor, Earthstar Geographics/.test(atif) && /Open-Meteo\.com \(CC BY 4\.0\) · Copernicus DEM GLO-90/.test(atif) && await pg.$eval('.leaflet-control-attribution a[href="https://open-meteo.com/"]', a => a.target === '_blank').catch(() => false), `${tag} K5-a harita atfı: ${atif}`);
     check(await pg.isVisible('#kotNotu') && /ön inceleme, ölçülmüş kot değil/.test(await pg.textContent('#kotNotu')), `${tag} K5-b haritada kot notu yok`);
     // K5-c
     await pg.click('#kotBilgi'); await pg.waitForTimeout(500);
@@ -65,7 +65,7 @@ const KML = `<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2"><D
     const rows = XLSX.utils.sheet_to_json(XLSX.read(xb).Sheets['Varsayımlar'], { header: 1 }).filter(r => r[0] === 'Veri kaynağı').map(r => r[1]);
     const hep = rows.join('\n');
     check(/Kot ve eğim kaynağı: Open-Meteo Elevation API — Copernicus DEM GLO-90/.test(hep) && /50–56 m/.test(hep), `${tag} K5-d Excel kot kaynağı/aralığı: ${rows[0]}`);
-    check(/doğrulanmış hidrolik kot değildir/.test(hep) && /© DLR e\.V\./.test(hep) && /Esri, Maxar/.test(hep), `${tag} K5-d Excel sınır/atıf`);
+    check(/doğrulanmış hidrolik kot değildir/.test(hep) && /© DLR e\.V\./.test(hep) && /Esri, Vantor/.test(hep) && /Elevation data by Open-Meteo\.com \(https:\/\/open-meteo\.com\/\), CC BY 4\.0/.test(hep), `${tag} K5-d Excel sınır/atıf`);
     check(/Parsel sınırı: KML dosyası “kot\.kml”, parsel “Kot tarlası”/.test(hep) && /hidrolik hesapta kullanılmaz/.test(hep), `${tag} K5-d Excel KML kaynağı`);
     check(pb.slice(0, 4).toString() === '%PDF' && pb.length > 20000, `${tag} K5-d PDF üretilmedi`);
     // PDF kaynak bölümü: aynı projede kaynak bilgisi yokken PDF daha az sayfa/bayt

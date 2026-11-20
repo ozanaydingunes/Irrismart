@@ -55,6 +55,7 @@ Durum: **hazırlık.** Hiçbir madde yayın anlamına gelmez. Ücretli/ticari ya
 
 > **Durum (20.11.2026): çözülmedi.** Open-Meteo ve Esri ticari kullanım koşulları çözülene kadar Play Store **üretim**
 > kanalına yayın yapılmaz; yalnız dahili test kanalı kullanılabilir. Adım adım rehber: `docs/k7-aab-rehberi.md`.
+> Kaynak bazında değerlendirme (alıntılar ve adresler): `docs/lisans-degerlendirme.md`.
 
 | Servis | Bugünkü kullanım | Durum | Seçenekler |
 |---|---|---|---|
