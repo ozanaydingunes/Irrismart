@@ -44,14 +44,17 @@ Durum: **hazırlık.** Hiçbir madde yayın anlamına gelmez. Ücretli/ticari ya
 - [ ] Geliştirici hesabı; uygulama adı **IrriGrow**; varsayılan dil Türkçe; kategori: İş/Verimlilik (öneri).
 - [ ] Mağaza girişi: kısa (≤ 80) ve uzun açıklama (TR, EN), simge 512×512, öne çıkan görsel 1024×500, telefon ve
       7"/10" tablet ekran görüntüleri.
-- [ ] **Gizlilik politikası URL'si** (`docs/gizlilik-politikasi.md` → herkese açık sayfa; iletişim adresi eklenmeli).
+- [ ] **Gizlilik politikası URL'si** (`docs/gizlilik-politikasi.md` TR, `docs/privacy-policy.md` EN → ad, e-posta ve tarih doldurulup herkese açık sayfada yayımlanmalı).
 - [ ] **Veri güvenliği formu** (`docs/play-veri-guvenligi.md`).
 - [ ] İçerik derecelendirmesi anketi; hedef kitle (18+ / profesyonel); reklam yok beyanı.
 - [ ] **Konum izni beyanı:** uygulama `ACCESS_FINE_LOCATION` istiyor (yalnız "◎ konumum" düğmesiyle, ön planda).
 - [ ] targetSdk Play'in güncel şartını karşılıyor (bugün 36).
 - [ ] Önce **dahili test** kanalı → kapalı test → üretim.
 
-## 4. Harita ve kot verisi lisansları — **çözülmeden ücretli/ticari yayın yok**
+## 4. Harita ve kot verisi lisansları — **YAYIN ENGELİ: çözülmeden ücretli/ticari yayın yok**
+
+> **Durum (20.11.2026): çözülmedi.** Open-Meteo ve Esri ticari kullanım koşulları çözülene kadar Play Store **üretim**
+> kanalına yayın yapılmaz; yalnız dahili test kanalı kullanılabilir. Adım adım rehber: `docs/k7-aab-rehberi.md`.
 
 | Servis | Bugünkü kullanım | Durum | Seçenekler |
 |---|---|---|---|

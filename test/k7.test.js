@@ -27,8 +27,14 @@ test('K7-02 AAB iş akışı: kimlik denetimi, gizli değişkenler, şifreler GI
 
 test('K7-03 Gizlilik ve veri güvenliği belgeleri uygulamanın gerçek davranışını kapsar', () => {
   const g = R('docs/gizlilik-politikasi.md'), v = R('docs/play-veri-guvenligi.md'), k = R('docs/k7-play-store.md');
-  for (const s of ['Esri', 'Open-Meteo', 'Android sistem yedeklemesi', '◎', 'KML/KMZ', 'reklam', 'TASLAK', '[e-posta]']) ok(g.includes(s), 'gizlilik: ' + s);
+  for (const s of ['Esri', 'Open-Meteo', 'Android sistem yedeklemesi', '◎', 'KML/KMZ', 'reklam', '[İLETİŞİM E-POSTASI]', 'KVKK']) ok(g.includes(s), 'gizlilik: ' + s);
+  const en = R('docs/privacy-policy.md');
+  for (const s of ['Esri', 'Open-Meteo', 'Android system backup', '◎', 'KML/KMZ', 'advertising', '[CONTACT E-MAIL]', 'GDPR']) ok(en.includes(s), 'privacy: ' + s);
+  ok(g.split('\n## ').length === en.split('\n## ').length, 'TR ve EN bölüm sayısı aynı olmalı');
   ok(/allowBackup="true"/.test(R('android/app/src/main/AndroidManifest.xml')), 'allowBackup değişirse gizlilik metni güncellenmeli');
   for (const s of ['Kesin konum', 'HTTPS', 'ACCESS_FINE_LOCATION', 'Analiz SDK']) ok(v.includes(s), 'veri güvenliği: ' + s);
-  for (const s of ['com.irrigrow.app', 'Play App Signing', 'çözülmeden ücretli/ticari yayın yok', 'MH-AKIL-5']) ok(k.includes(s), 'K-7: ' + s);
+  for (const s of ['com.irrigrow.app', 'Play App Signing', 'YAYIN ENGELİ', 'çözülmedi', 'MH-AKIL-5']) ok(k.includes(s), 'K-7: ' + s);
+  const r = R('docs/k7-aab-rehberi.md');
+  for (const s of ['IRRIGROW_UPLOAD_KEYSTORE_B64', 'IRRIGROW_UPLOAD_STORE_PASSWORD', 'IRRIGROW_UPLOAD_KEY_ALIAS', 'IRRIGROW_UPLOAD_KEY_PASSWORD', 'keytool -genkeypair', 'Yayın engeli', 'Dahili test']) ok(r.includes(s), 'rehber: ' + s);
+  for (const s of ['IRRIGROW_UPLOAD_KEYSTORE_B64', 'IRRIGROW_UPLOAD_STORE_PASSWORD', 'IRRIGROW_UPLOAD_KEY_ALIAS', 'IRRIGROW_UPLOAD_KEY_PASSWORD']) ok(wf.includes('secrets.' + s), 'iş akışı gizli değişkeni ile rehber aynı olmalı: ' + s);
 });
