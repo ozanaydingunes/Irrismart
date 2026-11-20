@@ -100,6 +100,7 @@
   // Renkler: ana hat kırmızı, manifold mavi, lateral yeşil, shift bölgeleri yarı saydam, su kaynağı turkuaz
   const COL = { main: '#d32f2f', man: '#1565c0', lat: '#2e9d4f', src: '#00bcd4', edge: '#ffd400' };
   let map, poly, markers = [], extra = [], planLayer = null, mapMode = 'sinir', overlayRes = null, showPlan = true, brush = 0, legend = null;
+  let mapZc = () => {};   // shift kutusu ayrıntı düzeyi (harita açılınca atanır)
   function openMap() {
     if (!map) {
       map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([38.5, 33.5], 6);
@@ -116,7 +117,24 @@
       });
       legend = L.DomUtil.create('div', 'mlegend'); legend.innerHTML = `<div><i style="background:${COL.main}"></i>${t('Ana hat')}</div><div><i style="background:${COL.man}"></i>Manifold</div><div><i style="background:${COL.lat}"></i>Lateral</div><div><i style="background:${COL.src};height:8px;width:8px;border-radius:50%"></i>${t('Kaynak')}</div>`;
       $('#map').appendChild(legend);
-      const zc = () => { const z = map.getZoom(), el = $('#map'); el.classList.toggle('zsmall', z < 17); el.classList.toggle('ztiny', z < 15); el.classList.toggle('znoeq', z < 17); }; map.on('zoomend', () => { zc(); mapLabels(); }); zc();
+      // Shift kutularının ayrıntısı, kutunun ekranda kaplayacağı alanın shift başına düşen parsel alanına oranına göre
+      // seçilir (yalnız yakınlaştırma düzeyine göre değil): büyük kutular küçük parselleri örtmez, birbirinin üstüne binmez.
+      const zc = () => {
+        const z = map.getZoom(), el = $('#map'); el.classList.toggle('znoeq', z < 17);
+        let px2 = Infinity;   // shift başına düşen parsel alanı (ekran px²)
+        try {
+          const n = overlayRes && overlayRes.ok && overlayRes.sel ? overlayRes.sel.groups.length : 0;
+          if (n && cur && cur.poly && cur.poly.length >= 3) {
+            const mpp = 156543.03 * Math.cos(map.getCenter().lat * Math.PI / 180) / Math.pow(2, z);
+            px2 = Gm.fieldFromPolygon(cur.poly).A / n / (mpp * mpp);
+          }
+        } catch (e) { /* hesap yoksa yalnız yakınlaştırmaya göre */ }
+        const KUTU = { tam: 14000, kisa: 5200, baslik: 2400 };   // yaklaşık kutu alanı (px²)
+        el.classList.toggle('zsmall', z < 17 || px2 < 3 * KUTU.tam);
+        el.classList.toggle('ztiny', z < 15 || px2 < 3 * KUTU.kisa);
+        el.classList.toggle('znobox', px2 < 2 * KUTU.baslik);
+      };
+      mapZc = zc; map.on('zoomend', () => { zc(); mapLabels(); }); zc();
     }
     setMode(mapMode);
     if (showPlan && !overlayRes && cur.inp.geom === 'parsel' && cur.poly.length >= 3) safely(() => compute(), 'Plan');
@@ -143,7 +161,8 @@
   }
   document.querySelectorAll('#mModes button').forEach(b => b.onclick = () => { setMode(mapMode === b.dataset.m && b.dataset.m !== 'sinir' ? 'sinir' : b.dataset.m); drawPoly(); });
   function vtx(ll, cls, onMove, html, size = 16) {
-    const m = L.marker(ll, { draggable: true, icon: L.divIcon({ className: cls, html: html || '', iconSize: [size, size] }) }).addTo(map);
+    // Düzenleme tutamaçları shift kutularının ve ekipmanın (zIndexOffset 400–500) üstünde: sınır her zaman sürüklenebilir
+    const m = L.marker(ll, { draggable: true, zIndexOffset: 1000, icon: L.divIcon({ className: cls, html: html || '', iconSize: [size, size] }) }).addTo(map);
     m.on('dragend', ev => { const p = ev.target.getLatLng(); onMove([p.lat, p.lng]); invalidateDesign(); persist(); drawPoly(); });
     extra.push(m); return m;
   }
@@ -234,6 +253,7 @@
     });
     M.fittings.forEach(ft => { if (ft.type === 'reduksiyon') L.marker(M.toLL(ft.at), { interactive: true, icon: L.divIcon({ className: 'eqm eqs', html: symSVG('reduksiyon', 14), iconSize: [14, 14] }) }).bindTooltip(t('Redüksiyon') + ' ' + ft.text).addTo(g); });
     planLayer = g.addTo(map);
+    mapZc();
     mapLabels();
   }
   // Ortak çizim modeli (harita, Teknik Proje, PDF ve DXF aynı modeli kullanır)
@@ -486,7 +506,7 @@
         const bad = val.errors[k];
         const field = Array.isArray(type)
           ? `<select name="${k}">${type.map(([v, tx]) => `<option value="${v}" ${String(i[k] ?? '') === v ? 'selected' : ''}>${t(tx)}</option>`).join('')}</select>`
-          : `<input name="${k}" type="text" inputmode="decimal" value="${esc(i[k] ?? '')}" placeholder="${esc(String(phv ?? '').replace('.', ','))}" class="${bad ? 'bad' : ''}">`;
+          : `<input name="${k}" type="text" inputmode="decimal" value="${esc(inVal(i[k]))}" placeholder="${esc(String(phv ?? '').replace('.', ','))}" class="${bad ? 'bad' : ''}">`;
         return `<label ${cls === 'one' ? 'style="grid-column:1/-1"' : ''}>${t(lab)}${field}${bad ? `<span class="ferr">${esc(bad)}</span>` : ''}</label>`;
       }).join('')}</div></fieldset>`).join('') +
       (i.geom === 'parsel' && (cur.poly || []).length < 3 ? `<div class="note warn">${t('Gerçek parsel modu için Arazi ekranında sınır çizin.')}</div>` : '') +

@@ -13,9 +13,9 @@ test('K6-01 Sürüm 1.0.0 her yerde aynı: package.json, package-lock, version.j
   ok(vn === pkg.version, `versionName ${vn}`);
 });
 
-test('K6-02 versionCode bir artırıldı (0.6.1 = 9 → 1.0.0 = 10); version.js ile aynı', () => {
+test('K6-02 versionCode artar (0.6.1 = 9 → 1.0.0 RC1 = 10 → 1.0.0 RC2 = 11); version.js ile aynı', () => {
   const vc = +gradle.match(/^\s*versionCode (\d+)$/m)[1];
-  ok(vc === 10 && V.kod === vc, `versionCode ${vc} / ${V.kod}`);
+  ok(vc === 11 && V.kod === vc, `versionCode ${vc} / ${V.kod}`);
 });
 
 test('K6-03 Uygulama kimliği ve imza anahtarı değişmedi (eski kurulumun üzerine güncelleme, veriler korunur)', () => {
