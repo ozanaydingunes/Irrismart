@@ -478,3 +478,19 @@ html.desk .sm-chip{top:calc(var(--top) + 12px)}
 .sm-uy small{color:var(--muted)}
 .sm-uy-i{font-weight:700;min-width:16px}
 .sm-uy-ok .sm-uy-i{color:var(--pri)}.sm-uy-bad .sm-uy-i,.sm-uy-bad b{color:var(--err)}.sm-uy-na .sm-uy-i{color:var(--muted)}
+.sm-genel{border-radius:10px;padding:8px 10px;margin:6px 0 8px;border:1px solid var(--line)}
+.sm-genel-uygun{background:var(--pri2);color:var(--pri)}
+.sm-genel-sinirda,.sm-genel-varsayimla,.sm-genel-dogrulanamadi{background:var(--warnbg);color:var(--warn)}
+.sm-genel-uygun-degil{background:var(--errbg);color:var(--err)}
+.sm-uy-warn .sm-uy-i,.sm-uy-warn b{color:var(--warn)}
+/* 1.0.1 düzeltmesi: önizleme özeti (yapışkan), hesaplanıyor durumu, harita vurgusu */
+.sm-ozetbar{position:sticky;top:-8px;z-index:2;margin:0 -16px 8px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 2px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:13px}
+.sm-ozetbar .hp-link{margin-left:auto;background:none;border:0;color:var(--pri);font:inherit;font-weight:600;min-height:36px}
+.sm-oz-iyi b{color:var(--pri)}.sm-oz-kotu b{color:var(--err)}
+.sm-genel-cip{border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
+.sm-mesgul{position:sticky;top:-8px;z-index:3;margin:0 -16px 8px;padding:10px 16px;background:var(--pri);color:var(--onpri);font-weight:600}
+.sm-panel[aria-busy=true] .sm-list,.sm-panel[aria-busy=true] .sm-sec{opacity:.5}
+body.sm-vurgu .mlegend{display:none}
+.sm-ozetbar{font-size:12.5px;gap:3px 6px;padding:6px 16px}
+.sm-oz{white-space:nowrap;border:1px solid var(--line);border-radius:6px;padding:0 5px;background:var(--card)}
+.sm-ozetbar .hp-link{min-height:32px}
