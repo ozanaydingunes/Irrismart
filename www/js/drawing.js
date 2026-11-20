@@ -134,7 +134,11 @@
   // ---------- Pafta ----------
   const PAPER = { A1: [841, 594], A2: [594, 420], A3: [420, 297], A4: [297, 210] };
   const FONT = { A1: 3.0, A2: 2.5, A3: 2.0, A4: 1.6 };
-  const SCALES = [500, 1000, 2000, 4000, 5000];
+  // Standart ölçekler. 1:5000'den küçükleri (uzak su kaynağı / uzun ana hat) eklenmeden önce, 1:5000'e sığmayan çizim
+  // sessizce 1:5000'de bırakılıyor, geometrinin merkezine ortalandığı için parsel kayıyor ve ana hat/kaynak kırpılıyordu.
+  const SCALES = [500, 1000, 2000, 4000, 5000, 7500, 10000, 15000, 20000, 25000, 50000];
+  // Listedeki ölçekler de yetmezse sığan ilk 1-2-5 dizisi ölçeği (tek paftada çizim asla kırpılmaz)
+  const sigdir = (gw, gh, aw, ah) => { const ham = Math.max(gw * 1000 / aw, gh * 1000 / ah); let u = Math.pow(10, Math.floor(Math.log10(ham))); for (;;) { for (const m of [1, 2, 5]) if (m * u >= ham) return m * u; u *= 10; } };
 
   // Pafta yerleşimi ve ölçek kontrolü
   function sheetLayout(M, o) {
@@ -166,11 +170,15 @@
     const aw = area.x1 - area.x0 - 8, ah = area.y1 - area.y0 - 8;
     const bb = M.bbox, need = s => ({ w: bb.w * 1000 / s, h: bb.h * 1000 / s });
     const fitsAt = s => need(s).w <= aw && need(s).h <= ah;
-    const auto = SCALES.find(fitsAt) || null;
-    const scale = o.scale === 'auto' || !o.scale ? (auto || SCALES[SCALES.length - 1]) : +o.scale;
+    const auto = SCALES.find(fitsAt) || (bb.w > 0 || bb.h > 0 ? sigdir(bb.w, bb.h, aw, ah) : SCALES[0]);
+    const scale = o.scale === 'auto' || !o.scale ? auto : +o.scale;
+    // Uzak kaynak: yalnız parsel çizilseydi ölçek en az 2,5 kat büyük olabilirdi → kullanıcıya not (detay paftası önerisi)
+    const pb = M.parcel && M.parcel.length >= 3 ? bboxOf(M.parcel) : null;
+    const parselOlcek = pb ? (SCALES.find(s2 => pb.w * 1000 / s2 <= aw && pb.h * 1000 / s2 <= ah) || sigdir(pb.w, pb.h, aw, ah)) : null;
+    const uzakKaynak = !!(parselOlcek && auto >= 2.5 * parselOlcek);
     const nd = need(scale), fits = nd.w <= aw && nd.h <= ah;
     const nx = Math.max(1, Math.ceil(nd.w / aw)), ny = Math.max(1, Math.ceil(nd.h / ah));
-    return { W, H, fs, mg, frame, area, aw, ah, place, scale, fits, auto, tiles: { nx, ny, n: nx * ny }, need: nd };
+    return { W, H, fs, mg, frame, area, aw, ah, place, scale, fits, auto, parselOlcek, uzakKaynak, tiles: { nx, ny, n: nx * ny }, need: nd };
   }
 
   // Bilgi paneli blokları: antet, proje parametreleri, shift özeti, boru özeti, semboller
@@ -375,13 +383,13 @@
     prims.push({ t: 'rect', x: L.frame.x0, y: L.frame.y0, w: L.frame.x1 - L.frame.x0, h: L.frame.y1 - L.frame.y0, fill: null, stroke: '#000', lw: 0.6 });
     prims.push({ t: 'rect', x: L.area.x0, y: L.area.y0, w: L.area.x1 - L.area.x0, h: L.area.y1 - L.area.y0, fill: null, stroke: '#000', lw: 0.3 });
     { const nx = L.area.x1 - fs * 5, ny = L.area.y0 + fs * 5, a = fs * 2.6; prims.push({ t: 'poly', pts: [[nx, ny - a], [nx + a * 0.45, ny + a * 0.6], [nx, ny + a * 0.25]], fill: '#000', stroke: '#000', lw: 0.15 }, { t: 'poly', pts: [[nx, ny - a], [nx - a * 0.45, ny + a * 0.6], [nx, ny + a * 0.25]], fill: '#fff', stroke: '#000', lw: 0.15 }, { t: 'text', x: nx, y: ny - a - fs * 0.6, s: fs * 1.3, txt: 'K', anchor: 'middle', bold: true }); }
-    { const target = 40 / k, nice = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000].reduce((b, v) => (v <= target ? v : b), 5), bl = nice * k, bx = L.area.x0 + 6, by = L.area.y1 - 6;
+    { const target = 40 / k, nice = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].reduce((b, v) => (v <= target ? v : b), 5), bl = nice * k, bx = L.area.x0 + 6, by = L.area.y1 - 6;
       for (let q = 0; q < 4; q++) prims.push({ t: 'rect', x: bx + q * bl / 4, y: by - 1.2, w: bl / 4, h: 1.2, fill: q % 2 ? '#fff' : '#000', stroke: '#000', lw: 0.15 });
       prims.push({ t: 'text', x: bx, y: by - 2, s: fs * 0.75, txt: '0', anchor: 'middle' }, { t: 'text', x: bx + bl, y: by - 2, s: fs * 0.75, txt: nice + ' m', anchor: 'middle' }, { t: 'text', x: bx + bl / 2, y: by + fs * 1.1, s: fs * 0.8, txt: `${T('Ölçek')} 1:${scale} (${o.format || 'A3'})`, anchor: 'middle', bold: true }); }
     // Bilgi paneli
     if (Ly.panel) for (const { bl, x, y } of L.place) drawBlock(prims, bl, x, y, fs, col, o);
     const cb = { x0: X(bb.x0) - 6, y0: Y(bb.y1) - 6, x1: X(bb.x1) + 6, y1: Y(bb.y0) + 6 };
-    return { W: L.W, H: L.H, prims, scale, content: cb, fits: L.fits, auto: L.auto, tiles, tileText, need: L.need, area: L.area, view: { x0: vx0, y1: vy1, k }, X, Y, ox, oy };
+    return { W: L.W, H: L.H, prims, scale, content: cb, fits: L.fits, auto: L.auto, parselOlcek: L.parselOlcek, uzakKaynak: L.uzakKaynak, tiles, tileText, need: L.need, area: L.area, view: { x0: vx0, y1: vy1, k }, X, Y, ox, oy };
   }
   function drawBlock(P, bl, x, y, fs, col, o) {
     const rh = fs * 1.75, w = bl.w;
