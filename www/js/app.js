@@ -960,6 +960,8 @@
     const LAY = [['parsel', 'Parsel'], ['shift', 'Shift'], ['lateral', 'Lateral'], ['manifold', 'Manifold'], ['main', 'Ana hat'], ['eq', 'Ekipman'], ['labels', 'Etiketler'], ['boxes', 'Shift kutuları'], ['panel', 'Tablolar']];
     const sel = (k, opts) => `<select data-o="${k}">${opts.map(([v, l]) => `<option value="${v}" ${String(o[k]) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     let warn = '';
+    // Uzak su kaynağı / uzun ana hat ölçeği küçültüyorsa bilgi (çizim kırpılmaz; parsel ayrıntısı için çoklu pafta veya ölçek seçimi)
+    if (S.uzakKaynak && S.parselOlcek && (o.scale === 'auto' || !o.scale)) warn += `<div class="note small">${t('Su kaynağı ve ana hat parselden uzak olduğu için bütün çizim 1:{s} ölçeğe sığdırıldı; yalnız parsel 1:{p} ile çizilebilirdi. Parsel ayrıntısı için ölçeği elle seçip çoklu pafta kullanabilirsiniz.', { s: S.scale, p: S.parselOlcek })}</div>`;
     if (!S.fits && !o.multi) warn = `<div class="note warn small">${t('Proje seçilen ölçekte paftaya sığmıyor (gereken {w} × {h} mm).', { w: fmt(S.need.w, 0), h: fmt(S.need.h, 0) })} ${S.auto ? t('Uygun ölçek: 1:{s}.', { s: S.auto }) : t('Hiçbir standart ölçekte sığmıyor: daha büyük pafta veya çoklu pafta seçin.')} ${t('Çoklu pafta ile {n} sayfa gerekir.', { n: S.tiles.n })}</div>`;
     if (!M.geo) warn += `<div class="note warn small">${t('Eşdeğer dikdörtgen tasarımı: çizimde gerçek koordinat yok. Harita üzerinde parsel çizip “Uygula” deyin.')}</div>`;
     el.innerHTML = `<div class="techwrap"><div class="techbar"><button class="btn sm" id="tzIn">+</button><button class="btn sm" id="tzOut">−</button><button class="btn sm" id="tzFit">⤢</button></div><div id="techSvg"></div></div>
