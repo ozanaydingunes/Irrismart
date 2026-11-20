@@ -39,8 +39,11 @@ npx cap sync android
 
 cd android
 chmod +x gradlew
-./gradlew assembleDebug --no-daemon --stacktrace
-APK="app/build/outputs/apk/debug/app-debug.apk"
-test -s "$APK" || { echo "HATA: APK üretilmedi"; exit 1; }
-cp "$APK" "$OUT"
-echo "APK hazır: $OUT ($(du -h "$OUT" | cut -f1))"
+# Varsayılan: debug APK. K-7 AAB iş akışı GOREV=bundleRelease, CIKTI=<aab yolu> ve GRADLE_EK=<-P...> verir.
+GOREV="${GOREV:-assembleDebug}"
+CIKTI="${CIKTI:-app/build/outputs/apk/debug/app-debug.apk}"
+# shellcheck disable=SC2086
+./gradlew "$GOREV" ${GRADLE_EK:-} --no-daemon --stacktrace
+test -s "$CIKTI" || { echo "HATA: $CIKTI üretilmedi"; exit 1; }
+cp "$CIKTI" "$OUT"
+echo "Çıktı hazır: $OUT ($(du -h "$OUT" | cut -f1))"

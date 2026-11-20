@@ -15,6 +15,9 @@ android {
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+        // K-7: Play Store derlemesi kalıcı kimliği yalnız komut satırından alır (-PirrigrowAppId=...);
+        // verilmezse geliştirme kimliği kalır. Kimlik bir kez Play'e yüklenince değiştirilemez.
+        if (project.hasProperty('irrigrowAppId')) applicationId project.property('irrigrowAppId')
     }
     // Sabit hata ayıklama anahtarı: her derleme aynı imzayla çıkar, güncellemeler eski sürümün üzerine kurulur.
     // Yalnız elden dağıtım içindir; Play Store için ayrı, gizli bir yayın anahtarı gerekir.
@@ -25,12 +28,24 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // K-7: Play yükleme anahtarı yalnız ortam değişkenlerinden (GitHub Actions gizli değişkenleri) okunur.
+        // Anahtar dosyası ve şifreler depoya, kaynak koda veya derleme günlüğüne yazılmaz.
+        release {
+            def ks = System.getenv('IRRIGROW_UPLOAD_KEYSTORE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('IRRIGROW_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('IRRIGROW_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('IRRIGROW_UPLOAD_KEY_PASSWORD')
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+            if (System.getenv('IRRIGROW_UPLOAD_KEYSTORE')) signingConfig signingConfigs.release   // yoksa imzasız (yalnız derleme denetimi)
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
