@@ -1,6 +1,6 @@
 # IrriGrow 1.0.0 — Gerçek Android cihaz test listesi
 
-**Durum: Sürüm adayı (1.0.0, versionCode 10, debug imzalı). Gerçek cihaz testleri tamamlanmadan yayına hazır değildir.**
+**Durum: Sürüm adayı (1.0.0, versionCode 11 — RC2, debug imzalı). Gerçek cihaz testleri tamamlanmadan yayına hazır değildir.**
 
 APK: GitHub Actions → "APK derle" iş akışı → ilgili çalıştırma → *Artifacts* → `IrriGrow-1.0.0-debug-apk`
 (zip içinde `IrriGrow-1.0.0-debug.apk` ve `.sha256`). Paket kimliği `com.irrigrow.app.dev`, en düşük Android 7.0 (API 24).
@@ -37,6 +37,7 @@ Her maddeyi **Geçti / Kaldı / Denenmedi** olarak işaretleyin; "Kaldı" için 
 | C-4 | PVC-U ve PN6 | Seçilemez, "veri eksik" yazar |
 | C-5 | Sonuç → bir alt ünitenin shift'ini elle değiştirin; sonra boru seçimini değiştirin | Elle shift ataması korunur |
 | C-6 | Su darbesi satırı | Aşımda "Geçici rejim analizi gerekli" (kırmızı "uygunsuz" değil) |
+| C-7 | (RC2) Haritada hesaplanmış parsel: shift kutuları ve köşeler | Kutular parseli örtmüyor ve üst üste binmiyor (yakınlaşınca ayrıntı açılıyor); köşeler kutuların altında kalmıyor, sürüklenebiliyor |
 
 ## D. Raporlar, paylaşım, dosya adları
 | # | Adım | Beklenen |
