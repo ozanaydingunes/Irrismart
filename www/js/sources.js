@@ -6,8 +6,9 @@
     uydu: Object.freeze({
       ad: 'Uydu görüntüsü',
       saglayici: 'Esri World Imagery',
-      atif: 'Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
-      kisaAtif: 'Esri, Maxar, Earthstar Geographics',
+      // Esri öğe sayfasındaki güncel 'accessInformation' (arcgis.com, World Imagery, 20.11.2026)
+      atif: 'Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community',
+      kisaAtif: 'Esri, Vantor, Earthstar Geographics',
     }),
     kot: Object.freeze({
       ad: 'Kot ve eğim',
@@ -16,6 +17,11 @@
       cozunurluk_m: 90,
       atif: '© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved',
       kisaAtif: 'Open-Meteo · Copernicus DEM GLO-90',
+      // Open-Meteo lisansı (open-meteo.com/en/licence): veri CC BY 4.0; verinin gösterildiği yerde Open-Meteo bağlantısı
+      // ve Copernicus atfı zorunlu.
+      url: 'https://open-meteo.com/',
+      lisans: 'CC BY 4.0',
+      lisansUrl: 'https://open-meteo.com/en/licence',
     }),
   });
 
@@ -31,7 +37,9 @@
   const GIZLILIK = 'Projeler yalnız bu cihazda saklanır. Harita görüntüsü için görüntülenen bölge Esri sunucularından, eğim ölçümü için parsel noktalarının koordinatları Open-Meteo’dan istenir; başka veri gönderilmez.';
 
   // Haritanın sağ alt köşesindeki atıf (Leaflet attribution; bağlantısız düz metin)
-  const haritaAtif = T => `${KAYNAK.uydu.kisaAtif} | ${T('Kot')}: ${KAYNAK.kot.kisaAtif}`;
+  // HTML (Leaflet atıf denetimi bağlantı gösterir; bağlantılar yeni sekmede / Android'de sistem tarayıcısında açılır)
+  const bag = (url, metin) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${metin}</a>`;
+  const haritaAtif = T => `${KAYNAK.uydu.kisaAtif} | ${T('Kot')}: ${bag(KAYNAK.kot.url, 'Open-Meteo.com')} (${bag(KAYNAK.kot.lisansUrl, KAYNAK.kot.lisans)}) · Copernicus DEM GLO-90`;
 
   // Projeye özgü kaynak satırları. Haritadan kot alınmamış ve KML ile içe aktarılmamış projelerde boş
   // (raporları ve altın kayıtları değiştirmez).
@@ -44,6 +52,7 @@
         d: Number.isFinite(e.zmin) ? fmt(e.zmin, 0) : '?', e: Number.isFinite(e.zmax) ? fmt(e.zmax, 0) : '?' }));
       KOT_SINIRLARI.forEach(s => out.push(T(s)));
       out.push(KAYNAK.kot.atif);
+      out.push(`Elevation data by Open-Meteo.com (${KAYNAK.kot.url}), ${KAYNAK.kot.lisans} (${KAYNAK.kot.lisansUrl})`);
     } else if (gk && (inp.slopeLong || inp.slopeShort)) out.push(T('Eğim değerleri kullanıcı tarafından girildi (harita yükseklik modeli kullanılmadı).'));
     if (gk) {
       out.push(T('Parsel sınırı: {a} dosyası “{b}”, parsel “{c}”, içe aktarma {d}.', {
@@ -54,7 +63,7 @@
     return out;
   }
 
-  const api = Object.freeze({ KAYNAK, KOT_SINIRLARI, KML_NOTU, GIZLILIK, haritaAtif, projeSatirlari });
+  const api = Object.freeze({ KAYNAK, KOT_SINIRLARI, KML_NOTU, GIZLILIK, haritaAtif, projeSatirlari, bag });
   g.IrriKaynak = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -78,12 +78,15 @@
   //  - aynı kimlik, farklı içerik → mevcut proje korunur, yedekteki "(yedekten)" adıyla yeni kimlikle kopya olarak eklenir
   // Dönüş: projects (geriye uyum); özet: mergeBackup.son = { eklenen, ayni, kopya }
   const icerik = p => { const q = Object.assign({}, p); delete q.updated; delete q.schema; return JSON.stringify(q); };
+  // Daha önce aynı yedekten eklenmiş "(yedekten)" kopya: kimlik, ad ve kaynakKimlik dışındaki içerik aynıysa yeniden eklenmez
+  const kopyaIcerik = p => { const q = Object.assign({}, p); delete q.id; delete q.name; delete q.kaynakKimlik; return icerik(q); };
+  const kopyasiVar = (projects, q) => { const k = kopyaIcerik(q); return projects.some(x => x.kaynakKimlik === q.id && kopyaIcerik(migrateProject(x)) === k); };
   function mergeBackup(projects, valid) {
     const ozet = { eklenen: 0, ayni: 0, kopya: 0 };
     for (const p of valid) {
       const q = migrateProject(p), i = projects.findIndex(x => x.id === q.id);
       if (i < 0) { projects.push(q); ozet.eklenen++; continue; }
-      if (icerik(migrateProject(projects[i])) === icerik(q)) { ozet.ayni++; continue; }
+      if (icerik(migrateProject(projects[i])) === icerik(q) || kopyasiVar(projects, q)) { ozet.ayni++; continue; }
       const c = JSON.parse(JSON.stringify(q));
       c.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       while (projects.some(x => x.id === c.id)) c.id += Math.random().toString(36).slice(2, 4);
@@ -97,7 +100,7 @@
   // Geri yükleme öncesi özet (onay penceresi için; listeyi değiştirmez)
   function planBackup(projects, valid) {
     const o = { yeni: 0, ayni: 0, farkli: 0 };
-    for (const p of valid) { const q = migrateProject(p), x = projects.find(y => y.id === q.id); if (!x) o.yeni++; else if (icerik(migrateProject(x)) === icerik(q)) o.ayni++; else o.farkli++; }
+    for (const p of valid) { const q = migrateProject(p), x = projects.find(y => y.id === q.id); if (!x) o.yeni++; else if (icerik(migrateProject(x)) === icerik(q) || kopyasiVar(projects, q)) o.ayni++; else o.farkli++; }
     return o;
   }
 

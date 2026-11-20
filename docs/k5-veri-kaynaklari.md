@@ -9,7 +9,7 @@ Harita, Ayarlar, PDF ve Excel aynı metni bu saf modülden alır (DOM/ağ/depola
 
 | Veri | Sağlayıcı | Atıf (özgün metin, çevrilmez) |
 |---|---|---|
-| Uydu görüntüsü | Esri World Imagery | Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community |
+| Uydu görüntüsü | Esri World Imagery | Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community |
 | Kot ve eğim | Open-Meteo Elevation API — Copernicus DEM GLO-90 (≈ 90 m) | © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved |
 
 **Kot verisinin sınırları** (Ayarlar ve raporlarda aynı sırayla):
@@ -24,7 +24,7 @@ Esri'ye görüntülenen bölge, eğim için Open-Meteo'ya parsel noktalarının 
 
 ## Nerede görünür
 
-- **Harita:** sağ alt atıf `Esri, Maxar, Earthstar Geographics | Kot: Open-Meteo · Copernicus DEM GLO-90`. Kot ölçülmüş
+- **Harita:** sağ alt atıf `Esri, Vantor, Earthstar Geographics | Kot: Open-Meteo.com (CC BY 4.0) · Copernicus DEM GLO-90` (Open-Meteo ve lisans bağlantılı). Kot ölçülmüş
   parselde harita bilgisinde "Kot: Copernicus DEM (≈ 90 m) — ön inceleme, ölçülmüş kot değil · ayrıntı".
 - **Ayarlar:** "Veri kaynakları ve sınırlamalar" kartı (ayrıntı bağlantısı bu kartı açar).
 - **PDF:** "Varsayımlar"dan sonra "Veri kaynakları ve sınırlamalar" bölümü.

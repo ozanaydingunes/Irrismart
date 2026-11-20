@@ -1,6 +1,6 @@
 # IrriGrow 1.0.0 — Gerçek Android cihaz test listesi
 
-**Durum: Sürüm adayı (1.0.0, versionCode 11 — RC2, debug imzalı). Gerçek cihaz testleri tamamlanmadan yayına hazır değildir.**
+**Durum: Sürüm adayı (1.0.0, versionCode 12 — RC3, debug imzalı). Gerçek cihaz testleri tamamlanmadan yayına hazır değildir.**
 
 APK: GitHub Actions → "APK derle" iş akışı → ilgili çalıştırma → *Artifacts* → `IrriGrow-1.0.0-debug-apk`
 (zip içinde `IrriGrow-1.0.0-debug.apk` ve `.sha256`). Paket kimliği `com.irrigrow.app.dev`, en düşük Android 7.0 (API 24).
@@ -38,6 +38,7 @@ Her maddeyi **Geçti / Kaldı / Denenmedi** olarak işaretleyin; "Kaldı" için 
 | C-5 | Sonuç → bir alt ünitenin shift'ini elle değiştirin; sonra boru seçimini değiştirin | Elle shift ataması korunur |
 | C-6 | Su darbesi satırı | Aşımda "Geçici rejim analizi gerekli" (kırmızı "uygunsuz" değil) |
 | C-7 | (RC2) Haritada hesaplanmış parsel: shift kutuları ve köşeler | Kutular parseli örtmüyor ve üst üste binmiyor (yakınlaşınca ayrıntı açılıyor); köşeler kutuların altında kalmıyor, sürüklenebiliyor |
+| C-8 | (RC3) Harita sağ alt köşesindeki atıfta **Open-Meteo.com** ve **CC BY 4.0** bağlantılarına dokunun | Bağlantı telefonun tarayıcısında açılır; uygulama kapanmaz, geri dönünce proje yerinde |
 
 ## D. Raporlar, paylaşım, dosya adları
 | # | Adım | Beklenen |
@@ -53,6 +54,7 @@ Her maddeyi **Geçti / Kaldı / Denenmedi** olarak işaretleyin; "Kaldı" için 
 |---|---|---|
 | E-1 | Projeler → Yedekle | JSON dosyası oluşur ve paylaşılabilir |
 | E-2 | Bir projeyi değiştirip yedekten yükleyin | Mevcut proje silinmez; farklıysa "(yedekten)" kopyası eklenir |
+| E-5 | (RC3) Aynı yedeği ikinci kez yükleyin | Yeni "(yedekten)" kopya oluşmaz; projeler çoğalmaz |
 | E-3 | Uygulamayı tamamen kapatıp açın; telefonu yeniden başlatın | Projeler duruyor |
 | E-4 | İnternetsiz (uçak modu) açın | Projeler açılır, hesap yapılır; harita/eğim için internet uyarısı çıkar |
 

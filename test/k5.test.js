@@ -10,13 +10,15 @@ const ELEV = { zmin: 118.4, zmax: 124.6, total: 6.2, src: 'Open-Meteo (Copernicu
 const GK = { tur: 'kmz', dosya: 'ciftlik.kmz', icDosya: 'doc.kml', parsel: 'Büyük tarla', iceAktarma: '2026-11-19T10:00:00.000Z', yukseklikler: [120, 120, 120, 120], kotDogrulanmis: false };
 
 test('K5-01 Atıf ve sınır metinleri: Esri ve Copernicus DEM (özgün lisans metni), 5 kot sınırı, KML notu, gizlilik', () => {
-  ok(/Esri, Maxar, Earthstar Geographics/.test(K.KAYNAK.uydu.atif), 'Esri atfı');
+  ok(K.KAYNAK.uydu.atif === 'Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community', 'Esri atfı (arcgis.com öğe sayfasındaki güncel metin)');
   ok(/© DLR e\.V\. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA/.test(K.KAYNAK.kot.atif), 'Copernicus DEM atfı');
   ok(K.KAYNAK.kot.saglayici === 'Open-Meteo Elevation API' && K.KAYNAK.kot.model === 'Copernicus DEM GLO-90' && K.KAYNAK.kot.cozunurluk_m === 90, 'kot kaynağı');
   ok(K.KOT_SINIRLARI.length === 5 && /90 m/.test(K.KOT_SINIRLARI[0]) && /Yüzey modeli/.test(K.KOT_SINIRLARI[1]) && /doğrulanmış hidrolik kot değildir/.test(K.KOT_SINIRLARI[4]), 'sınırlar');
   ok(/hidrolik hesapta kullanılmaz/.test(K.KML_NOTU) && /yalnız bu cihazda/.test(K.GIZLILIK) && /Open-Meteo/.test(K.GIZLILIK) && /Esri/.test(K.GIZLILIK), 'KML/gizlilik');
   ok(Object.isFrozen(K) && Object.isFrozen(K.KAYNAK.kot) && Object.isFrozen(K.KOT_SINIRLARI), 'dondurulmuş');
-  ok(K.haritaAtif(x => x) === 'Esri, Maxar, Earthstar Geographics | Kot: Open-Meteo · Copernicus DEM GLO-90', K.haritaAtif(x => x));
+  const ha = K.haritaAtif(x => x);
+  ok(ha.startsWith('Esri, Vantor, Earthstar Geographics | Kot: ') && /href="https:\/\/open-meteo\.com\/"[^>]*>Open-Meteo\.com<\/a>/.test(ha) && /href="https:\/\/open-meteo\.com\/en\/licence"[^>]*>CC BY 4\.0<\/a>/.test(ha) && /Copernicus DEM GLO-90/.test(ha), ha);
+  ok(/rel="noopener noreferrer"/.test(ha) && /target="_blank"/.test(ha), 'dış bağlantılar yeni sekmede');
 });
 
 test('K5-02 Haritadan kot alınmamış, KML’siz projede rapor değişmez (altın kayıt korunur)', () => {
