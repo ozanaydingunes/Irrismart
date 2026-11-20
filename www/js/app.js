@@ -1033,7 +1033,7 @@
         <div class="row wrap"><label class="btn sm" style="flex-direction:row">${t('Katalog yükle (JSON)')}<input type="file" id="catFile" accept=".json,application/json" style="display:none"></label>
         <button class="btn sm" id="catTpl">${t('Şablon indir')}</button>${userCat ? `<button class="btn sm danger" id="catDel">${t('Kullanıcı kataloğunu kaldır')}</button>` : ''}</div></div>
       ${kaynakKarti()}
-      <div class="card small muted"><b>IrriGrow v0.6.1</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
+      <div class="card small muted"><b>IrriGrow v${esc(window.IRRI_SURUM || "")}</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
     bindLang('langSet');
     $('#themeSet').onchange = ev => { setTheme(ev.target.value); };
     $('#settings').querySelectorAll('input[data-k]').forEach(el => el.onchange = () => {
