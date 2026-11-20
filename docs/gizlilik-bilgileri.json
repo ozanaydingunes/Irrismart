@@ -1,0 +1,6 @@
+{
+  "_aciklama": "Gizlilik politikası sayfalarındaki üç alan. Doldurduktan sonra: node tools/gizlilik-sayfa.js (www/gizlilik.html ve www/privacy.html üretilir). Boş alan varsa sayfa üretilmez.",
+  "gelistirici": "",
+  "eposta": "",
+  "tarih": ""
+}
