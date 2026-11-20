@@ -434,3 +434,47 @@ html.desk body.mapfull nav.tabs,html.desk body.mapfull #deskRight,html.desk body
 html.desk body.mapfull main{left:0;right:0;bottom:0}
 nav.tabs button.desk-only{display:none}
 html.desk nav.tabs button.desk-only{display:flex}
+
+/* ---------- 1.0.1 Shift Yönetimi paneli ----------
+   Mobil: alt sekme çubuğunun üstünde tam ekran sayfa. Masaüstü (html.desk): sağda çekmece; harita görünür kalır. */
+.sm-panel{position:fixed;left:0;right:0;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--tab) + env(safe-area-inset-bottom));z-index:1500;background:var(--bg);display:flex;flex-direction:column}
+.sm-panel.sm-min{display:none}
+.sm-in{display:flex;flex-direction:column;height:100%;min-height:0}
+.sm-head{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.sm-head h2{margin:0;font-size:18px;color:var(--pri)}
+.sm-head .dt-gap{flex:1}
+.sm-body{flex:1;overflow:auto;padding:8px 16px 16px;min-height:0}
+.sm-foot{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.sm-foot .btn{flex:1}
+.sm-foot .btn:disabled{opacity:.5}
+.sm-ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0}
+.sm-ctl label{display:flex;flex-direction:column;gap:4px;font-size:13px;flex:1 1 140px;min-width:0}
+.sm-ctl .btn{flex:0 0 auto}
+.sm-sec h3{font-size:15px;margin:14px 0 6px}
+.sm-list{display:grid;gap:8px}
+.sm-shift{border:1px solid var(--line);border-left:6px solid var(--c);border-radius:12px;background:var(--card);padding:10px}
+.sm-shift.on{box-shadow:0 0 0 2px var(--pri)}
+.sm-shift header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sm-shift .sm-sira{font-size:12px;color:var(--muted)}
+.sm-shift .sm-mv{margin-left:auto;display:flex;gap:4px}
+.sm-shift .sm-mv .btn{min-width:40px;min-height:36px;padding:4px 8px}
+.sm-shift .row{margin-top:8px;gap:8px}
+.sm-kv{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:3px 10px;margin:8px 0 0;font-size:13.5px}
+.sm-kv dt{color:var(--muted)}.sm-kv dd{margin:0;text-align:end;overflow-wrap:anywhere}
+.sm-hedef{display:inline-block;font-size:11.5px;border:1px dashed var(--line);border-radius:6px;padding:0 5px;margin-left:4px;color:var(--muted)}
+.sm-hedef.warn{color:var(--warn);border-color:var(--warn)}
+.sm-kv .warn{color:var(--warn)}
+.sm-cmp td:first-child,.sm-cmp th:first-child{text-align:start}
+.sm-cmp tr.sm-iyi td:last-child{color:var(--pri);font-weight:600}
+.sm-cmp tr.sm-kotu td:last-child{color:var(--err);font-weight:600}
+.sm-cmp tr.sm-ayni td{color:var(--muted)}
+.sm-chip{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--top) + env(safe-area-inset-top) + 12px);z-index:1400;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:calc(100vw - 32px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ak-smrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.ak-smrow small{color:var(--muted)}
+html.desk .sm-panel{left:auto;right:0;width:min(520px,46vw);top:var(--top);bottom:0;border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(0,0,0,.12)}
+html.desk .sm-chip{top:calc(var(--top) + 12px)}
+.ak-smbtn,.sm-shift .row .btn{min-height:44px}
+.sm-uy{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.sm-uy small{color:var(--muted)}
+.sm-uy-i{font-weight:700;min-width:16px}
+.sm-uy-ok .sm-uy-i{color:var(--pri)}.sm-uy-bad .sm-uy-i,.sm-uy-bad b{color:var(--err)}.sm-uy-na .sm-uy-i{color:var(--muted)}

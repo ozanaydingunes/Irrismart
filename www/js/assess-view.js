@@ -14,6 +14,8 @@
     const t = o.t || (x => x), esc = o.esc || ESC;
     const fmt = o.fmt || ((v, d) => (typeof v === 'number' && Number.isFinite(v)) ? v.toLocaleString('tr-TR', { minimumFractionDigits: d ?? 1, maximumFractionDigits: d ?? 1 }) : '—');
     const A = AS();
+    // 1.0.1: bu bulgu kodlarının çözüm kartında "Shiftleri Düzenle" (Shift Yönetimi paneli) düğmesi gösterilir
+    const SMK = new Set(o.shiftYonetimi || []);
     const tx = x => A.text(x, t, fmt);
     const N = (v, d) => (typeof v === 'number' && Number.isFinite(v)) ? `<span class="ak-n" data-v="${v}">${esc(fmt(v, d))}</span>` : '—';
     const lv = s => `<span class="ak-lv ak-lv-${LV_CLASS[s]}">${esc(t(A.LEVEL_AD[s]))}</span>`;
@@ -56,6 +58,7 @@
           <p class="ak-neden">${esc(tx(x.neden))}</p>
           ${x.kisaGerekce ? `<p class="ak-key">${esc(tx(x.kisaGerekce))}</p>` : ''}
           ${x.onem ? `<details class="ak-sub"><summary>${esc(t('Neden önemli'))}</summary><p class="ak-asm">${esc(tx(x.onem))}</p></details>` : ''}
+          ${SMK.has(x.kod) ? `<p class="ak-smrow"><button type="button" class="btn sm ak-smbtn" data-shiftyon="${esc(x.kod)}">${esc(t('Shiftleri Düzenle'))}</button> <small>${esc(t('Shift sayısını veya atamasını önizleyerek değiştirin; ana hat debisi ve pompa görev noktası shift debisine bağlıdır.'))}</small></p>` : ''}
           ${sols.length ? `<details class="ak-sub ak-sols" ${open ? 'open' : ''}><summary>${esc(t('Çözüm seçenekleri'))} (${sols.length})</summary><ul class="ak-solist">${sols.map(solution).join('')}</ul></details>` : ''}
           ${uniq.length ? `<details class="ak-sub"><summary>${esc(t('Gereken veriler'))} (${uniq.length})</summary>${list(uniq)}</details>` : ''}
           ${detailBlock(x)}

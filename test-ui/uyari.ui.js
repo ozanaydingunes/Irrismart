@@ -57,7 +57,10 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - 
       const small = await pg.$$eval('#akil .ak-head, #akil .ak-sub > summary, #akil select', els => els.filter(e => e.getBoundingClientRect().height < 40).length);
       check(small === 0, `${id}/${tag}: ${small} dokunma hedefi 40 px’ten küçük`);
       const txt = await pg.$eval('#akil', e => e.textContent);
-      const links = await pg.$$eval('#akil a, #akil button', els => els.map(e => e.textContent.trim()));
+      // 1.0.1: "Shiftleri Düzenle" hazır bir modüle (Shift Yönetimi) gider; başka düğme/bağlantı olmamalı
+      const links = await pg.$$eval('#akil a, #akil button:not([data-shiftyon])', els => els.map(e => e.textContent.trim()));
+      const smb = await pg.$$eval('#akil button[data-shiftyon]', els => els.map(e => [e.dataset.shiftyon, e.getBoundingClientRect().height]));
+      check(smb.every(([k, h]) => (k === 'W-HIZ-01' || k === 'W-POM-01') && h >= 36), `${id}/${tag}: Shiftleri Düzenle düğmesi yalnız W-HIZ-01/W-POM-01'de ve dokunulabilir olmalı (${JSON.stringify(smb)})`);
       check(!links.length && !/Alternatifleri karşılaştır|Haritada böl|Araziyi böl —|yakında/i.test(txt), `${id}/${tag}: hazır olmayan modüle yönlendirme var (${links.join(', ')})`);
       check(!/güvenli|onaylı|garanti/i.test(txt), `${id}/${tag}: yasaklı ifade`);
       if (id === 't2') {
