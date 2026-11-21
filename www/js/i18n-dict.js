@@ -1440,6 +1440,7 @@
 ["Günlük su ihtiyacı", "Daily water requirement", "Täglicher Wasserbedarf", "Necesidad diaria de agua", "Суточная потребность в воде", "Fabbisogno idrico giornaliero", "צריכת מים יומית", "每日需水量"],
 ["Bu shift’in hedef debisi", "Target flow of this shift", "Zieldurchfluss dieser Schicht", "Caudal objetivo de este turno", "Целевой расход этой смены", "Portata obiettivo di questo turno", "ספיקת היעד של משמרת זו", "此轮灌组目标流量"],
 ["Hedef debi (bilgi, m³/h)", "Target flow (information, m³/h)", "Zieldurchfluss (Information, m³/h)", "Caudal objetivo (informativo, m³/h)", "Целевой расход (справочно, м³/ч)", "Portata obiettivo (informativa, m³/h)", "ספיקת יעד (מידע, מ״ק/שעה)", "目标流量（仅供参考，m³/h）"],
+["Seçili shift kartına git", "Go to the selected shift card", "Zur Karte der gewählten Schicht", "Ir a la tarjeta del turno seleccionado", "К карточке выбранной смены", "Vai alla scheda del turno selezionato", "עבור לכרטיס המשמרת הנבחרת", "转到所选轮灌组卡片"],
   ];
   const D = {};
   for (const row of R) { const e = {}; L.forEach((l, i) => { if (row[i + 1]) e[l] = row[i + 1]; }); D[row[0]] = e; }

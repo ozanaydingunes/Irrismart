@@ -560,3 +560,14 @@ html.desk body.ss-acik main{right:max(var(--right),min(480px,42vw))}
 /* 1.0.4: Arazi'de tutamak harita alt çubuğunun üstünde */
 body.ss-arazi .ss-tut{bottom:calc(var(--tab) + env(safe-area-inset-bottom) + var(--mapbar) + 10px)}
 html.desk body.ss-arazi .ss-tut{bottom:calc(var(--drawer) + var(--mapbar) + 16px)}
+
+/* 1.0.5 düzeltmesi (gerçek WebView'da bulundu): eski Android WebView'da (Chrome < ~90) uzun seçenek metinli <select>,
+   ızgara sütununun en küçük genişliğini büyütüp Hidrolik içeriğini ~970 px'e taşırıyordu ("Shift Yönetimi" düğmesi
+   ekran dışına çıkıyordu). Etiket ve seçiciler daralabilir; seçenek metni kısaltılır. */
+label{min-width:0}
+select{max-width:100%;text-overflow:ellipsis}
+/* 1.0.5 düzeltmesi (kısa ekranda bulundu): sütun düzenindeki panelde yatay kaydırmalı çip satırı (overflow-x:auto)
+   en küçük yükseklik olarak 0 alıp eziliyor, alttaki ayrıntı gövdesi çiplerin üstüne biniyordu (çipler seçilemiyordu).
+   Başlık, çip satırı ve alt düğmeler küçülmez; yalnız gövde kaydırılır. */
+.ss-head,.ss-chips,.ss-foot,.ss-grab,.sm-head,.sm-foot{flex:0 0 auto}
+.ss-body,.sm-body{flex:1 1 auto;min-height:0}
