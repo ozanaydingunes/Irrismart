@@ -55,16 +55,20 @@ const BOYUTLAR = (process.env.KAT_BOYUT || '5,50,120,300').split(',').map(Number
   const k0 = v1.kataloglar.find(k => k.ad === `Test ${BOYUTLAR[0]} MB`);
   if (k0) {
     const r = await yaz(BOYUTLAR[0], 99);
+    if (!r.ok) SONUC('güncelleme için yeni PDF yazımı', false, r);
+    else {
     await page.evaluate(([k, d]) => window.IrriKatalogDepo.katalogKaydet(window.IrriKatalogModel.surumEkle(k, d)), [k0, r.d]);
     const ad = (await dosyalar()).map(f => f.ad);
     SONUC('güncelleme: yeni ve eski sürüm dosyaları diskte', ad.includes(r.d.anahtar + '.pdf') && ad.includes(k0.dosya.anahtar + '.pdf'));
-  }
+  } }
 
   // 4) Aynı PDF yeniden: aynı SHA-256 → yinelenme algılanır
+  await baslat();
   const r2 = await yaz(BOYUTLAR[0], 1);
+  if (!r2.ok) SONUC('aynı PDF yazımı', false, r2); else {
   const ayni = await page.evaluate(async sha => { const { kataloglar } = await window.IrriKatalogDepo.listele(); const k = window.IrriKatalogModel.ayniDosya(kataloglar, sha); return k && k.ad; }, r2.d.sha256);
   SONUC('aynı PDF yeniden yüklenince algılanır', !!ayni, ayni);
-  await page.evaluate(d => window.IrriKatalogDepo.dosyaSil(d), r2.d);
+  await page.evaluate(d => window.IrriKatalogDepo.dosyaSil(d), r2.d); }
 
   // 5) Yarım kalan yükleme: yazım sürerken uygulama kapatılır; sonra sahipsiz dosya temizliği
   await page.evaluate(() => { const p = new Uint8Array(1024 * 1024).fill(7); const b = new Blob([new TextEncoder().encode('%PDF-1.4\n')].concat(Array(80).fill(p)), { type: 'application/pdf' }); window.__yarim = window.IrriKatalogDepo.dosyaYaz(new File([b], 'yarim.pdf')).catch(() => null); });
@@ -83,7 +87,9 @@ const BOYUTLAR = (process.env.KAT_BOYUT || '5,50,120,300').split(',').map(Number
     await page.evaluate(k => window.IrriKatalogDepo.katalogSil(k), kk);
     const geri = await page.evaluate(async y => { const D = window.IrriKatalogDepo, M = window.IrriKatalogModel, v = await D.listele(), r = M.yedekOku(y, v.firmalar, v.kataloglar); for (const f of r.firmalar) await D.firmaKaydet(f); for (const k of r.kataloglar) await D.katalogKaydet(k); return r.kataloglar.map(k => k.id); }, yedek);
     const idx = BOYUTLAR.indexOf(BOYUTLAR[1] || BOYUTLAR[0]);
+    await baslat();
     const r3 = await yaz(BOYUTLAR[idx], idx + 1);
+    if (!r3.ok) { SONUC('geri yükleme için PDF yazımı', false, r3); r3.d = { sha256: '' }; }
     const es = await page.evaluate(async ([id, d]) => { const D = window.IrriKatalogDepo, { kataloglar } = await D.listele(), k = kataloglar.find(x => x.id === id); if (!k || !k.dosya.bekliyor || k.dosya.sha256 !== d.sha256) return false; await D.katalogKaydet(Object.assign({}, k, { dosya: d })); return true; }, [kk.id, r3.d]);
     SONUC('geri yükleme sonrası aynı PDF SHA-256 ile eşleşir', geri.includes(kk.id) && es);
   }
