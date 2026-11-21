@@ -64,7 +64,8 @@
   async function dosyaYaz(dosya, ilerleme) {
     if (!dosya || !(dosya.size > 0)) throw new Error('Dosya boş');
     if (dosya.size > M.ENCOK_BAYT) throw new Error('Dosya çok büyük (üst sınır 400 MB)');
-    if (!M.pdfImzasi(await blobBayt(dosya, 0, 5))) throw new Error('Bu dosya PDF değil (PDF imzası yok)');
+    let imza; try { imza = await blobBayt(dosya, 0, 5); } catch (e) { throw yerHatasi(e); }
+    if (!M.pdfImzasi(imza)) throw new Error('Bu dosya PDF değil (PDF imzası yok)');
     const anahtar = M.yeniId('pdf'), h = M.sha256Akis(), adim = p => ilerleme && ilerleme(p);
     bekleyen.add(anahtar);
     if (yerel()) {
@@ -88,14 +89,16 @@
       }
     }
     // Web: IndexedDB'ye Blob olarak
-    const sha256 = await blobOzet(dosya, p => adim(0.5 * p));
+    let sha256; try { sha256 = await blobOzet(dosya, p => adim(0.5 * p)); } catch (e) { bekleyen.delete(anahtar); throw yerHatasi(e); }
     try { await koy('dosyalar', new Blob([dosya], { type: 'application/pdf' }), anahtar); } catch (e) { bekleyen.delete(anahtar); throw yerHatasi(e); }
     const geri = await al('dosyalar', anahtar);
     const gsha = geri ? await blobOzet(geri, p => adim(0.5 + 0.5 * p)) : null;
     if (!geri || geri.size !== dosya.size || gsha !== sha256) { bekleyen.delete(anahtar); try { await sil('dosyalar', anahtar); } catch (e) { /* */ } throw new Error('Yazılan dosya doğrulanamadı (SHA-256 / boyut tutmuyor)'); }
     return { ad: String(dosya.name || 'katalog.pdf').slice(0, 200), boyut: dosya.size, sha256, mime: 'application/pdf', depo: 'indexeddb', anahtar };
   }
-  function yerHatasi(e) { const m = String(e && (e.message || e.name) || e); return /quota|space|ENOSPC|dolu|full/i.test(m) ? new Error('Cihazda yeterli boş alan yok; dosya kaydedilmedi') : e instanceof Error ? e : new Error(m); }
+  // Emülatörde dolu diskte tarayıcı yalnız 'NotReadableError / could not be read' veriyordu; kullanıcıya anlaşılır metin
+  function yerHatasi(e) { const m = String(e && (e.message || e.name) || e) + ' ' + String(e && e.name || ''); return /quota|space|ENOSPC|dolu|full/i.test(m) ? new Error('Cihazda yeterli boş alan yok; dosya kaydedilmedi')
+      : /NotReadable|could not be read/i.test(m) ? new Error('Dosya okunamadı: cihazda yeterli boş alan veya bellek olmayabilir ya da dosyaya erişim kalktı; dosya kaydedilmedi') : e instanceof Error ? e : new Error(m); }
 
   // Görüntüleme/açma için adres (Android: yerel sunucu adresi; web: geçici blob adresi — kullanım bitince serbest bırakılmalı)
   async function dosyaUrl(d) {
