@@ -1388,6 +1388,27 @@
 ["Taslak düzen hesaplanamadı; önce/sonra karşılaştırması yapılamıyor. Uygula kapalı.", "The draft layout could not be calculated; before/after comparison is not possible. Apply is disabled.", "Der Entwurf konnte nicht berechnet werden; kein Vorher/Nachher-Vergleich möglich. Übernehmen ist deaktiviert.", "No se pudo calcular el borrador; no es posible la comparación antes/después. Aplicar está desactivado.", "Черновик не удалось рассчитать; сравнение до/после невозможно. «Применить» отключено.", "Impossibile calcolare la bozza; confronto prima/dopo non disponibile. Applica è disattivato.", "לא ניתן לחשב את הטיוטה; השוואת לפני/אחרי אינה אפשרית. „החל” מושבת.", "无法计算草稿；无法进行前后对比。“应用”已禁用。"],
 ["Önizleme", "Preview", "Vorschau", "Vista previa", "Предпросмотр", "Anteprima", "תצוגה מקדימה", "预览"],
 ["Önizleme hesaplanamadı", "Preview could not be calculated", "Vorschau konnte nicht berechnet werden", "No se pudo calcular la vista previa", "Не удалось рассчитать предпросмотр", "Impossibile calcolare l’anteprima", "לא ניתן לחשב תצוגה מקדימה", "无法计算预览"],
+// 1.0.3 Shift seçici
+["Shiftler", "Shifts", "Schichten", "Turnos", "Смены", "Turni", "משמרות", "轮灌组"],
+["Hesaplanamadı", "Could not be calculated", "Nicht berechenbar", "No calculado", "Не рассчитано", "Non calcolabile", "לא חושב", "无法计算"],
+["alt ünite geometrisinden", "from subunit geometry", "aus der Geometrie der Teileinheiten", "según la geometría de las subunidades", "по геометрии подблоков", "dalla geometria delle sottounità", "לפי גאומטריית תת-היחידות", "按子单元几何计算"],
+["Hesaplanan debi", "Calculated flow", "Berechneter Durchfluss", "Caudal calculado", "Расчётный расход", "Portata calcolata", "ספיקה מחושבת", "计算流量"],
+["motor sonucu; düzenlenemez", "engine result; not editable", "Ergebnis der Berechnung; nicht bearbeitbar", "resultado del motor; no editable", "результат расчёта; не редактируется", "risultato del motore; non modificabile", "תוצאת מנוע החישוב; לא ניתן לעריכה", "计算结果；不可编辑"],
+["Hedef debi", "Target flow", "Zieldurchfluss", "Caudal objetivo", "Целевой расход", "Portata obiettivo", "ספיקת יעד", "目标流量"],
+["Girilmedi", "Not entered", "Nicht eingegeben", "No introducido", "Не введено", "Non inserito", "לא הוזן", "未输入"],
+["bilgi; tasarım debisini değiştirmez", "information; does not change the design flow", "Information; ändert den Auslegungsdurchfluss nicht", "informativo; no cambia el caudal de diseño", "справочно; не меняет расчётный расход", "informativo; non modifica la portata di progetto", "מידע; אינו משנה את ספיקת התכנון", "仅供参考；不改变设计流量"],
+["Sulama hacmi", "Irrigation volume", "Bewässerungsvolumen", "Volumen de riego", "Объём полива", "Volume irriguo", "נפח השקיה", "灌溉水量"],
+["bir sulamada", "per irrigation", "je Bewässerung", "por riego", "за один полив", "per irrigazione", "בכל השקיה", "每次灌溉"],
+["Kontrol vanaları", "Control valves", "Steuerventile", "Válvulas de control", "Управляющие клапаны", "Valvole di controllo", "מגופי בקרה", "控制阀"],
+["her alt ünite girişinde", "at each subunit inlet", "am Eingang jeder Teileinheit", "en la entrada de cada subunidad", "на входе каждого подблока", "all’ingresso di ogni sottounità", "בכניסה לכל תת-יחידה", "每个子单元入口"],
+["jenerik", "generic", "generisch", "genérico", "типовой", "generico", "גנרי", "通用"],
+["Fazla basınç {a} m: regülatör önerilir", "Excess pressure {a} m: regulator recommended", "Überdruck {a} m: Regler empfohlen", "Exceso de presión {a} m: se recomienda regulador", "Избыточное давление {a} м: рекомендуется регулятор", "Sovrappressione {a} m: si consiglia un regolatore", "עודף לחץ {a} מ׳: מומלץ וסת", "超压 {a} m：建议安装减压阀"],
+["Kritik hidrolik kayıplar", "Critical hydraulic losses", "Kritische hydraulische Verluste", "Pérdidas hidráulicas críticas", "Критические гидравлические потери", "Perdite idrauliche critiche", "הפסדים הידראוליים קריטיים", "关键水力损失"],
+["Manifold ve lateral bağlantıları", "Manifold and lateral connections", "Verteiler- und Tropfrohranschlüsse", "Conexiones de colector y laterales", "Коллекторы и латерали", "Collegamenti collettore e laterali", "חיבורי סעפת ושלוחות", "支管与毛管连接"],
+["Giriş", "Inlet", "Eingang", "Entrada", "Вход", "Ingresso", "כניסה", "入口"],
+["Mühendislik uygunluk durumu", "Engineering suitability", "Technische Eignung", "Idoneidad técnica", "Инженерная пригодность", "Idoneità tecnica", "התאמה הנדסית", "工程适用性"],
+["Proje geneli", "Whole project", "Gesamtprojekt", "Proyecto completo", "Проект в целом", "Intero progetto", "הפרויקט כולו", "整个项目"],
+["Düzenle", "Edit", "Bearbeiten", "Editar", "Изменить", "Modifica", "ערוך", "编辑"],
   ];
   const D = {};
   for (const row of R) { const e = {}; L.forEach((l, i) => { if (row[i + 1]) e[l] = row[i + 1]; }); D[row[0]] = e; }

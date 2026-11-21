@@ -177,3 +177,18 @@ test('SY-11 Uygunluk durum ve genel sonuç metinleri 7 dilde çevrili', () => {
   const miss = []; for (const k of new Set(metin)) for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!(DICT[k] && DICT[k][l])) miss.push(l + ': ' + k);
   ok(metin.length >= 15 && !miss.length, metin.length + ' metin; eksik: ' + miss.slice(0, 8).join(' | '));
 });
+
+test('SY-12 Shift paneli gerçek alanı: alt ünite poligonlarından; toplam parsel alanına eşit; debi oranlı değerle tutarlı', () => {
+  const Gm = require('./_lib').Gm, SC = require('./golden/scenarios'); let n = 0;
+  for (const sc of SC) {
+    const r = E.design(sc.inp, null, sc.opt || {}); if (!r.ok) continue;
+    const G = SY.geoAlan(r, Gm); ok(G, sc.id + ': geometri');
+    const top = G.shift.reduce((a, b) => a + b, 0);
+    // Σ alt ünite alanı ≤ parsel; fark yalnız sıra aralığına sığmayan kenar şeritleri (damlatıcısız)
+    ok(top <= r.field.da + 0.01 && top >= 0.98 * r.field.da, `${sc.id}: Σ shift alanı ${top} / parsel ${r.field.da}`);
+    G.shift.forEach((a, j) => { const qa = r.sel.Qj[j] / r.sectors.Qfield * r.field.da; ok(Math.abs(a - qa) <= 0.05 * qa + 0.05, `${sc.id} shift ${j + 1}: geometri ${a} / debi oranı ${qa}`); });
+    const L = SY.birimLateral(r, 0); ok(L.n === r.units[0].nLat && (L.enUzun == null || L.enUzun <= r.lateral.maxLen + 1e-6), sc.id + ': lateral');
+    n++;
+  }
+  ok(n >= 15 && SY.geoAlan({ ok: false }, Gm) === null, 'senaryo ' + n);
+});

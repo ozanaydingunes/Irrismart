@@ -44,6 +44,8 @@
   let kmlSonuc = null, kmlKatman = null, kmlGecici = null, kmlYeni = false;   // MH-KML durumu (show() kullandığı için burada)
   function show(v) {
     if (v !== 'arazi') kmlGeciciSil();
+    if (v !== 'arazi' && vurgu && vurgu.kaynak === 'ss') ssVurguBitir();
+    if (ss && ss.acik && v !== 'arazi') ssKapat();
     // Taslak, verinin değişebileceği ekranlara geçilince kapanır (eski sonuçla Uygula yapılamaz)
     if (sm && ['projeler', 'veri', 'ayarlar'].includes(v)) { smKapat(); toast(t('Shift Yönetimi taslağı kapatıldı (uygulanmadı)')); }
     if (v !== 'projeler' && v !== 'ayarlar' && !cur) { toast(t('Önce bir proje açın veya oluşturun')); v = 'projeler'; }
@@ -52,6 +54,7 @@
     document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     safely(() => ({ projeler: renderProjects, arazi: openMap, veri: renderForm, sonuc: renderResult, malzeme: renderBom, ayarlar: renderSettings, hidrolik: renderHydro, teknik: renderTech })[v](), t('Ekran'));
     if (window.IrriDesk) window.IrriDesk.refresh();
+    ssTutamak();
   }
   document.querySelectorAll('nav.tabs button[data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
   $('#btnBack').onclick = () => show('projeler');
@@ -64,7 +67,7 @@
     const p = { id: Date.now().toString(36), name: name.slice(0, 80), created: Date.now(), updated: Date.now(), poly: [], src: null, inp: { crop: 'domates', srcType: 'kuyu', region: 'akdeniz', soil: 'tinli', rowDir: 'uzun', emitter: 'normal', geom: 'dikdortgen' } };
     projects.unshift(p); persist(); openProject(p.id); show('arazi');
   }
-  function openProject(id) { if (sm || vurgu) smKapat(); cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
+  function openProject(id) { if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; } cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
   function renderProjects() {
     const el = $('#projList');
     if (!projects.length) { el.innerHTML = `<div class="card center muted">${t('Henüz proje yok.')}<br>${t('“Yeni proje” ile başlayın.')}</div>`; return; }
@@ -230,14 +233,20 @@
       const pg = L.polygon(c.map(ll), { renderer: rend, interactive: !ro, stroke: mapMode === 'shift' || on, color: on ? '#ffd400' : '#fff', weight: on ? 4 : 1, fillColor: pal[secOf[k] % pal.length], fillOpacity: !ro ? .38 : on ? .85 : .06 }).addTo(g);
       if (on) mapEl.dataset.vurguBirim = String(Number(mapEl.dataset.vurguBirim || 0) + 1);
       if (mapMode === 'shift' && !vurgu) pg.on('click', () => assignUnit(r, k));
+      else if (!(window.IrriDesk && window.IrriDesk.active)) pg.on('click', e => { L.DomEvent.stopPropagation(e); ssHaritadanSec(secOf[k]); });   // 1.0.3: telefonda bilgi balonu yerine Shift paneli
       else pg.on('click', e => deskPick(e, { type: 'shift', j: secOf[k] })).bindPopup(() => `<b>Shift ${secOf[k] + 1}</b> · ${t('alt ünite')} ${k + 1}` + tbl([[t('Debi'), fmt(u.Q, 2) + ' m³/h'], [t('Lateral'), fmt(u.nLat, 0)], [t('Giriş basıncı'), fmt(u.hIn, 1) + ' m']]));
     });
     const step = Math.max(1, Math.ceil(Ly.laterals.length / 2500));
     for (let i = 0; i < Ly.laterals.length; i += step) {
       const l = Ly.laterals[i];
-      L.polyline([ll([l.ax, l.y]), ll([l.ax + l.side * l.len, l.y])], { renderer: rend, color: COL.lat, weight: 1.2, opacity: !ro ? .85 : .12, interactive: mapMode !== 'shift' && !ro }).addTo(g)
-        .on('click', e => deskPick(e, { type: 'lateral', l, k: r.units.findIndex(u => u.band === l.band && l.y >= Math.min(u.y0, u.y1) - 1e-6 && l.y <= Math.max(u.y0, u.y1) + 1e-6) }))
-        .bindPopup(() => `<b>Lateral Ø${r.lateral.d}</b>` + tbl([[t('İç çap'), fmt(r.lateral.ic, 1) + ' mm'], [t('Uzunluk'), fmt(l.len, 1) + ' m'], [t('Damlatıcı'), fmt(l.N, 0)], [t('Debi'), fmt(l.Q, 0) + ' l/h'], [t('Sürtünme kaybı'), fmt(l.hf, 2) + ' m'], [t('Basınç farkı'), fmt(l.dH, 2) + ' m'], [t('Giriş basıncı'), fmt(l.hreq, 1) + ' m'], [t('Malzeme'), 'PE']]));
+      const LAT = L.polyline([ll([l.ax, l.y]), ll([l.ax + l.side * l.len, l.y])], { renderer: rend, color: COL.lat, weight: 1.2, opacity: !ro ? .85 : .12, interactive: mapMode !== 'shift' && !ro }).addTo(g)
+        .on('click', e => {
+          const k = r.units.findIndex(u => u.band === l.band && l.y >= Math.min(u.y0, u.y1) - 1e-6 && l.y <= Math.max(u.y0, u.y1) + 1e-6);
+          // 1.0.3: telefonda sık lateral çizgileri dokunuşu yakalar; balon yerine o shift'in paneli açılır (lateral bilgisi panelde)
+          if (!(window.IrriDesk && window.IrriDesk.active) && k >= 0) { L.DomEvent.stopPropagation(e); if (e.target && e.target.closePopup) setTimeout(() => e.target.closePopup(), 0); return ssHaritadanSec(secOf[k]); }
+          deskPick(e, { type: 'lateral', l, k });
+        });
+      if (window.IrriDesk && window.IrriDesk.active) LAT.bindPopup(() => `<b>Lateral Ø${r.lateral.d}</b>` + tbl([[t('İç çap'), fmt(r.lateral.ic, 1) + ' mm'], [t('Uzunluk'), fmt(l.len, 1) + ' m'], [t('Damlatıcı'), fmt(l.N, 0)], [t('Debi'), fmt(l.Q, 0) + ' l/h'], [t('Sürtünme kaybı'), fmt(l.hf, 2) + ' m'], [t('Basınç farkı'), fmt(l.dH, 2) + ' m'], [t('Giriş basıncı'), fmt(l.hreq, 1) + ' m'], [t('Malzeme'), 'PE']]));
     }
     r.units.forEach((u, k) => L.polyline([ll([u.ax, u.yIn]), ll([u.ax, u.yEnd])], { renderer: rend, color: COL.man, weight: 4, opacity: !ro || secOf[k] === vj ? 1 : .3, interactive: mapMode !== 'shift' && !ro }).addTo(g)
       .on('click', e => deskPick(e, { type: 'manifold', k }))
@@ -266,6 +275,7 @@
     });
     M.fittings.forEach(ft => { if (ft.type === 'reduksiyon') L.marker(M.toLL(ft.at), { interactive: true, icon: L.divIcon({ className: 'eqm eqs', html: symSVG('reduksiyon', 14), iconSize: [14, 14] }) }).bindTooltip(t('Redüksiyon') + ' ' + ft.text).addTo(g); });
     planLayer = g.addTo(map);
+    try { const pb = L.latLngBounds(Ly.P.map(ll)), a0 = map.latLngToContainerPoint(pb.getNorthWest()), b0 = map.latLngToContainerPoint(pb.getSouthEast()); mapEl.dataset.planKutu = JSON.stringify({ x0: Math.round(a0.x), y0: Math.round(a0.y), x1: Math.round(b0.x), y1: Math.round(b0.y) }); } catch (e) { /* yalnız test kancası */ }
     if (ro) {
       mapEl.dataset.vurgu = String(vj);
       if (secLL.length) {
@@ -860,6 +870,7 @@
     const sg = $('#bShiftGeri'); if (sg) sg.onclick = smGeriAl;
     el.querySelectorAll('[data-shiftyon]').forEach(b => b.onclick = () => shiftYonetimiAc());
     if (h.ptab === 'tablo') renderHydroTable(h, r);
+    ssTutamak();
   }
   // ---------- 1.0.1: Shift Yönetimi (A + B) ----------
   // Taslak: shift sayısı, elle alt ünite ataması, çalışma sırası ve hedef debi. Önizleme aynı E.design çağrısıyla
@@ -891,6 +902,7 @@
     };
     sm = { taslak, ilk: JSON.parse(JSON.stringify(taslak)), r0, o0: smOzet(r0), r1: null, o1: null, sec: j != null && j < n ? j : 0, acik: false };
     smCiz();
+    if (j != null) { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); }
   }
   const smHidrolikAyni = () => (sm.taslak.Ns ?? null) === (sm.ilk.Ns ?? null) && JSON.stringify(sm.taslak.manual && sm.taslak.manual.assign) === JSON.stringify(sm.ilk.manual && sm.ilk.manual.assign);
   function smOnizle() {
@@ -1059,6 +1071,120 @@
       sm.sec = Math.min(+x.value, Math.max(...assign)); yeniden();
     });
   }
+  // ---------- 1.0.3 PR-1: Alt Shift seçici (alttan açılan panel) ve Shift detay paneli ----------
+  // Yalnız gösterim ve seçim: hiçbir değer bu panelde hesaplanmaz veya kaydedilmez. Değerler motor sonucundan
+  // (E.design → IrriHydroView.build), alan alt ünite poligonlarından (IrriShiftYonetimi.geoAlan), uygunluk resmî
+  // değerlendirmeden (IrriAssess). Eksik değerde tahmin yapılmaz: "Hesaplanamadı" / "Veri gerekli".
+  let ss = null;   // { j: seçili shift (panel kapansa da korunur), acik }
+  const ssSonuc = () => cur && lastRes && lastRes.ok ? lastRes : null;
+  function ssTutamak() {
+    let b = $('#ssTut');
+    const v = document.querySelector('.view.on'), r = ssSonuc(), goster = !!(r && v && v.id === 'v-hidrolik');
+    if (!goster) { if (b) b.remove(); document.body.classList.remove('ss-var'); return; }
+    if (!b) { b = document.createElement('button'); b.id = 'ssTut'; b.type = 'button'; b.className = 'ss-tut'; b.setAttribute('aria-haspopup', 'dialog'); document.body.appendChild(b); b.onclick = () => ssAc(); }
+    b.innerHTML = `<span aria-hidden="true">▴</span> ${t('Shiftler')} <span class="ss-say">${r.sel.groups.length}</span>`;
+    b.setAttribute('aria-expanded', String(!!(ss && ss.acik)));
+    document.body.classList.add('ss-var');
+  }
+  function ssAc(j) {
+    const r = ssSonuc(); if (!r) return toast(t('Shift Yönetimi için önce hesabın tamamlanması gerekir.'));
+    const n = r.sel.groups.length, j0 = j != null ? j : ss ? ss.j : 0;
+    ss = { j: Math.min(Math.max(0, j0 | 0), n - 1), acik: true };
+    ssCiz(r, true);
+  }
+  function ssKapat() {
+    if (ss) ss.acik = false;
+    ['#ssSheet', '#ssPerde'].forEach(q => { const e = $(q); if (e) e.remove(); });
+    document.body.classList.remove('ss-acik');
+    ssTutamak();
+    const b = $('#ssTut'); if (b) b.focus();
+  }
+  function ssVurguBitir() {
+    if (!vurgu || vurgu.kaynak !== 'ss') return;
+    vurgu = null; document.body.classList.remove('sm-vurgu');
+    const c = $('#ssChip'); if (c) c.remove();
+    if (map && $('#v-arazi').classList.contains('on')) drawPoly();
+  }
+  function ssHaritada(j) {
+    const r = ssSonuc(); if (!r) return;
+    if (r.layout.mode !== 'parsel') return toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)'));
+    ss.j = j; ssKapat();
+    vurgu = { j, r, fit: true, kaynak: 'ss' }; showPlan = true;
+    document.body.classList.add('sm-vurgu');
+    if (mapMode !== 'sinir') setMode('sinir');
+    show('arazi');
+    let c = $('#ssChip');
+    if (!c) { c = document.createElement('button'); c.id = 'ssChip'; c.type = 'button'; c.className = 'btn primary sm-chip'; document.body.appendChild(c); }
+    c.textContent = `‹ ${t('Shiftler')} · Shift ${j + 1}`;
+    c.onclick = () => { ssVurguBitir(); show('hidrolik'); ssAc(j); };
+  }
+  // Haritada (görüntüleme modunda) bir shift'e dokunma: bilgi balonu yerine Shift paneli o shift ile açılır
+  function ssHaritadanSec(j) { if (!ssSonuc()) return; ssAc(j); }
+  const ssYok = (x = 'Hesaplanamadı') => `<span class="ss-yok">${t(x)}</span>`;
+  function ssDetay(r, j) {
+    const vm = HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) });
+    const d = vm.shift.details[j], li = vm.shift.list[j], A = assessOf(r);
+    const geo = SY.geoAlan(r, Gm), uyg = SY.uygunluk(SY.ozet(r, vm, A), V0(cur.inp.Q), cur.inp);
+    const N = (v, dd, u) => Number.isFinite(v) ? `${fmt(v, dd)}${u ? ' ' + u : ''}` : ssYok();
+    const hedefX = SY.hedefSapma(d.Q, cur.shiftHedef);
+    const durum = { ok: ['ok', 'Uygun'], warn: ['warn', 'Sınırda'], bad: ['bad', 'Uygunsuz'] }[li.status] || ['na', 'Hesaplanamadı'];
+    // Kontrol vanaları: her alt ünite girişinde bir shift vanası (motorun seçimi)
+    const uv = r.sel.uValve || [], vanaS = new Map();
+    r.sel.groups[j].forEach(k => { const v = uv[k] && uv[k].v; const key = v ? v.cap + (v.dogrulandi ? '' : ' (' + t('jenerik') + ')') : null; vanaS.set(key, (vanaS.get(key) || 0) + 1); });
+    const vana = [...vanaS].map(([k, n]) => k ? `${n} × ${esc(k)}` : `${n} × ${ssYok('Veri gerekli')}`).join(', ');
+    const p = d.pump;
+    const pompa = p ? `${N(p.Q, 2, 'm³/h')} @ ${N(p.H != null ? p.H : p.Hreq, 2, 'm')}${p.H != null ? ` · ${t('gerekli')} ${N(p.Hreq, 2, 'm')}` : ''}${p.eta != null ? ` · η %${fmt(p.eta, 0)}` : ''}${p.src === 'jenerik' ? ` <small class="muted">(${t('jenerik')})</small>` : ''}` : (r.pump.need ? ssYok() : t('Pompa gerekmez'));
+    const sebep = [d.overSource ? t('Shift debisi kaynak debisini aşıyor') : '', d.regulator ? t('Fazla basınç {a} m: regülatör önerilir', { a: fmt(d.surplus, 1) }) : ''].filter(Boolean);
+    const satir = rows => `<dl class="ss-kv">${rows.map(([a, b, c]) => `<dt>${a}${c ? `<small>${c}</small>` : ''}</dt><dd>${b}</dd>`).join('')}</dl>`;
+    const birimler = r.sel.groups[j].map(k => { const u = r.units[k], L = SY.birimLateral(r, k); return `<tr><th scope="row">M${k + 1}</th><td>Ø${u.pipe.od} PN${u.pipe.pn}</td><td>${N(u.Q, 2)}</td><td>${N(L.n, 0)}</td><td>${L.enUzun != null ? N(L.enUzun, 1) : ssYok()}</td><td>${N(u.hIn, 1)}</td><td>${geo ? N(geo.birim[k], 2) : ssYok()}</td></tr>`; }).join('');
+    return `<div class="ss-detay" data-j="${j}">
+      <div class="ss-baslik"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span><b>Shift ${j + 1}</b><span class="ss-durum ss-durum-${durum[0]}" data-durum="${li.status}">${t(durum[1])}</span></div>
+      ${satir([
+        [t('Alan'), geo ? `<b data-v="${geo.shift[j]}" id="ssAlan">${fmt(geo.shift[j], 2)} da</b>` : ssYok(), t('alt ünite geometrisinden')],
+        [t('Hesaplanan debi'), `<b data-v="${d.Q}" id="ssDebi">${N(d.Q, 2, 'm³/h')}</b>`, t('motor sonucu; düzenlenemez')],
+        [t('Hedef debi'), cur.shiftHedef > 0 ? `${N(cur.shiftHedef, 2, 'm³/h')}${hedefX != null ? ` · ${t('fark')} ${hedefX > 0 ? '+' : ''}${fmt(hedefX, 0)}%` : ''}` : `<span class="muted">${t('Girilmedi')}</span>`, t('bilgi; tasarım debisini değiştirmez')],
+        [t('Gerekli giriş basıncı'), `<span data-v="${d.H}" id="ssBasinc">${N(d.H, 2, 'mSS')}</span> (${N(d.Hbar, 2, 'bar')})`, ''],
+        [t('Sulama süresi'), N(d.dur, 2, 'h'), ''],
+        [t('Sulama hacmi'), N(d.vol, 1, 'm³'), t('bir sulamada')],
+        [t('Pompa görev noktası'), pompa, ''],
+        [t('Kontrol vanaları'), vana || ssYok('Veri gerekli'), t('her alt ünite girişinde')],
+      ])}
+      <h4>${t('Kritik hidrolik kayıplar')}</h4>
+      ${d.breakdown && d.breakdown.length ? satir(d.breakdown.map(b => [t(b.label), N(b.v, 2, 'm'), ''])) + `<p class="small muted">${t('Toplam')} ${N(d.breakdownSum, 2, 'm')}${d.critUnit ? ` · ${t('Belirleyici ünite {u} · yol {l} m', { u: d.critUnit.id, l: fmt(d.critUnit.L, 0) })}` : ''}</p>` : `<p>${ssYok()}</p>`}
+      <h4>${t('Manifold ve lateral bağlantıları')}</h4>
+      <div class="scroll"><table class="ss-tablo"><thead><tr><th>${t('Alt ünite')}</th><th>Manifold</th><th>${t('Debi')} m³/h</th><th>Lateral</th><th>${t('En uzun lateral')} m</th><th>${t('Giriş')} m</th><th>${t('Alan')} da</th></tr></thead><tbody>${birimler}</tbody></table></div>
+      <h4>${t('Mühendislik uygunluk durumu')}</h4>
+      <p class="ss-uygun"><span class="ss-durum ss-durum-${durum[0]}">Shift ${j + 1}: ${t(durum[1])}</span>${sebep.length ? ` — ${sebep.join('; ')}` : ''}</p>
+      <p class="ss-uygun" id="ssGenel" data-genel="${uyg.genel}"><span class="sm-genel-cip sm-genel-${uyg.genel}">${t('Proje geneli')}: ${t(SM_GENEL[uyg.genel][0])}</span>${uyg.bulgular.length ? ` · ${t('Uygunsuz bulgular')}: ${uyg.bulgular.map(k => `<code>${esc(k)}</code>`).join(', ')}` : ''}</p>
+    </div>`;
+  }
+  function ssCiz(r, ilk) {
+    r = r || ssSonuc(); if (!r || !ss) return ssKapat();
+    const n = r.sel.groups.length, j = ss.j, vm = HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) });
+    let el = $('#ssSheet');
+    if (!el) {
+      const perde = document.createElement('div'); perde.id = 'ssPerde'; perde.className = 'ss-perde'; perde.onclick = ssKapat; document.body.appendChild(perde);
+      el = document.createElement('div'); el.id = 'ssSheet'; el.className = 'ss-sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'ssTitle'); document.body.appendChild(el);
+    }
+    document.body.classList.add('ss-acik');
+    const chip = x => `<button type="button" class="ss-chip${x.j === j ? ' on' : ''}" role="tab" aria-selected="${x.j === j}" data-ssj="${x.j}" style="--c:${PALETTE[x.j % PALETTE.length]}"><span class="dot" style="background:${PALETTE[x.j % PALETTE.length]}"></span><b>Shift ${x.no}</b><small>${fmt(x.Q, 1)} m³/h</small>${x.status !== 'ok' ? `<span class="ss-i ss-i-${x.status}" aria-label="${esc(t(x.status === 'bad' ? 'Uygunsuz' : 'Sınırda'))}">${x.status === 'bad' ? '✗' : '!'}</span>` : ''}</button>`;
+    const kay = el.querySelector('.ss-body') ? el.querySelector('.ss-body').scrollTop : 0, kayX = el.querySelector('.ss-chips') ? el.querySelector('.ss-chips').scrollLeft : 0;
+    el.innerHTML = `<div class="ss-grab" aria-hidden="true"></div>
+      <header class="ss-head"><h2 id="ssTitle">${t('Shiftler')}</h2><span class="muted small">${n} shift${sm ? '' : ''}</span><span class="dt-gap"></span><button type="button" class="btn sm" id="ssX" aria-label="${esc(t('Kapat'))}">✕</button></header>
+      <div class="ss-chips" role="tablist" aria-label="${esc(t('Shiftler'))}">${vm.shift.list.map(chip).join('')}</div>
+      <div class="ss-body">${ssDetay(r, j)}</div>
+      <footer class="ss-foot"><button type="button" class="btn" id="ssHarita">${t('Haritada göster')}</button><button type="button" class="btn primary" id="ssDuzenle">${t('Düzenle')}</button></footer>`;
+    const ch = el.querySelector('.ss-chips'); ch.scrollLeft = kayX;
+    const on = el.querySelector('.ss-chip.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+    if (!ilk) el.querySelector('.ss-body').scrollTop = 0; else el.querySelector('.ss-body').scrollTop = kay;
+    el.querySelectorAll('[data-ssj]').forEach(b => b.onclick = () => { ss.j = +b.dataset.ssj; ssCiz(r); const x = el.querySelector(`[data-ssj="${ss.j}"]`); if (x) x.focus(); });
+    $('#ssX').onclick = ssKapat;
+    $('#ssHarita').onclick = () => ssHaritada(ss.j);
+    $('#ssDuzenle').onclick = () => { const jj = ss.j; ssKapat(); shiftYonetimiAc(jj); };
+    if (ilk) { const x = el.querySelector('.ss-chip.on'); if (x) x.focus({ preventScroll: true }); }
+    ssTutamak();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && ss && ss.acik) ssKapat(); });
   // ---------- K-3: Ana hat borusu seçimi (malzeme, çap, SDR/PN) ----------
   // Yalnız doğrulanmış kütüphane satırları seçilebilir. PVC-U ve PN6 (SDR26) doğrulanmış katalog olmadığı için
   // gösterilir ama SEÇİLEMEZ (veri eksik). Seçim değişince hesap aynı design() çağrısıyla yenilenir.
