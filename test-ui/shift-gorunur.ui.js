@@ -19,6 +19,11 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
 (async () => {
   const srv = http.createServer((q, r) => { const u = decodeURIComponent(q.url.split('?')[0]); const f = path.join(ROOT, u === '/' ? 'index.html' : u); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' }); r.end(d); }); }).listen(0);
   await new Promise(r => srv.on('listening', r));
+  // G4 Eski Android WebView (Chrome < 87) `inset` kısaltmasını tanımaz: .view konumsuz kalır, genişliği içeriğe göre büyür
+  //    ve dikey kaydırma çalışmaz (API 30 / WebView 83 emülatöründe #hydro 967 px). Uzun biçimli top/right/bottom/left kullanılmalı.
+  const css = fs.readFileSync(path.join(ROOT, 'css', 'app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const insetler = css.match(/(^|[;{\s])inset\s*:[^;}]*/g) || [];
+  check(!insetler.length, `G4 CSS eski WebView'da desteklenmeyen inset kısaltması içeriyor: ${insetler.map(x => x.trim()).join(' | ')}`);
   const browser = await chromium.launch();
   for (const [ad, vp] of [['320', { width: 320, height: 616 }], ['390', { width: 390, height: 844 }]]) {
     const ctx = await browser.newContext({ viewport: vp, isMobile: true, hasTouch: true });

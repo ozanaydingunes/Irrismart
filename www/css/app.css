@@ -11,7 +11,7 @@ header .ttl{flex:1;display:flex;flex-direction:column;line-height:1.15}
 header .ttl span{font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon{background:none;border:0;color:inherit;font-size:22px;width:44px;height:44px;border-radius:10px}
 main{position:fixed;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--tab) + env(safe-area-inset-bottom));left:0;right:0;overflow:hidden}
-.view{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+.view{position:absolute;top:0;right:0;bottom:0;left:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
 .view.on{display:block}
 .pad{padding:14px 14px 28px;max-width:720px;margin:0 auto}
 nav.tabs{position:fixed;bottom:0;left:0;right:0;height:calc(var(--tab) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--surface);border-top:1px solid var(--line);z-index:1000}
@@ -55,7 +55,7 @@ tr.click{cursor:pointer}
 .scroll{overflow-x:auto}
 .tag{display:inline-block;font-size:11px;background:var(--pri);color:var(--onpri);border-radius:6px;padding:1px 6px;margin-left:4px}
 details summary{cursor:pointer;color:var(--pri);font-weight:600}
-#map{position:absolute;inset:0 0 var(--mapbar,150px) 0;z-index:0}   /* Leaflet katmanları harita içinde kalsın; büyüyen alt çubuk (KML paneli) üstte */
+#map{position:absolute;top:0;right:0;bottom:var(--mapbar,150px);left:0;z-index:0}   /* Leaflet katmanları harita içinde kalsın; büyüyen alt çubuk (KML paneli) üstte */
 .mapbar{position:absolute;left:0;right:0;bottom:0;min-height:var(--mapbar,150px);background:var(--surface);border-top:1px solid var(--line);padding:8px 10px;z-index:1}
 .mapinfo{font-size:13px;margin-bottom:6px;min-height:36px}
 .vtx{background:#ffd400;border:2px solid #0f5132;border-radius:50%}
@@ -79,12 +79,12 @@ header .ttl span{color:var(--muted);font-size:13px;opacity:1;border-left:1px sol
 .hero{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 14px}
 .hero img{width:min(78%,360px);height:auto}
 .hero span{color:var(--muted);font-size:13px}
-#splash{position:fixed;inset:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:5000;transition:opacity .35s}
+#splash{position:fixed;top:0;right:0;bottom:0;left:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:5000;transition:opacity .35s}
 #splash img{width:min(72%,420px);height:auto}
 #splash.off{opacity:0;pointer-events:none}
 #fileSheet{display:none}
 #fileSheet.on{display:block}
-#fileSheet .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3000}
+#fileSheet .sheet-bg{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.35);z-index:3000}
 #fileSheet .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));z-index:3001;box-shadow:0 -4px 20px rgba(0,0,0,.15);word-break:break-all}
 
 /* Hidrolik tablo — Excel görünümü */
@@ -130,7 +130,7 @@ nav.tabs button{font-size:10.5px}
 .leaflet-popup-content table{border-collapse:collapse}
 .leaflet-popup-content td{padding:1px 6px 1px 0;border:0}
 body.mapfull header,body.mapfull nav.tabs{display:none}
-body.mapfull #v-arazi{position:fixed;inset:0;z-index:1500;background:#fff}
+body.mapfull #v-arazi{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1500;background:#fff}
 body.mapfull main{top:0;bottom:0}
 .mlegend{position:absolute;top:8px;right:8px;z-index:500;background:rgba(255,255,255,.92);border-radius:8px;padding:6px 8px;font-size:11px;line-height:1.5;pointer-events:none;width:auto;height:auto;border:0}
 .mlegend i{display:inline-block;width:16px;height:4px;vertical-align:middle;margin-right:4px}
@@ -503,7 +503,7 @@ body.sm-vurgu .mlegend{display:none}
 .ss-tut .ss-say{display:inline-block;min-width:22px;margin-left:4px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.25)}
 body.ss-var #v-hidrolik .pad{padding-bottom:84px}
 body.ss-acik .ss-tut{display:none}
-.ss-perde{position:fixed;inset:0;bottom:calc(var(--tab) + env(safe-area-inset-bottom));background:rgba(0,0,0,.35);z-index:1190}
+.ss-perde{position:fixed;top:0;right:0;bottom:0;left:0;bottom:calc(var(--tab) + env(safe-area-inset-bottom));background:rgba(0,0,0,.35);z-index:1190}
 .ss-sheet{position:fixed;left:0;right:0;bottom:calc(var(--tab) + env(safe-area-inset-bottom));max-height:min(78vh,calc(100% - var(--top) - var(--tab) - 24px));z-index:1200;
   display:flex;flex-direction:column;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:0 -6px 20px rgba(0,0,0,.25)}
 .ss-grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 2px}
