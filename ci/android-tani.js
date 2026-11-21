@@ -77,6 +77,23 @@ const PROJ = [
     await durum('hidrolik'); await tani('hidrolik'); await ekranGoruntusu(id + '-1-hidrolik');
     // 1. Alt Shift paneli
     if (await dokun('#ssTut', 'TUTAMAK')) { await durum('tutamak sonrası'); await tani('tutamak sonrası'); await ekranGoruntusu(id + '-2-sheet'); const x = await page.$('#ssX'); if (x) await dokun('#ssX', 'kapat'); }
+    // 1b. Çip seçimi ve Düzenle (gerçek dokunuş)
+    const SONUC = (ad, ok) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad);
+    if (await dokun('#ssTut', 'TUTAMAK (2)')) {
+      await page.evaluate(() => { const c = document.querySelector('[data-ssj="1"]'); if (c) c.scrollIntoView({ inline: 'center' }); }); await page.waitForTimeout(800);
+      if (await page.$('[data-ssj="1"]')) { await dokun('[data-ssj="1"]', 'ÇİP 2'); SONUC('çip 2 seçildi', await page.evaluate(() => (document.querySelector('.ss-chip.on') || {}).dataset && document.querySelector('.ss-chip.on').dataset.ssj === '1')); }
+      if (await dokun('#ssDuzenle', 'DÜZENLE')) {
+        await page.waitForTimeout(1500);
+        const g = await page.evaluate(() => { const v = s => { const e = document.querySelector(s); if (!e) return false; const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth; }; return { arti: v('#smNsArti'), eksi: v('#smNsEksi'), uygunluk: v('#smUygunluk h3'), secili: (document.querySelector('#smPanel .sm-shift.on') || { dataset: {} }).dataset.j }; });
+        SONUC('Düzenle: − / + ve uygunluk kaydırmadan görünür ' + JSON.stringify(g), g.arti && g.eksi && g.uygunluk);
+        SONUC('Düzenle: seçili shift 2', g.secili === '1');
+        const n0 = await page.evaluate(() => (document.querySelector('#smNsN') || {}).textContent);
+        if (await dokun('#smNsArti', 'ARTI (Düzenle)')) { await page.waitForTimeout(6000); const n1 = await page.evaluate(() => (document.querySelector('#smNsN') || {}).textContent); SONUC(`+ dokunuşu (${n0} → ${n1})`, +n1 === +n0 + 1);
+          SONUC('önce/sonra özeti görünür', await page.evaluate(() => { const e = document.querySelector('#smOzetBar'); if (!e) return false; const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; })); }
+        if (await page.$('#smIptal')) await dokun('#smIptal', 'iptal');
+      }
+    }
+    SONUC('Hidrolik yatay taşma yok', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && ![...document.querySelectorAll('#v-hidrolik *')].some(e => e.getBoundingClientRect().width > innerWidth + 2)));
     // 2. +/−
     if (await dokun('#bShiftYon', 'Shift Yönetimi düğmesi')) {
       await page.waitForTimeout(1500); await durum('panel açıldı'); await ekranGoruntusu(id + '-3-panel');
