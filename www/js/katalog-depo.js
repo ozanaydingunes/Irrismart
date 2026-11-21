@@ -55,6 +55,9 @@
     else { const u = new Uint8Array(await yan.arrayBuffer()); h.ekle(u); n = u.length; }
     return { sha256: h.bitir(), boyut: n };
   }
+  // Yazılmış ama henüz kayda bağlanmamış dosyalar: sahipsiz dosya temizliği bunlara dokunmaz
+  // (Android emülatör testinde açılış temizliği, yazımı biten ama kaydı yapılmamış PDF'i siliyordu).
+  const bekleyen = new Set();
   const yol = (anahtar, part) => `${KLASOR}/${anahtar}.pdf${part ? '.part' : ''}`;
 
   // Dosya önce denetlenir (PDF imzası, boyut); yazılır; geri okunup doğrulanır. Dönen nesne katalog kaydının 'dosya' alanıdır.
@@ -63,6 +66,7 @@
     if (dosya.size > M.ENCOK_BAYT) throw new Error('Dosya çok büyük (üst sınır 400 MB)');
     if (!M.pdfImzasi(await blobBayt(dosya, 0, 5))) throw new Error('Bu dosya PDF değil (PDF imzası yok)');
     const anahtar = M.yeniId('pdf'), h = M.sha256Akis(), adim = p => ilerleme && ilerleme(p);
+    bekleyen.add(anahtar);
     if (yerel()) {
       const fs = FS();
       try {
@@ -80,15 +84,15 @@
         return { ad: String(dosya.name || 'katalog.pdf').slice(0, 200), boyut: dosya.size, sha256, mime: 'application/pdf', depo: 'android-dosya', anahtar };
       } catch (e) {
         for (const p of [yol(anahtar, true), yol(anahtar)]) { try { await fs.deleteFile({ path: p, directory: 'DATA' }); } catch (e2) { /* yok */ } }
-        throw yerHatasi(e);
+        bekleyen.delete(anahtar); throw yerHatasi(e);
       }
     }
     // Web: IndexedDB'ye Blob olarak
     const sha256 = await blobOzet(dosya, p => adim(0.5 * p));
-    try { await koy('dosyalar', new Blob([dosya], { type: 'application/pdf' }), anahtar); } catch (e) { throw yerHatasi(e); }
+    try { await koy('dosyalar', new Blob([dosya], { type: 'application/pdf' }), anahtar); } catch (e) { bekleyen.delete(anahtar); throw yerHatasi(e); }
     const geri = await al('dosyalar', anahtar);
     const gsha = geri ? await blobOzet(geri, p => adim(0.5 + 0.5 * p)) : null;
-    if (!geri || geri.size !== dosya.size || gsha !== sha256) { try { await sil('dosyalar', anahtar); } catch (e) { /* */ } throw new Error('Yazılan dosya doğrulanamadı (SHA-256 / boyut tutmuyor)'); }
+    if (!geri || geri.size !== dosya.size || gsha !== sha256) { bekleyen.delete(anahtar); try { await sil('dosyalar', anahtar); } catch (e) { /* */ } throw new Error('Yazılan dosya doğrulanamadı (SHA-256 / boyut tutmuyor)'); }
     return { ad: String(dosya.name || 'katalog.pdf').slice(0, 200), boyut: dosya.size, sha256, mime: 'application/pdf', depo: 'indexeddb', anahtar };
   }
   function yerHatasi(e) { const m = String(e && (e.message || e.name) || e); return /quota|space|ENOSPC|dolu|full/i.test(m) ? new Error('Cihazda yeterli boş alan yok; dosya kaydedilmedi') : e instanceof Error ? e : new Error(m); }
@@ -112,6 +116,7 @@
   }
   async function dosyaSil(d) {
     if (!d || !d.anahtar) return;
+    bekleyen.delete(d.anahtar);
     if (d.depo === 'android-dosya') { try { await FS().deleteFile({ path: yol(d.anahtar), directory: 'DATA' }); } catch (e) { /* zaten yok */ } return; }
     await sil('dosyalar', d.anahtar);
   }
@@ -119,7 +124,7 @@
   // ---------- Kayıtlar ----------
   async function listele() { const [firmalar, kataloglar] = await Promise.all([hepsi('firmalar'), hepsi('kataloglar')]); return { firmalar, kataloglar }; }
   async function firmaKaydet(f) { await koy('firmalar', f); return f; }
-  async function katalogKaydet(k) { const h = M.katalogDogrula(k); if (h.length && !(k.dosya && k.dosya.bekliyor)) throw new Error(h.join('; ')); await koy('kataloglar', k); return k; }
+  async function katalogKaydet(k) { const h = M.katalogDogrula(k); if (h.length && !(k.dosya && k.dosya.bekliyor)) throw new Error(h.join('; ')); await koy('kataloglar', k); M.dosyaAnahtarlari(k).forEach(a => bekleyen.delete(a)); return k; }
   // Katalog silme: bütün sürüm dosyaları + kayıt. Firmanın son kataloğuysa firma da silinir (kullanıcı firmayı ayrıca tutmak istemedikçe).
   async function katalogSil(k) { for (const d of [k.dosya].concat((k.oncekiSurumler || []).map(s => s.dosya))) if (d && d.anahtar) await dosyaSil(d); await sil('kataloglar', k.id); }
   async function surumDosyasiSil(k, anahtar) { const s = (k.oncekiSurumler || []).find(x => x.dosya.anahtar === anahtar); if (!s) return k; await dosyaSil(s.dosya); const y = M.surumSil(k, anahtar); await koy('kataloglar', y); return y; }
@@ -127,10 +132,10 @@
 
   // Kayıtlarda adı geçmeyen dosyaları (yarım kalmış yazımlar dahil) temizler
   async function sahipsizTemizle() {
-    const { kataloglar } = await listele(), gecerli = new Set(kataloglar.flatMap(M.dosyaAnahtarlari)); let n = 0;
+    const { kataloglar } = await listele(), gecerli = new Set(kataloglar.flatMap(M.dosyaAnahtarlari).concat([...bekleyen])); let n = 0;
     if (yerel()) {
       let liste = []; try { liste = (await FS().readdir({ path: KLASOR, directory: 'DATA' })).files || []; } catch (e) { return 0; }
-      for (const f of liste) { const ad = typeof f === 'string' ? f : f.name, a = ad.replace(/\.pdf(\.part)?$/, ''); if (/\.part$/.test(ad) || !gecerli.has(a)) { try { await FS().deleteFile({ path: KLASOR + '/' + ad, directory: 'DATA' }); n++; } catch (e) { /* */ } } }
+      for (const f of liste) { const ad = typeof f === 'string' ? f : f.name, a = ad.replace(/\.pdf(\.part)?$/, ''); if (!gecerli.has(a)) { try { await FS().deleteFile({ path: KLASOR + '/' + ad, directory: 'DATA' }); n++; } catch (e) { /* */ } } }
       return n;
     }
     const anahtarlar = await islem('dosyalar', 'readonly', s => istek(s.getAllKeys()));

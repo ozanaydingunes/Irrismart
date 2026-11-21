@@ -82,6 +82,9 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
     check(dlg.some(m => /zaten kayıtlı/.test(m)) && (await D()).kataloglar.length === 1, `${ad} aynı PDF uyarısı; vazgeçince eklenmez`);
     check((await pg.evaluate(() => window.IrriKatalogDepo.sahipsizTemizle())) === 0, `${ad} vazgeçilen dosya depoda kalmadı`);
 
+    // 5b) Regresyon (Android emülatöründe bulundu): yazımı biten ama henüz kaydedilmemiş dosya sahipsiz temizliğinde silinmemeli
+    const yarisma = await pg.evaluate(async () => { const D = window.IrriKatalogDepo; const b = new Blob([new TextEncoder().encode('%PDF-1.4\n% yarisma\n%%EOF\n')]); const d = await D.dosyaYaz(new File([b], 'y.pdf')); const n = await D.sahipsizTemizle(); const var1 = await D.dosyaVarMi(d); await D.dosyaSil(d); return { n, var1 }; });
+    check(yarisma.var1 && yarisma.n === 0, `${ad} kaydedilmeyi bekleyen dosya temizlikte silinmez (${JSON.stringify(yarisma)})`);
     // 6) Düzenleme
     await pg.click('[data-duzenle]'); await pg.waitForSelector('#kfAd'); check(await pg.inputValue('#kfTarih') === '20.10.2026', `${ad} düzenlemede tarih gösterimi`);
     await pg.fill('#kfNot', 'Bayi indirimi hariç'); await pg.click('#katKaydet'); await pg.waitForSelector('.kat-doc');
