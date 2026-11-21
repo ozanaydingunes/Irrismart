@@ -5,6 +5,10 @@
   const HV = window.IrriHydroView, HP = window.IrriHydroPanel, AS = window.IrriAssess, AV = window.IrriAssessView;
   // MH-AKIL-1: uyarı katmanı. Sonuç, Hidrolik, PDF ve Excel aynı çağrıyı kullanır (IrriAssess.forProject).
   const assessOf = r => AS.forProject(cur, r);
+  // TANILAMA (geçici, tanı dalı): son JavaScript hatası bellekte tutulur (proje verisi içermez)
+  window.__sonHata = window.__sonHata || null;
+  window.addEventListener('error', e => { window.__sonHata = { t: new Date().toISOString(), m: String(e.message || e.error || ''), k: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') + ':' + (e.colno || '') }; });
+  window.addEventListener('unhandledrejection', e => { window.__sonHata = { t: new Date().toISOString(), m: 'Promise: ' + String(e.reason && e.reason.message || e.reason) }; });
   const $ = s => document.querySelector(s);
   const KEY = 'irrismart.projects.v1', SKEY = 'irrismart.settings.v1', CKEY = 'irrismart.catalog.v1';
   const fmt = (v, d = 1) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString(I.locale, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -1517,6 +1521,18 @@
       <p class="small"><b>${t('Kot verisinin sınırları')}</b></p><ul class="small">${K.KOT_SINIRLARI.map(s => li(t(s))).join('')}${li(t(K.KML_NOTU))}</ul>
       <p class="small muted">${esc(t(K.GIZLILIK))}</p></details>`;
   }
+  // TANILAMA (geçici): Shift paneli durumu — yalnız teknik bilgi; proje adı, koordinat veya girdi içermez
+  window.IrriTani = () => {
+    const el = q => { const e = document.querySelector(q); if (!e) return 'yok'; const b = e.getBoundingClientRect(), cs = getComputedStyle(e); const x = b.left + b.width / 2, y = b.top + b.height / 2; const ust = b.width && b.height ? document.elementFromPoint(Math.min(Math.max(x, 0), innerWidth - 1), Math.min(Math.max(y, 0), innerHeight - 1)) : null;
+      return { var: true, display: cs.display, visibility: cs.visibility, z: cs.zIndex, kutu: [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)], ekranda: b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth, ustte: ust ? (ust === e || e.contains(ust) ? 'evet' : (ust.id || ust.tagName) + '.' + String(ust.className).slice(0, 30)) : '-' }; };
+    const r = lastRes && lastRes.ok ? lastRes : overlayRes && overlayRes.ok ? overlayRes : null;
+    return { surum: window.IRRI_SURUM, surumKodu: window.IRRI_SURUM_KODU, commit: window.IRRI_COMMIT || 'bilinmiyor', webView: navigator.userAgent.replace(/^.*?\(/, '('), ekran: [innerWidth, innerHeight, devicePixelRatio],
+      shiftModulu: window.IrriShiftYonetimi ? Object.keys(window.IrriShiftYonetimi).length + ' işlev' + (window.IrriShiftYonetimi.hedefler ? ' (1.0.5 hedefler var)' : ' (ESKİ)') : 'YOK',
+      gorunum: (document.querySelector('.view.on') || {}).id || '-', projeAcik: !!cur, hesap: r ? 'var (' + r.sel.groups.length + ' shift' + (r.sel.manual ? ', elle' : '') + ')' : 'YOK', haritaModu: mapMode,
+      tutamak: el('#ssTut'), shiftPaneli: el('#ssSheet'), shiftYonetimi: el('#smPanel'), panelDurum: ss ? { secili: ss.j + 1, acik: ss.acik } : null,
+      taslak: sm ? { Ns: sm.taslak.Ns, elle: !!sm.taslak.manual, degisti: !SY.esit(sm.taslak, sm.ilk), onizleme: sm.r1 ? (sm.r1.ok ? 'hesaplandı' : 'hata') : 'yok', gosterilen: smGoster().sel.groups.length } : null,
+      sonHata: window.__sonHata };
+  };
   function renderSettings() {
     const s = settings, inp = (k, v, lab) => `<label>${lab}<input data-k="${k}" type="text" inputmode="decimal" value="${String(v ?? '').replace('.', ',')}">${s.edited[k] ? '' : `<span class="muted small">${t('örnek değer')}</span>`}</label>`;
     const cnt = (a, f) => t('{n} kayıt ({m} doğrulanmış)', { n: a.length, m: a.filter(f || (x => x.dogrulandi)).length });
@@ -1537,9 +1553,12 @@
         <div class="row wrap"><label class="btn sm" style="flex-direction:row">${t('Katalog yükle (JSON)')}<input type="file" id="catFile" accept=".json,application/json" style="display:none"></label>
         <button class="btn sm" id="catTpl">${t('Şablon indir')}</button>${userCat ? `<button class="btn sm danger" id="catDel">${t('Kullanıcı kataloğunu kaldır')}</button>` : ''}</div></div>
       ${kaynakKarti()}
+      <div class="card small" id="taniKart"><h3>Tanılama (geçici)</h3><pre id="taniCikti" style="white-space:pre-wrap;font-size:11px;user-select:text">${esc(JSON.stringify(window.IrriTani(), null, 1))}</pre><button type="button" class="btn sm" id="taniYenile">Yenile</button> <button type="button" class="btn sm" id="taniKopya">Kopyala</button></div>
       <div class="card small muted"><b>IrriGrow v${esc(window.IRRI_SURUM || "")}</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
     bindLang('langSet');
     $('#themeSet').onchange = ev => { setTheme(ev.target.value); };
+    const ty = $('#taniYenile'); if (ty) ty.onclick = () => { $('#taniCikti').textContent = JSON.stringify(window.IrriTani(), null, 1); };
+    const tk = $('#taniKopya'); if (tk) tk.onclick = async () => { try { await navigator.clipboard.writeText($('#taniCikti').textContent); toast('Kopyalandı'); } catch (e) { const r = document.createRange(); r.selectNodeContents($('#taniCikti')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Metni seçip kopyalayın'); } };
     $('#settings').querySelectorAll('input[data-k]').forEach(el => el.onchange = () => {
       const [a, b] = el.dataset.k.split('.'); const v = V.parseNum(el.value);
       if (v === null || Number.isNaN(v) || v < 0) { toast(t('Geçerli, negatif olmayan bir sayı girin')); renderSettings(); return; }

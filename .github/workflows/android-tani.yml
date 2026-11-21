@@ -24,6 +24,11 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Kaynak commit bilgisi (tanılama)
+        run: |
+          echo "window.IRRI_COMMIT = '${GITHUB_SHA::12}';" > www/js/build-info.js
+          sed -i 's#<script src="js/version.js"></script>#<script src="js/version.js"></script>\n<script src="js/build-info.js"></script>#' www/index.html
+          grep -n build-info www/index.html
       - name: APK derlemesi
         env:
           APK_OUT: ${{ github.workspace }}/tani.apk
@@ -53,6 +58,11 @@ jobs:
           script: |
             adb install -r tani.apk
             TANI_OUT=tani-${{ matrix.api }} node ci/android-tani.js
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.api == 34
+        with:
+          name: IrriGrow-1.0.5-tanilama-apk
+          path: tani.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:

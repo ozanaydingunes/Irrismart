@@ -57,6 +57,7 @@ const PROJ = [
   };
   const durum = async ad => log(ad, JSON.stringify(await page.evaluate(() => ({ gorunum: (document.querySelector('.view.on') || {}).id, tut: !!document.querySelector('#ssTut'), sheet: !!document.querySelector('#ssSheet'), sm: !!document.querySelector('#smPanel'), smGizli: (document.querySelector('#smPanel') || { classList: { contains: () => null } }).classList.contains('sm-min'),
     ns: (document.querySelector('#smNsN') || {}).textContent, kart: document.querySelectorAll('#smPanel .sm-shift').length, cmp: !!document.querySelector('#smPanel .sm-cmp'), bulgu: !!document.querySelector('#smBulgu'), uygun: (document.querySelector('#smUygunluk') || { dataset: {} }).dataset.genel, mesgul: (document.querySelector('#smPanel') || { getAttribute: () => null }).getAttribute('aria-busy'), toast: (document.querySelector('#toast.on') || {}).textContent || '' }))));
+  const tani = async ad => log('IrriTani ' + ad, JSON.stringify(await page.evaluate(() => window.IrriTani ? window.IrriTani() : 'tanı işlevi yok')));
   const ekranGoruntusu = async ad => { try { fs.writeFileSync(path.join(OUT, ad + '.png'), await device.screenshot()); } catch (e) { log('ekran görüntüsü alınamadı', e.message); } };
 
   for (const id of ['pb', 'p3', 'p1']) {
@@ -64,17 +65,17 @@ const PROJ = [
     await page.evaluate(() => document.querySelector('nav.tabs [data-v=projeler]').click()); await page.waitForTimeout(800);
     await dokun(`[data-open="${id}"]`, 'proje aç');
     await dokun('nav.tabs [data-v=hidrolik]', 'hidrolik sekmesi'); await page.waitForTimeout(4000);
-    await durum('hidrolik'); await ekranGoruntusu(id + '-1-hidrolik');
+    await durum('hidrolik'); await tani('hidrolik'); await ekranGoruntusu(id + '-1-hidrolik');
     // 1. Alt Shift paneli
-    if (await dokun('#ssTut', 'TUTAMAK')) { await durum('tutamak sonrası'); await ekranGoruntusu(id + '-2-sheet'); const x = await page.$('#ssX'); if (x) await dokun('#ssX', 'kapat'); }
+    if (await dokun('#ssTut', 'TUTAMAK')) { await durum('tutamak sonrası'); await tani('tutamak sonrası'); await ekranGoruntusu(id + '-2-sheet'); const x = await page.$('#ssX'); if (x) await dokun('#ssX', 'kapat'); }
     // 2. +/−
     if (await dokun('#bShiftYon', 'Shift Yönetimi düğmesi')) {
       await page.waitForTimeout(1500); await durum('panel açıldı'); await ekranGoruntusu(id + '-3-panel');
-      if (await dokun('#smNsArti', 'ARTI')) { await page.waitForTimeout(5000); await durum('+ sonrası'); await ekranGoruntusu(id + '-4-arti'); }
+      if (await dokun('#smNsArti', 'ARTI')) { await page.waitForTimeout(5000); await durum('+ sonrası'); await tani('+ sonrası'); await ekranGoruntusu(id + '-4-arti'); }
       if (await dokun('#smNsEksi', 'EKSİ')) { await page.waitForTimeout(5000); await durum('− sonrası'); }
       // 3. Alt ünite ekleme: gerçek <select> dokunuşu yerel seçiciyi açar; seçim DOM üzerinden yapılır (yerel liste otomasyonu yok)
       const sec = await page.$('#smPanel select[data-smekle]');
-      if (sec) { const ops = await sec.$$eval('option', o => o.map(x => x.value).filter(Boolean)); await sec.selectOption(ops[0]); await page.waitForTimeout(5000); await durum('alt ünite ekleme sonrası'); await ekranGoruntusu(id + '-5-ekle'); }
+      if (sec) { const ops = await sec.$$eval('option', o => o.map(x => x.value).filter(Boolean)); await sec.selectOption(ops[0]); await page.waitForTimeout(5000); await durum('alt ünite ekleme sonrası'); await tani('alt ünite ekleme sonrası'); await ekranGoruntusu(id + '-5-ekle'); }
       else log('alt ünite ekle seçicisi YOK');
       // 4. Uygunluk
       log('uygunluk', JSON.stringify(await page.evaluate(() => { const u = document.querySelector('#smUygunluk'), b = document.querySelector('#smBulgu'); return { u: !!u, genel: u && u.dataset.genel, bulguGrup: b ? b.querySelectorAll('ul[data-grup]').length : 0, cmpSatir: document.querySelectorAll('#smPanel .sm-cmp tr[data-k]').length }; })));
@@ -82,7 +83,7 @@ const PROJ = [
     }
     // Arazi tutamağı
     await dokun('nav.tabs [data-v=arazi]', 'arazi sekmesi'); await page.waitForTimeout(3000);
-    await durum('arazi'); await ekranGoruntusu(id + '-6-arazi');
+    await durum('arazi'); await tani('arazi'); await ekranGoruntusu(id + '-6-arazi');
   }
   log('HATALAR', hatalar.length ? hatalar.slice(0, 30).join(' || ') : 'yok');
   log('son hata (window)', await page.evaluate(() => window.__sonHata || '-'));
