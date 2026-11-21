@@ -65,7 +65,7 @@ const PROJ = { id: 'sy1', name: 'Shift yönetimi testi', created: 1, updated: 2,
       pg.once('dialog', d => { soru = d.message(); d.dismiss(); });
       await pg.click('#smUygula'); await pg.waitForTimeout(400);
       pg.on('dialog', d => d.accept());
-      check(/tur süresi/.test(soru) && await pg.isVisible('#smPanel') && (await P()).inp.Ns == null, `${ad} SH-3a uygun olmayan düzende onay sorulmalı ve reddedilince yazılmamalı (${soru})`);
+      check(/Uygun değil/.test(soru) && /kaydedilsin/.test(soru) && await pg.isVisible('#smPanel') && (await P()).inp.Ns == null, `${ad} SH-3a uygun olmayan düzende onay sorulmalı ve reddedilince yazılmamalı (${soru})`);
     }
     // SH-3
     const yeni = motor.alts.find(a => !a.rec && a.feasible && a.Ns > motor.n) || motor.alts.find(a => !a.rec && a.feasible);

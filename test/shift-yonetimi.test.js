@@ -99,7 +99,7 @@ test('SY-08 Uygunluk: tur süresi, günlük süre ve kaynak kapasitesi proje ver
   const SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
   const ozP = (i, opt) => { const r = E.design(i, null, opt); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject({ inp: i }, r)); };
   const o5 = ozP(s18.inp, s18.opt), L5 = SY.uygunluk(o5, s18.inp.Q, s18.inp);
-  ok(SY.uygunMu(L5) && L5.varsayilan === true, '5 shift uygun; günlük süre varsayılan (20 h)');
+  ok(!SY.uygunMu(L5) && L5.genel === 'varsayimla' && L5.varsayilan === true, '5 shift: günlük süre girilmediği için yalnız varsayımla uygun (doğrulanmadı)');   // 1.0.1 düzeltmesi: varsayımlı veri uygun sayılmaz
   const i12 = Object.assign({}, s18.inp, { Ns: 12 }), o12 = ozP(i12, s18.opt), L12 = SY.uygunluk(o12, i12.Q, i12);
   const by = k => L12.find(x => x.k === k);
   near(o12.tur, 23.023, 0.01, '12 shift tur'); ok(by('tur').ok === false && by('gunluk').ok === false && by('tur').sinir === 20, '23 h tur 20 h sınırını aşar');
@@ -121,4 +121,59 @@ test('SY-08 Uygunluk: tur süresi, günlük süre ve kaynak kapasitesi proje ver
   const miss = []; for (const x of L12) for (const k of [x.ad, x.not, x.birim]) for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!['h', 'm³/h'].includes(k) && !(DICT[k] && DICT[k][l])) miss.push(l + ': ' + k);
   for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!(DICT['Günlük çalışma süresi girilmedi: varsayılan değer kullanıldı'] || {})[l]) miss.push(l);
   ok(!miss.length, miss.join('\n'));
+});
+
+// ---------- 1.0.1 hata düzeltmesi (cihaz testi, Hata 2): panelin uygunluk sonucu resmî değerlendirmeyle aynı olmalı ----------
+const BUYUK = (() => { const lat = 37, lng = 35; return { inp: { crop: 'domates', geom: 'parsel', Q: 120, srcType: 'kuyu', depth: 40, region: 'akdeniz' },
+  opt: { poly: [[lat, lng], [lat, lng + 0.0075], [lat + 0.0021, lng + 0.0078], [lat + 0.0027, lng + 0.0012], [lat + 0.0012, lng - 0.0006]], src: [lat - 0.0005, lng - 0.0005] } }; })();
+const ozA = (i, opt) => { const r = E.design(i, null, opt); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject({ inp: i }, r)); };
+
+test('SY-09 Uygunluk: resmî değerlendirmedeki uygunsuz bulgu (W-PN-02) ve işletme payı (W-KAP-02) panelde de görünür; eksik/varsayımlı veri "uygun" sayılmaz', () => {
+  // 9 shift: tur 17,3 h ≤ 20 h ama W-PN-02 (pompa kapama basıncı > PN) uygunsuz → panel "uygun" diyemez
+  const i9 = Object.assign({}, BUYUK.inp, { Ns: 9, hours: 20 }), o9 = ozA(i9, BUYUK.opt), L9 = SY.uygunluk(o9, i9.Q, i9);
+  ok(!SY.uygunMu(L9) && L9.genel === 'uygun-degil' && (L9.bulgular || []).includes('W-PN-02'), `9 shift: genel=${L9.genel} bulgular=${L9.bulgular}`);
+  // 10 shift: tur 19,2 h, planlama sınırı %90 × 20 = 18 h → W-KAP-02 'sınırda'
+  const i10 = Object.assign({}, BUYUK.inp, { Ns: 10, hours: 20 }), L10 = SY.uygunluk(ozA(i10, BUYUK.opt), i10.Q, i10);
+  ok(L10.find(x => x.k === 'tur').durum === 'sinirda', '10 shift tur sınırda: ' + L10.find(x => x.k === 'tur').durum);
+  // 11 shift: W-KAP-01 → tur uygun değil
+  const i11 = Object.assign({}, BUYUK.inp, { Ns: 11, hours: 20 }), L11 = SY.uygunluk(ozA(i11, BUYUK.opt), i11.Q, i11);
+  ok(L11.find(x => x.k === 'tur').durum === 'uygun-degil' && L11.genel === 'uygun-degil', '11 shift tur uygun değil');
+  // Kaynak debisi yok → doğrulanamadı (eskiden: uygun)
+  const Lq = SY.uygunluk(o9, null, i9);
+  ok(!SY.uygunMu(Lq) && Lq.find(x => x.k === 'kaynak').durum === 'veri-yok' && ['dogrulanamadi', 'uygun-degil'].includes(Lq.genel), 'kaynak debisi yok: ' + Lq.genel);
+  // Günlük süre girilmemiş (motor varsayılanı 20 h) → varsayımla, "uygun" değil (eskiden: uygun)
+  const SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
+  const L5 = SY.uygunluk(ozA(s18.inp, s18.opt), s18.inp.Q, s18.inp);
+  ok(L5.genel !== 'uygun' && L5.find(x => x.k === 'gunluk').durum === 'varsayim', 'varsayılan günlük süre: ' + L5.genel);
+  // Aynı proje günlük süre girilince ve başka uygunsuz bulgu yoksa uygun
+  const s18h = Object.assign({}, s18.inp, { hours: 20 }), L5h = SY.uygunluk(ozA(s18h, s18.opt), s18h.Q, s18h);
+  const A5 = AS.forProject({ inp: s18h }, E.design(s18h, null, s18.opt));
+  ok(SY.uygunMu(L5h) === !A5.findings.some(x => x.seviye === 'uygunsuz'), 'girilmiş veride resmî değerlendirmeyle aynı: ' + L5h.genel);
+});
+
+test('SY-10 Uygunluk tutarlılığı: bütün altın senaryolar × bütün shift seçeneklerinde panel "uygun" ⇔ resmî değerlendirmede uygunsuz bulgu yok ve veri tam', () => {
+  const SC = require('./golden/scenarios'); let n = 0;
+  for (const sc of SC) {
+    const r0 = E.design(sc.inp, null, sc.opt || {}); if (!r0.ok) continue;
+    for (const a of r0.sectorAlts.filter(x => !x.manual)) {
+      const i = Object.assign({}, sc.inp, { Ns: a.Ns }), r = E.design(i, null, sc.opt || {}); if (!r.ok) continue;
+      const A = AS.forProject({ inp: i }, r), o = SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), A), L = SY.uygunluk(o, Number(i.Q) || null, i);
+      const resmi = !A.findings.some(x => x.seviye === 'uygunsuz') && !!(Number(i.Q) > 0) && i.hours != null;
+      ok(SY.uygunMu(L) === resmi || (L.genel === 'sinirda' && resmi), `${sc.id} Ns=${a.Ns}: panel ${L.genel}, resmî uygun=${resmi}`);
+      ok(L.find(x => x.k === 'tur').durum !== 'uygun' || r.sel.feasible, `${sc.id} Ns=${a.Ns}: tur`);
+      n++;
+    }
+  }
+  ok(n > 50, 'denenen düzen ' + n);
+});
+
+test('SY-11 Uygunluk durum ve genel sonuç metinleri 7 dilde çevrili', () => {
+  const src = require('fs').readFileSync(W('app.js'), 'utf8');
+  const blok = src.slice(src.indexOf('const SM_DURUM'), src.indexOf('};', src.indexOf('const SM_GENEL')));
+  const metin = [...blok.matchAll(/'([^']{3,})'/g)].map(m => m[1]).filter(x => !/^(ok|warn|na|bad|uygun-degil|veri-yok)$/.test(x));
+  const sy = require('fs').readFileSync(W('shift-yonetimi.js'), 'utf8');
+  for (const m of sy.matchAll(/satir\('\w+', '([^']+)'[^\n]*?'(Su kaynağı[^']+|En büyük[^']+|Günlük[^']+|Tur süresi ≤[^']+|Teknik olarak[^']+)'/g)) metin.push(m[1], m[2]);
+  for (const m of sy.matchAll(/'(Su kaynağı debisi girilmedi: denetlenemedi|Teknik olarak uygun; işletme payı \(planlama sınırı\) aşıldı)'/g)) metin.push(m[1]);
+  const miss = []; for (const k of new Set(metin)) for (const l of ['en', 'de', 'es', 'ru', 'it', 'he', 'zh']) if (!(DICT[k] && DICT[k][l])) miss.push(l + ': ' + k);
+  ok(metin.length >= 15 && !miss.length, metin.length + ' metin; eksik: ' + miss.slice(0, 8).join(' | '));
 });
