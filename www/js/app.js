@@ -1069,6 +1069,20 @@
     c.innerHTML = `‹ ${esc(t('Shift Yönetimi'))} · Shift ${vurgu ? vurgu.j + 1 : ''}${sm && (sm.r1 || smTaslakDuzen()) ? ' (' + esc(t('taslak')) + ')' : ''}`;
     c.onclick = () => smTaslakDuzen() ? smPaneleDon() : smCiz();
   }
+  // Shift sayısı sınır nedenleri (SY.nsPasifNedeni / SY.nsDogrula kodları); istek: doğrulamada istenen sayı, pasif düğmede yön
+  function nsNedenMetni(d, istek) {
+    const q = d.Qs != null ? fmt(d.Qs, 1) : '—';
+    switch (d.kod) {
+      case 'kaynak': return istek ? t('{k} shift uygulanamaz: en az bir shift’in debisi kaynak debisini ({q} m³/h) aşar. En az {m} shift gerekir.', { k: d.n, q, m: d.min })
+        : t('Daha az shift mümkün değil: {k} shift’te en az bir shift’in debisi kaynak debisini ({q} m³/h) aşar.', { k: d.n - 1, q });
+      case 'alt-unite': return istek ? t('{k} shift uygulanamaz: her shift en az bir alt ünite içerir (alt ünite sayısı {n}).', { k: d.n, n: d.nU })
+        : t('Daha fazla shift mümkün değil: her shift en az bir alt ünite içerir (alt ünite sayısı {n}).', { n: d.nU });
+      case 'en-az-bir': return t('Shift sayısı en az 1 olabilir.');
+      case 'tam-sayi': return t('Shift sayısı tam sayı olmalı.');
+      case 'unite-kaynak': return t('Bir alt ünitenin debisi kaynak debisini aşıyor; hiçbir shift sayısı uygulanamaz.');
+      default: return t('Otomatik hesap {a}–{b} shift aralığını inceler; bu aralığın dışındaki düzenler için alt üniteleri elle taşıyın.', { a: d.otoMin, b: d.otoMax });
+    }
+  }
   function smCiz() {
     if (!sm) return smKapat();
     let el = $('#smPanel');
@@ -1083,6 +1097,8 @@
     // − / +: yalnız motorun hesapladığı otomatik shift sayısı seçenekleri arasında (gösterilen düzenin sayısına göre)
     const nsList = sm.r0.sectorAlts.filter(a => !a.manual).map(a => a.Ns).sort((a, b) => a - b);
     const nsEksi = nsList.filter(x => x < n).pop() ?? null, nsArti = nsList.find(x => x > n) ?? null;
+    // Pasif − / + düğmelerinin nedeni kullanıcıya yazılır (cihaz testinde soluk düğme "çalışmıyor" gibi görünüyordu)
+    const nsS = SY.nsSinirlari(sm.r0, cur.inp.Q), nsNeden = [SY.nsPasifNedeni(nsS, n, -1), SY.nsPasifNedeni(nsS, n, 1)].filter(Boolean).map(nsNedenMetni);
     const satir = sm.o1 ? SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(0, 2).concat(SY.karsilastir(sm.o0, sm.o1), SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(2)) : null;
     const bf = sm.o1 ? SY.bulguFarki(sm.o0, sm.o1) : null;
     const Qs = V0(cur.inp.Q), uyg = SY.uygunluk(o, Qs, cur.inp);
@@ -1108,7 +1124,10 @@
         ])}
         <div class="row"><button type="button" class="btn sm" data-harita="${j}" style="flex:1">${t('Haritada göster')}</button><button type="button" class="btn sm" data-hduz="${j}" style="flex:1">${t('Haritada düzenle')}</button><button type="button" class="btn sm" data-ac="${j}" aria-expanded="${on && sm.acik}" style="flex:1">${t('Alt üniteleri taşı')}</button></div>
         ${on ? `<label class="sm-ekle">${t('Bu shift’in hedef debisi')} <small>m³/h · ${t('bilgi; tasarım debisini değiştirmez')}</small><input data-smhedefj="${j}" inputmode="decimal" value="${T.hedefler && T.hedefler[j] != null ? inVal(T.hedefler[j]) : ''}" placeholder="${T.hedef != null ? inVal(T.hedef) : '—'}"></label>` : ''}
-        ${on ? `<label class="sm-ekle">${t('Bu shift’e alt ünite ekle')}<select data-smekle="${j}"><option value="">—</option>${r.units.map((u, k) => ({ u, k, s: SY.atamaOf(r)[k] })).filter(x => x.s !== j).map(x => `<option value="${x.k}">M${x.k + 1} · Shift ${x.s + 1} · ${fmt(x.u.Q, 1)} m³/h</option>`).join('')}</select></label>` : ''}
+        ${on ? (() => { const ad = r.units.map((u, k) => ({ u, k, s: SY.atamaOf(r)[k] })).filter(x => x.s !== j);
+          // Liste boşsa seçici yerine nedeni gösterilir (cihaz testi: boş liste "ekleme çalışmıyor" gibi görünüyordu)
+          return ad.length ? `<label class="sm-ekle">${t('Bu shift’e alt ünite ekle')}<select data-smekle="${j}"><option value="">—</option>${ad.map(x => `<option value="${x.k}">M${x.k + 1} · Shift ${x.s + 1} · ${fmt(x.u.Q, 1)} m³/h</option>`).join('')}</select></label>`
+            : `<p class="sm-ekle small muted" data-smekle-yok="${j}">${t('Bu shift’e alt ünite eklenemez: taşınacak alt ünite yok, projedeki tüm alt üniteler bu shift’te.')}</p>`; })() : ''}
         ${on && sm.acik ? `<div class="scroll"><table><tr><th>${t('Alt ünite')}</th><th>${t('Debi')} m³/h</th><th>Lateral</th><th>Shift</th></tr>${r.sel.groups[j].map(k => `<tr><td>M${k + 1}</td><td>${fmt(r.units[k].Q, 2)}</td><td>${r.units[k].nLat}</td><td><select data-smunit="${k}" aria-label="M${k + 1}">${Array.from({ length: n + 1 }, (_, q) => `<option value="${q}" ${q === j ? 'selected' : ''}>${q + 1}${q === n ? ' (' + t('yeni') + ')' : ''}</option>`).join('')}</select></td></tr>`).join('')}</table></div>` : ''}
       </article>`;
     };
@@ -1140,6 +1159,7 @@
       <div class="sm-body">${ozetBar}
         <div class="sm-ctl">
           <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${nsEksi == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${nsArti == null ? 'disabled' : ''}>+</button></div>
+          ${nsNeden.length ? `<ul class="sm-ns-neden small muted" id="smNsNeden">${[...new Set(nsNeden)].map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
           <label>${t('Shift sayısı')}<select id="smNs">${T.manual ? `<option value="elle" selected>${t('Elle')} (${n})</option>` : ''}${sm.r0.sectorAlts.filter(a => !a.manual).map(a => `<option value="${a.Ns}" ${nsSec === String(a.Ns) ? 'selected' : ''}>${a.Ns}${a.recommended ? ' · ' + t('Önerilen') : ''}${a.feasible ? '' : ' ✗'}</option>`).join('')}</select></label>
           <label>${t('Hedef shift debisi')} <small>m³/h</small><input id="smHedef" inputmode="decimal" value="${T.hedef != null ? inVal(T.hedef) : ''}" placeholder="—"></label>
           ${T.manual ? `<button type="button" class="btn sm" id="smOto">${t('Otomatik düzene dön')}</button>` : ''}
@@ -1171,7 +1191,7 @@
     };
     $('#smX').onclick = smIptal; $('#smIptal').onclick = smIptal; $('#smUygula').onclick = smUygula;
     const gb = $('#smGeri'); if (gb) gb.onclick = smGeriAl;
-    function nsSecim(k) { tOlay('işleyici', 'nsSecim ' + n + '→' + k); T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
+    function nsSecim(k) { tOlay('işleyici', 'nsSecim ' + n + '→' + k); const d = SY.nsDogrula(k, nsS); if (!d.ok) { toast(nsNedenMetni({ kod: d.kod, n: k, nU: nsS.nU, Qs: nsS.Qs, min: nsS.min, otoMin: nsS.otoMin, otoMax: nsS.otoMax }, true)); return; } T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
     $('#smNs').onchange = e => { const v = e.target.value; if (v === 'elle') return; nsSecim(Number(v)); };
     $('#smHedef').onchange = e => { const x = SY.hedefOku(e.target.value); if (Number.isNaN(x)) { toast(t('Hedef debi pozitif bir sayı olmalı')); e.target.value = T.hedef != null ? inVal(T.hedef) : ''; return; } if (x === T.hedef) return; T.hedef = x; setTimeout(() => { if (sm) smCiz(); }, 0); };   // odak kaybında (yeniden çizim sırasında) iç içe çizim olmasın
     const kg = $('#smKartaGit'); if (kg) kg.onclick = () => { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); };

@@ -237,3 +237,30 @@ test('SY-15 Shift başına hedef debi: yalnız aynı shift sayısında geçerli;
   const q = proj({ id: 'h', rev: 0, revs: [], shiftHedefler: { Ns: 3, deger: { 0: 10 } } }); St.snapshot(q, 'a'); const r1 = q.rev; q.shiftHedefler = { Ns: 3, deger: { 0: 20 } }; St.snapshot(q, 'b');
   ok(St.restoreRev(q, r1) && q.shiftHedefler.deger[0] === 10, 'revizyon');
 });
+
+test('SY-16 Shift sayısı sınırları: alt sınır kaynak debisinden (motorla aynı kural), üst sınır alt ünite sayısından; otomatik aralık ayrı', () => {
+  const Ly = require(W('layout.js'));
+  for (const i of [inp, Object.assign({}, inp, { area_da: 20, L: 200, W: 100, Q: 40 }), Object.assign({}, inp, { area_da: 4, L: 80, W: 50, Q: 60 })]) {
+    const r = E.design(i); ok(r.ok, 'hesap');
+    const Qu = r.units.map(u => u.Q), s = SY.nsSinirlari(r, i.Q);
+    const g = (typeof window !== 'undefined' ? window : globalThis).IrriLayout || Ly;
+    ok(s.min === g.minSectors(Qu, i.Q) && SY.minShift(Qu, i.Q) === g.minSectors(Qu, i.Q), `alt sınır motorla aynı (${s.min})`);
+    ok(s.nU === r.units.length && s.otoMin === Math.min(...r.sectorAlts.filter(a => !a.manual).map(a => a.Ns)), 'üst sınır ve otomatik aralık');
+    ok(s.otoMin >= s.min && s.otoMax <= s.nU, 'otomatik aralık fiziksel aralığın içinde');
+  }
+});
+
+test('SY-17 Pasif − / + nedeni ve elle shift sayısı doğrulaması (motora gönderilmeden önce)', () => {
+  const s = { nU: 8, Qs: 40, min: 3, imkansiz: false, oto: [3, 4, 6], otoMin: 3, otoMax: 6 };
+  ok(SY.nsPasifNedeni(s, 3, -1).kod === 'kaynak', '− kaynak sınırında pasif');
+  ok(SY.nsPasifNedeni(s, 4, -1) === null && SY.nsPasifNedeni(s, 4, 1) === null, 'aralık içinde etkin');
+  ok(SY.nsPasifNedeni(s, 6, 1).kod === 'oto-aralik', '+ otomatik aralık sonunda (alt ünite sınırı değil)');
+  ok(SY.nsPasifNedeni(Object.assign({}, s, { oto: [3, 4, 5], otoMax: 5, nU: 5 }), 5, 1).kod === 'alt-unite', '+ alt ünite sınırında');
+  const tek = { nU: 1, Qs: 60, min: 1, imkansiz: false, oto: [1], otoMin: 1, otoMax: 1 };
+  ok(SY.nsPasifNedeni(tek, 1, -1).kod === 'en-az-bir' && SY.nsPasifNedeni(tek, 1, 1).kod === 'alt-unite', 'tek alt ünite: iki yön de nedenli');
+  ok(SY.nsDogrula(2, s).kod === 'kaynak' && SY.nsDogrula(9, s).kod === 'alt-unite' && SY.nsDogrula(0, s).kod === 'en-az-bir' && SY.nsDogrula(3.5, s).kod === 'tam-sayi' && SY.nsDogrula('4', s).kod === 'tam-sayi', 'geçersiz sayılar reddedilir');
+  ok(SY.nsDogrula(4, s).ok && SY.nsDogrula(4, s).otomatikAralikta && SY.nsDogrula(5, s).ok && !SY.nsDogrula(5, s).otomatikAralikta, 'fiziksel aralıktaki sayı geçerli; otomatik aralıkta olup olmadığı ayrı');
+  ok(SY.nsDogrula(5, Object.assign({}, s, { imkansiz: true, min: null })).kod === 'unite-kaynak', 'kaynağı aşan alt ünite');
+  ok(SY.nsDogrula(2, Object.assign({}, s, { oto: [2, 3, 4] })).ok, 'motorun hesapladığı aday (kayıtlı Ns) alt sınırın altında olsa da geçerli');
+  ok(SY.minShift([10, 10, 10], 20) === 2 && SY.minShift([30], 20) === Infinity && SY.minShift([], 20) === null, 'minShift');
+});
