@@ -88,9 +88,12 @@ const PROJ = [
         await page.waitForTimeout(1500);
         const g = await page.evaluate(() => { const v = s => { const e = document.querySelector(s); if (!e) return false; const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight && b.left >= 0 && b.right <= innerWidth; }; return { arti: v('#smNsArti'), eksi: v('#smNsEksi'), uygunluk: v('#smUygunluk h3'), secili: (document.querySelector('#smPanel .sm-shift.on') || { dataset: {} }).dataset.j }; });
         SONUC('Düzenle: − / + ve uygunluk kaydırmadan görünür ' + JSON.stringify(g), g.arti && g.eksi && g.uygunluk);
-        SONUC('Düzenle: seçili shift 2', g.secili === '1');
+        if (await page.$('[data-ssj="1"]') || g.secili !== '0') SONUC('Düzenle: seçili shift 2', g.secili === '1'); else log('ATLANDI Düzenle: seçili shift 2 (projede tek shift var)');
         const n0 = await page.evaluate(() => (document.querySelector('#smNsN') || {}).textContent);
-        if (await dokun('#smNsArti', 'ARTI (Düzenle)')) { await page.waitForTimeout(6000); const n1 = await page.evaluate(() => (document.querySelector('#smNsN') || {}).textContent); SONUC(`+ dokunuşu (${n0} → ${n1})`, +n1 === +n0 + 1);
+        // Pasif + (motor daha fazla shift üretmiyor): dokunuş yerine nedenin ekranda yazılı olduğu denetlenir
+        const artiPasif = await page.evaluate(() => { const b = document.querySelector('#smNsArti'); return !!(b && b.disabled); });
+        if (artiPasif) { const nd = await page.evaluate(() => [...document.querySelectorAll('#smNsNeden li')].map(x => x.textContent)); SONUC('+ pasif; nedeni yazılı: ' + JSON.stringify(nd), nd.length > 0); }
+        else if (await dokun('#smNsArti', 'ARTI (Düzenle)')) { await page.waitForTimeout(6000); const n1 = await page.evaluate(() => (document.querySelector('#smNsN') || {}).textContent); SONUC(`+ dokunuşu (${n0} → ${n1})`, +n1 === +n0 + 1);
           SONUC('önce/sonra özeti görünür', await page.evaluate(() => { const e = document.querySelector('#smOzetBar'); if (!e) return false; const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; })); }
         if (await page.$('#smIptal')) await dokun('#smIptal', 'iptal');
       }
@@ -103,8 +106,11 @@ const PROJ = [
       if (await dokun('#smNsEksi', 'EKSİ')) { await page.waitForTimeout(5000); await durum('− sonrası'); }
       // 3. Alt ünite ekleme: gerçek <select> dokunuşu yerel seçiciyi açar; seçim DOM üzerinden yapılır (yerel liste otomasyonu yok)
       const sec = await page.$('#smPanel select[data-smekle]');
-      if (sec) { const ops = await sec.$$eval('option', o => o.map(x => x.value).filter(Boolean)); await sec.selectOption(ops[0]); await page.waitForTimeout(5000); await durum('alt ünite ekleme sonrası'); await tani('alt ünite ekleme sonrası'); await ekranGoruntusu(id + '-5-ekle'); }
-      else log('alt ünite ekle seçicisi YOK');
+      const ops = sec ? await sec.$$eval('option', o => o.map(x => x.value).filter(Boolean)) : [];
+      if (sec && !ops.length) log('alt ünite ekle seçicisinde seçenek yok');
+      if (!sec || !ops.length) SONUC('alt ünite ekle listesi boşsa nedeni yazılı', !!(await page.$('[data-smekle-yok]')));
+      if (sec && ops.length) { await sec.selectOption(ops[0]); await page.waitForTimeout(5000); await durum('alt ünite ekleme sonrası'); await tani('alt ünite ekleme sonrası'); await ekranGoruntusu(id + '-5-ekle'); }
+      // (seçici yoksa yukarıda nedenin yazılı olduğu denetlendi)
       // 4. Uygunluk
       log('uygunluk', JSON.stringify(await page.evaluate(() => { const u = document.querySelector('#smUygunluk'), b = document.querySelector('#smBulgu'); return { u: !!u, genel: u && u.dataset.genel, bulguGrup: b ? b.querySelectorAll('ul[data-grup]').length : 0, cmpSatir: document.querySelectorAll('#smPanel .sm-cmp tr[data-k]').length }; })));
       if (await page.$('#smIptal')) await dokun('#smIptal', 'iptal');
