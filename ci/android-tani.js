@@ -36,7 +36,7 @@ const PROJ = [
     return { surum: window.IRRI_SURUM, kod: window.IRRI_SURUM_KODU, appBoyut: app.length, sy: typeof window.IrriShiftYonetimi, syHedefler: !!(window.IrriShiftYonetimi && window.IrriShiftYonetimi.hedefler),
       ssTutamak: app.includes('function ssTutamak'), nsSecim: app.includes('function nsSecim'), smekle: app.includes('data-smekle'), bulgu: app.includes('smBulgu'), arazi: app.includes("ss-arazi"),
       desk: document.documentElement.classList.contains('desk'), web: document.documentElement.classList.contains('web'), w: innerWidth, h: innerHeight, dpr: devicePixelRatio,
-      tabH: getComputedStyle(document.documentElement).getPropertyValue('--tab'), topH: getComputedStyle(document.documentElement).getPropertyValue('--top') };
+      tabH: getComputedStyle(document.documentElement).getPropertyValue('--tab'), belgeGenislik: document.documentElement.scrollWidth, topH: getComputedStyle(document.documentElement).getPropertyValue('--top') };
   });
   log('kod', JSON.stringify(kod));
 
@@ -46,12 +46,20 @@ const PROJ = [
 
   // Gerçek dokunuş: CSS piksel → ekran pikseli (WebView tam ekran varsayımı ölçülerek doğrulanır)
   const ekran = await sh('wm size'); log('ekran', ekran);
+  // Dokunma kalibrasyonu: ekranda bilinen bir noktaya gerçek dokunuş, WebView içindeki clientX/Y ile karşılaştırılır
+  await page.evaluate(() => { window.__kal = null; addEventListener('touchstart', e => { const t = e.touches[0]; window.__kal = { cx: t.clientX, cy: t.clientY }; }, { once: true, capture: true }); });
+  const [W, H] = ekran.match(/(\d+)x(\d+)/).slice(1).map(Number);
+  await device.shell(`input tap ${Math.round(W / 2)} ${Math.round(H / 2)}`); await page.waitForTimeout(800);
+  const kal = await page.evaluate(() => window.__kal);
+  const dpr0 = kod.dpr, ox = kal ? W / 2 / dpr0 - kal.cx : 0, oy = kal ? H / 2 / dpr0 - kal.cy : 0;
+  log('kalibrasyon', JSON.stringify({ kal, ox, oy }));
+  await page.reload(); await page.waitForTimeout(3000);
   const dokun = async (sel, ad) => {
     const r = await page.evaluate(s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); const x = b.left + b.width / 2, y = b.top + b.height / 2; const ust = document.elementFromPoint(x, y);
       const cs = getComputedStyle(e); return { x, y, w: b.width, h: b.height, gorunur: b.width > 0 && b.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none', ustte: ust ? (ust === e || e.contains(ust)) : false, ustEleman: ust ? ust.tagName + '#' + ust.id + '.' + String(ust.className).slice(0, 40) : null, z: cs.zIndex, pos: cs.position, bottom: cs.bottom }; }, sel);
     if (!r) { log(ad, 'YOK (DOM\'da değil):', sel); return false; }
     log(ad, JSON.stringify(r));
-    const dpr = kod.dpr, x = Math.round(r.x * dpr), y = Math.round(r.y * dpr);
+    const dpr = kod.dpr, x = Math.round((r.x + ox) * dpr), y = Math.round((r.y + oy) * dpr);
     await device.shell(`input tap ${x} ${y}`); await page.waitForTimeout(1500);
     return true;
   };
@@ -65,6 +73,7 @@ const PROJ = [
     await page.evaluate(() => document.querySelector('nav.tabs [data-v=projeler]').click()); await page.waitForTimeout(800);
     await dokun(`[data-open="${id}"]`, 'proje aç');
     await dokun('nav.tabs [data-v=hidrolik]', 'hidrolik sekmesi'); await page.waitForTimeout(4000);
+    log('geniş öğeler', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('#v-hidrolik *')].map(e => [e, e.getBoundingClientRect().width]).filter(([, w]) => w > innerWidth + 2).slice(0, 6).map(([e, w]) => (e.id || e.tagName) + '.' + String(e.className).slice(0, 30) + ':' + Math.round(w)))));
     await durum('hidrolik'); await tani('hidrolik'); await ekranGoruntusu(id + '-1-hidrolik');
     // 1. Alt Shift paneli
     if (await dokun('#ssTut', 'TUTAMAK')) { await durum('tutamak sonrası'); await tani('tutamak sonrası'); await ekranGoruntusu(id + '-2-sheet'); const x = await page.$('#ssX'); if (x) await dokun('#ssX', 'kapat'); }
