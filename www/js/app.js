@@ -67,7 +67,7 @@
     const p = { id: Date.now().toString(36), name: name.slice(0, 80), created: Date.now(), updated: Date.now(), poly: [], src: null, inp: { crop: 'domates', srcType: 'kuyu', region: 'akdeniz', soil: 'tinli', rowDir: 'uzun', emitter: 'normal', geom: 'dikdortgen' } };
     projects.unshift(p); persist(); openProject(p.id); show('arazi');
   }
-  function openProject(id) { if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; } cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
+  function openProject(id) { if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; } mapMode = null; cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
   function renderProjects() {
     const el = $('#projList');
     if (!projects.length) { el.innerHTML = `<div class="card center muted">${t('Henüz proje yok.')}<br>${t('“Yeni proje” ile başlayın.')}</div>`; return; }
@@ -104,7 +104,7 @@
   // ---------- Harita ----------
   // Renkler: ana hat kırmızı, manifold mavi, lateral yeşil, shift bölgeleri yarı saydam, su kaynağı turkuaz
   const COL = { main: '#d32f2f', man: '#1565c0', lat: '#2e9d4f', src: '#00bcd4', edge: '#ffd400' };
-  let map, poly, markers = [], extra = [], planLayer = null, mapMode = 'sinir', overlayRes = null, showPlan = true, brush = 0, legend = null;
+  let map, poly, markers = [], extra = [], planLayer = null, mapMode = null, overlayRes = null, showPlan = true, brush = 0, legend = null;
   let sm = null, vurgu = null;   // 1.0.1 Shift Yönetimi: açık taslak ve haritadaki vurgu
   let mapZc = () => {};   // shift kutusu ayrıntı düzeyi (harita açılınca atanır)
   function openMap() {
@@ -114,7 +114,7 @@
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: .8 }).addTo(map);
       map.on('click', e => {
         const ll = [e.latlng.lat, e.latlng.lng];
-        if (mapMode === 'shift') return;
+        if (mapMode === 'shift' || mapMode === 'gor') return;   // 1.0.3: görüntüleme ve shift modunda dokunma sınırı değiştirmez
         if (vurgu) return;   // 1.0.1 düzeltmesi: shift vurgusu sırasında harita salt okunur (dokunma sınıra köşe eklemez)
         if (mapMode === 'kaynak') { cur.src = ll; setMode('sinir'); }
         else if (mapMode === 'istasyon') { cur.station = ll; setMode('sinir'); }
@@ -143,22 +143,35 @@
       };
       mapZc = zc; map.on('zoomend', () => { zc(); mapLabels(); }); zc();
     }
+    // 1.0.3: parsel tamamlanmışsa harita görüntüleme modunda açılır; yeni parsel çizimi bugünkü gibi Sınır modunda
+    if (!mapMode) mapMode = varsayilanMod();
     setMode(mapMode);
     if (showPlan && !overlayRes && cur.inp.geom === 'parsel' && cur.poly.length >= 3) safely(() => compute(), 'Plan');
     setTimeout(() => { map.invalidateSize(); drawPoly(true); }, 50);
   }
   function invalidateDesign() { lastRes = null; overlayRes = null; altCache = null; }
+  // 1.0.3 PR-2: harita modları — 'gor' (yalnız görüntüleme), 'sinir'/'kaynak'/'istasyon'/'anahat' (parsel ve hat
+  // düzenleme), 'shift' (shift ataması). Düzenleme ancak açıkça seçilince yapılır.
+  const DUZENLEME = new Set(['sinir', 'kaynak', 'istasyon', 'anahat']);
+  const varsayilanMod = () => cur && cur.poly && cur.poly.length >= 3 ? 'gor' : 'sinir';
+  const smTaslakDuzen = () => !!(sm && vurgu && vurgu.duzen);
   function setMode(m) {
     mapMode = m;
+    const ro = m === 'gor';
+    ['#mUndo', '#mClear'].forEach(q => { const b = $(q); if (b) { b.disabled = ro || m === 'shift'; b.title = ro ? t('Düzenlemek için bir mod seçin (ör. Sınır)') : ''; } });
     document.querySelectorAll('#mModes button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
     const bar = $('#mShiftBar');
     if (m === 'shift') {
-      const r = overlayRes && overlayRes.ok ? overlayRes : null;
+      const taslak = smTaslakDuzen();
+      const r = taslak ? smGoster() : overlayRes && overlayRes.ok ? overlayRes : null;
       const n = r ? r.sel.groups.length : 0;
       bar.style.display = 'flex';
-      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} <button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>${cur.shiftEditYedek ? ` <button class="btn sm" id="mGeri" style="flex:none">${t('Elle atamayı geri getir')}</button>` : ''}`
+      bar.innerHTML = r ? `<span class="small">${t('Atanacak shift')}:</span> ${Array.from({ length: n + 1 }, (_, j) => `<button class="btn sm ${brush === j ? 'primary' : ''}" data-b="${j}" style="flex:none;min-width:38px"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span>${j + 1}${j === n ? '+' : ''}</button>`).join('')} `
+          + (taslak ? `<span class="tag warn">${t('taslak')}</span> <span class="small muted" id="mTaslakNot">${t('Dokunduğunuz alt ünite seçili shift’e taşınır; Uygula demeden proje değişmez.')}</span> <button class="btn sm primary" id="mPanel" style="flex:none">‹ ${t('Shift Yönetimi')}</button>`
+            : `<button class="btn sm" id="mAuto" style="flex:none">${t('Otomatik')}</button>${cur.shiftEditYedek ? ` <button class="btn sm" id="mGeri" style="flex:none">${t('Elle atamayı geri getir')}</button>` : ''}`)
         : `<span class="small">${t('Önce “Uygula” ile parsel planını oluşturun.')}</span>`;
-      bar.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { brush = +x.dataset.b; setMode('shift'); });
+      const mp = $('#mPanel'); if (mp) mp.onclick = () => smPaneleDon();
+      bar.querySelectorAll('[data-b]').forEach(x => x.onclick = () => { brush = +x.dataset.b; if (smTaslakDuzen() && brush < n) { vurgu.j = brush; sm.sec = brush; } setMode('shift'); if (smTaslakDuzen()) drawPoly(); });
       const au = $('#mAuto'); if (au) au.onclick = () => { if (!otomatigeDon()) return; compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
       const gg = $('#mGeri'); if (gg) gg.onclick = () => { elleAtamayiGeriGetir(); compute(); setMode('shift'); drawPoly(); };
     } else bar.style.display = 'none';
@@ -166,10 +179,32 @@
     if (map) setTimeout(() => map.invalidateSize(), 30);
     drawInfo();
   }
-  document.querySelectorAll('#mModes button').forEach(b => b.onclick = () => { setMode(mapMode === b.dataset.m && b.dataset.m !== 'sinir' ? 'sinir' : b.dataset.m); drawPoly(); });
+  document.querySelectorAll('#mModes button').forEach(b => b.onclick = () => {
+    const m = b.dataset.m, def = varsayilanMod(), hedef = mapMode === m && m !== def ? def : m;
+    const gec = () => { if (vurgu && !vurgu.duzen && hedef !== 'gor') { /* salt okunur vurgudan çık */ if (vurgu.kaynak === 'ss') ssVurguBitir(); else { vurgu = null; document.body.classList.remove('sm-vurgu'); } }
+      setMode(hedef); drawPoly(); };
+    // Açık Shift taslağı varken parsel/hat düzenlemesine geçilirse kullanıcı karar verir (Uygula / İptal / Vazgeç)
+    if (sm && DUZENLEME.has(hedef)) return taslakKarar(gec);
+    if (smTaslakDuzen() && hedef !== 'shift') { vurgu.duzen = false; }
+    gec();
+  });
+  // Açık Shift Yönetimi taslağı varken yerleşimi değiştirecek bir düzenlemeye geçiş: taslak kaydedilmeden kaybolmaz
+  function taslakKarar(devam) {
+    if (!sm) return devam();
+    if (SY.esit(sm.taslak, sm.ilk)) { smKapat(); return devam(); }
+    let k = $('#mKarar');
+    if (!k) { k = document.createElement('div'); k.id = 'mKarar'; k.className = 'card m-karar'; k.setAttribute('role', 'alertdialog'); k.setAttribute('aria-modal', 'true'); document.body.appendChild(k); }
+    k.innerHTML = `<b>${t('Açık bir Shift taslağı var')}</b><p class="small">${t('Parsel sınırı veya hat düzenlemesi yerleşimi değiştirir; taslak ona uygulanamaz. Önce taslağı uygulayın veya iptal edin.')}</p>
+      <div class="row"><button type="button" class="btn sm primary" id="mkUygula">${t('Taslağı uygula')}</button><button type="button" class="btn sm" id="mkIptal">${t('Taslağı iptal et')}</button><button type="button" class="btn sm" id="mkVazgec">${t('Vazgeç')}</button></div>`;
+    const kapa = () => { const e = $('#mKarar'); if (e) e.remove(); };
+    setTimeout(() => { const b = $('#mkVazgec'); if (b) b.focus(); }, 0);
+    $('#mkUygula').onclick = () => { kapa(); smUygula(); if (!sm) { show('arazi'); devam(); } };
+    $('#mkIptal').onclick = () => { kapa(); smKapat(); devam(); };
+    $('#mkVazgec').onclick = kapa;
+  }
   function vtx(ll, cls, onMove, html, size = 16) {
     // Düzenleme tutamaçları shift kutularının ve ekipmanın (zIndexOffset 400–500) üstünde: sınır her zaman sürüklenebilir
-    const m = L.marker(ll, { draggable: !vurgu, zIndexOffset: 1000, icon: L.divIcon({ className: cls, html: html || '', iconSize: [size, size] }) }).addTo(map);
+    const m = L.marker(ll, { draggable: !vurgu && DUZENLEME.has(mapMode), zIndexOffset: 1000, icon: L.divIcon({ className: cls, html: html || '', iconSize: [size, size] }) }).addTo(map);
     m.on('dragend', ev => { const p = ev.target.getLatLng(); onMove([p.lat, p.lng]); invalidateDesign(); persist(); drawPoly(); });
     extra.push(m); return m;
   }
@@ -181,7 +216,9 @@
     if (pts.length) {
       poly = (pts.length >= 3 ? L.polygon(pts, { color: COL.edge, weight: 2, fillOpacity: .08, interactive: false }) : L.polyline(pts, { color: COL.edge, weight: 2, interactive: false })).addTo(map);
       if (mapMode === 'sinir' && !vurgu) pts.forEach((p, i) => markers.push(vtx(p, 'vtx', q => { cur.poly[i] = q; })));
-      if (fit && pts.length >= 2) map.fitBounds(poly.getBounds(), { padding: [30, 30], maxZoom: 18 });
+      // 1.0.3 düzeltmesi: shift vurgusu varken harita parsele değil seçili shift'e sığdırılır (aksi hâlde Arazi'nin
+      // gecikmeli parsel sığdırması vurguyu ve dokunma konumlarını kaydırıyordu)
+      if (fit && pts.length >= 2 && !vurgu) map.fitBounds(poly.getBounds(), { padding: [30, 30], maxZoom: 18 });
     }
     // Ana hat güzergâhı (kullanıcı çizimi): kaynak → istasyon → noktalar
     const chain = [cur.src, cur.station, ...(cur.route || [])].filter(Boolean);
@@ -194,11 +231,12 @@
   }
   function drawInfo() {
     const pts = cur ? cur.poly : [], el = $('#mapInfo'); if (!el || !cur) return;
-    const hint = { kaynak: t('Kaynak (kuyu/pompa) noktasına dokunun.'), istasyon: t('Pompa ve filtre istasyonunun yerine dokunun.'), anahat: t('Ana hat güzergâhını kaynaktan araziye doğru noktalarla çizin. Noktalar sürüklenebilir.'), shift: t('Bir alt üniteye dokunarak seçili shift’e atayın.') }[mapMode];
-    if (hint) { el.textContent = hint + ((cur.route || []).length && mapMode === 'anahat' ? ' · ' + t('{n} nokta', { n: cur.route.length }) : ''); return; }
+    const hint = { gor: t('Görüntüleme modu: harita sınırı değiştirmez. Düzenlemek için Sınır, Kaynak, İstasyon, Ana hat veya Shift seçin.'), kaynak: t('Kaynak (kuyu/pompa) noktasına dokunun.'), istasyon: t('Pompa ve filtre istasyonunun yerine dokunun.'), anahat: t('Ana hat güzergâhını kaynaktan araziye doğru noktalarla çizin. Noktalar sürüklenebilir.'), shift: smTaslakDuzen() ? t('Taslak: alt üniteye dokunarak seçili shift’e taşıyın; Uygula demeden proje değişmez.') : t('Bir alt üniteye dokunarak seçili shift’e atayın.') }[mapMode];
+    if (hint && !(mapMode === 'gor' && pts.length >= 3)) { el.textContent = hint + ((cur.route || []).length && mapMode === 'anahat' ? ' · ' + t('{n} nokta', { n: cur.route.length }) : ''); return; }
     if (pts.length >= 3) {
       const f = Gm.fieldFromPolygon(pts);
       el.innerHTML = `<b>${fmt(f.A / 1000, 2)} ${t('dekar')}</b> (${fmt(f.A / 10000, 2)} ha) · ${t('{n} köşe', { n: pts.length })}${cur.src ? ' · ' + t('kaynak işaretli') : ''}${f.selfX ? ' · <span class="bad">' + t('sınır kendini kesiyor') + '</span>' : f.fill < 0.8 ? ' · ' + t('düzensiz şekil') : ''}`
+        + (mapMode === 'gor' ? `<br><span class="small muted" id="gorNotu">${t('Görüntüleme modu: harita sınırı değiştirmez. Düzenlemek için Sınır, Kaynak, İstasyon, Ana hat veya Shift seçin.')}</span>` : '')
         + (cur.elev ? `<br><span class="small muted" id="kotNotu">${t('Kot: {a} (≈ 90 m) — ön inceleme, ölçülmüş kot değil', { a: 'Copernicus DEM' })} · <a href="#" id="kotBilgi">${t('ayrıntı')}</a></span>` : '');
       const kb = $('#kotBilgi'); if (kb) kb.onclick = ev => { ev.preventDefault(); show('ayarlar'); setTimeout(() => { const c = $('#kaynakKarti'); if (c) { c.open = true; c.scrollIntoView({ block: 'start' }); } }, 60); };
     } else el.textContent = pts.length ? t('{n} köşe — en az 3 köşe gerekli.', { n: pts.length }) : t('Haritada arazinin köşelerine sırayla dokunun. Köşeler sürüklenebilir.');
@@ -225,14 +263,16 @@
     const secOf = sectorIndex(r), pal = PALETTE, m = r.main.sel, s = r.schedule;
     // 1.0.1 düzeltmesi (cihaz testi, Hata 3): vurgu sırasında bütün plan katmanları dokunmaya kapalı (bilgi balonu
     // vurguyu örtmez), seçili shift sarı kalın kenar + koyu dolgu, diğerleri çok soluk; seçili shift ekrana sığdırılır.
-    const ro = vj != null, secLL = [];
+    const duzen = !!(vurgu && vurgu.duzen), ro = vj != null && !duzen, secLL = [];
     r.units.forEach((u, k) => {
       const b = Ly.bands[u.band]; const c = Gm.clipRect(Ly.P, b.x0, b.x1, u.y0, u.y1); if (c.length < 3) return;
       const on = ro && secOf[k] === vj;
       if (on) secLL.push(...c.map(ll));
-      const pg = L.polygon(c.map(ll), { renderer: rend, interactive: !ro, stroke: mapMode === 'shift' || on, color: on ? '#ffd400' : '#fff', weight: on ? 4 : 1, fillColor: pal[secOf[k] % pal.length], fillOpacity: !ro ? .38 : on ? .85 : .06 }).addTo(g);
+      const on2 = vj != null && secOf[k] === vj;
+      const pg = L.polygon(c.map(ll), { renderer: rend, interactive: !ro, stroke: mapMode === 'shift' || on2, color: on2 ? '#ffd400' : '#fff', weight: on2 ? 4 : 1, fillColor: pal[secOf[k] % pal.length], fillOpacity: vj == null || duzen ? (on2 ? .7 : .38) : on ? .85 : .06 }).addTo(g);
+      if (duzen && on2) secLL.push(...c.map(ll));
       if (on) mapEl.dataset.vurguBirim = String(Number(mapEl.dataset.vurguBirim || 0) + 1);
-      if (mapMode === 'shift' && !vurgu) pg.on('click', () => assignUnit(r, k));
+      if (mapMode === 'shift' && (!vurgu || duzen)) pg.on('click', e => { L.DomEvent.stopPropagation(e); assignUnit(r, k); });
       else if (!(window.IrriDesk && window.IrriDesk.active)) pg.on('click', e => { L.DomEvent.stopPropagation(e); ssHaritadanSec(secOf[k]); });   // 1.0.3: telefonda bilgi balonu yerine Shift paneli
       else pg.on('click', e => deskPick(e, { type: 'shift', j: secOf[k] })).bindPopup(() => `<b>Shift ${secOf[k] + 1}</b> · ${t('alt ünite')} ${k + 1}` + tbl([[t('Debi'), fmt(u.Q, 2) + ' m³/h'], [t('Lateral'), fmt(u.nLat, 0)], [t('Giriş basıncı'), fmt(u.hIn, 1) + ' m']]));
     });
@@ -263,20 +303,20 @@
     M.shifts.forEach(sh => {
       if (vj != null && sh.no !== vj + 1) return;   // vurgu: yalnız seçili shift'in kutusu
       const html = `<div class="sbox"><div class="sh" style="background:${sh.head}">FIELD ${sh.field} — SHIFT ${sh.no}</div><div class="bd">${window.IrriDrawing.shiftLines(M, sh, t).map(([a, b], i) => `<div class="${i === 2 ? 'k' : ''}"><span>${a}</span><b>${b}</b></div>`).join('')}</div></div>`;
-      const mk = L.marker(M.toLL(sh.box), { draggable: mapMode !== 'shift' && !ro, interactive: !ro, zIndexOffset: 500, icon: L.divIcon({ className: 'sboxw', html, iconSize: null }) }).addTo(g);
+      const mk = L.marker(M.toLL(sh.box), { draggable: DUZENLEME.has(mapMode) && !ro, interactive: !ro && !duzen, zIndexOffset: 500, icon: L.divIcon({ className: 'sboxw', html, iconSize: null }) }).addTo(g);
       mk.on('dragend', ev => { const q = ev.target.getLatLng(); (cur.drawPos = cur.drawPos || {})['S' + sh.no] = [q.lat, q.lng]; persist(); drawModelCache = null; });
     });
     // Ekipman sembolleri (sürüklenebilir; konum hidrolik hesabı değiştirmez)
     M.eq.forEach(e => {
       const big = !e.small, sz = big ? 22 : 15, off = e.offset && e.at === e.atDef ? e.offset * (sz + 2) : 0;
-      const mk = L.marker(M.toLL(e.at), { draggable: !ro, zIndexOffset: 400, icon: L.divIcon({ className: 'eqm' + (e.small ? ' eqs' : ''), html: symSVG(e.type, sz), iconSize: [sz, sz], iconAnchor: [sz / 2 - off, sz / 2 + (e.small ? sz * 0.8 : 0)] }) }).addTo(g);
+      const mk = L.marker(M.toLL(e.at), { draggable: !ro && DUZENLEME.has(mapMode), zIndexOffset: 400, icon: L.divIcon({ className: 'eqm' + (e.small ? ' eqs' : ''), html: symSVG(e.type, sz), iconSize: [sz, sz], iconAnchor: [sz / 2 - off, sz / 2 + (e.small ? sz * 0.8 : 0)] }) }).addTo(g);
       mk.bindTooltip(esc(e.text), { direction: 'top' });
       mk.on('dragend', ev => { const q = ev.target.getLatLng(); (cur.drawPos = cur.drawPos || {})[e.code] = [q.lat, q.lng]; persist(); drawModelCache = null; drawPoly(); });
     });
     M.fittings.forEach(ft => { if (ft.type === 'reduksiyon') L.marker(M.toLL(ft.at), { interactive: true, icon: L.divIcon({ className: 'eqm eqs', html: symSVG('reduksiyon', 14), iconSize: [14, 14] }) }).bindTooltip(t('Redüksiyon') + ' ' + ft.text).addTo(g); });
     planLayer = g.addTo(map);
     try { const pb = L.latLngBounds(Ly.P.map(ll)), a0 = map.latLngToContainerPoint(pb.getNorthWest()), b0 = map.latLngToContainerPoint(pb.getSouthEast()); mapEl.dataset.planKutu = JSON.stringify({ x0: Math.round(a0.x), y0: Math.round(a0.y), x1: Math.round(b0.x), y1: Math.round(b0.y) }); } catch (e) { /* yalnız test kancası */ }
-    if (ro) {
+    if (ro || duzen) {
       mapEl.dataset.vurgu = String(vj);
       if (secLL.length) {
         const bb = L.latLngBounds(secLL), desk = document.documentElement.classList.contains('desk');
@@ -291,6 +331,8 @@
         if (vurgu.sigdi) mapEl.dataset.vurguSigdi = '1';
       }
     }
+    // Test kancası: taslak düzenleme modunda alt ünite merkezleri (ekran pikseli) ve shift'leri
+    if (duzen) { try { mapEl.dataset.birimler = JSON.stringify(r.units.map((u, k) => { const b = Ly.bands[u.band], c = Gm.clipRect(Ly.P, b.x0, b.x1, u.y0, u.y1); if (c.length < 3) return null; const cx = c.reduce((t, q) => t + q[0], 0) / c.length, cy = c.reduce((t, q) => t + q[1], 0) / c.length, p = map.latLngToContainerPoint(ll([cx, cy])); return { k, s: secOf[k], x: Math.round(p.x), y: Math.round(p.y) }; }).filter(Boolean)); } catch (e) { } } else delete mapEl.dataset.birimler;
     mapZc();
     mapLabels();
   }
@@ -331,6 +373,15 @@
     labelLayer = g.addTo(map);
   }
   function assignUnit(r, k) {
+    // 1.0.3 PR-2: Shift Yönetimi'nden "Haritada düzenle" ile gelindiyse atama TASLAĞA yazılır (proje değişmez)
+    if (smTaslakDuzen()) {
+      const rt = smGoster(), a = SY.ataTasi(SY.atamaOf(rt), k, brush), T = sm.taslak;
+      T.manual = { sig: rt.layout.sig, assign: a }; T.sira = SY.siraUyar(T.sira, Math.max(...a) + 1);
+      brush = Math.min(brush, Math.max(...a)); sm.sec = brush; vurgu.j = brush;
+      const not = $('#mTaslakNot'); if (not) not.textContent = t('Hesaplanıyor…');
+      setTimeout(() => { if (!sm) return; try { smOnizle(); } catch (e) { toast(t('Önizleme hesaplanamadı') + ': ' + e.message); } vurgu.r = smGoster(); setMode('shift'); drawPoly(); const ch = $('#smChip'); if (ch) smKucult(); else if (document.documentElement.classList.contains('desk')) smCiz(); }, 30);
+      return;
+    }
     const cur0 = sectorIndex(r);
     const assign = cur.shiftEdit && cur.shiftEdit.sig === r.layout.sig ? cur.shiftEdit.assign.slice() : cur0.slice();
     assign[k] = brush;
@@ -879,7 +930,7 @@
   // hedef debi yalnız bilgidir: ikisi de hidrolik hesabı değiştirmez.
   const SY = window.IrriShiftYonetimi;
   const smVm = r => HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) });
-  const smOzet = r => r && r.ok ? SY.ozet(r, smVm(r), assessOf(r)) : null;
+  const smOzet = r => r && r.ok ? SY.ozet(r, smVm(r), assessOf(r), Gm) : null;
   const smKod = ['W-HIZ-01', 'W-POM-01'];
   // Uygunluk durumları: [css, simge, etiket]; genel sonuç: [başlık, açıklama]
   const SM_DURUM = { uygun: ['ok', '✓', 'uygun'], sinirda: ['warn', '!', 'sınırda'], varsayim: ['na', '?', 'varsayımla'], 'veri-yok': ['na', '?', 'denetlenemedi'], 'uygun-degil': ['bad', '✗', 'uygun değil'] };
@@ -919,7 +970,9 @@
   }
   const smGoster = () => sm.r1 && sm.r1.ok ? sm.r1 : sm.r0;
   function smKapat() {
+    const duzenden = smTaslakDuzen();
     sm = null; const had = !!vurgu; vurgu = null; document.body.classList.remove('sm-vurgu');
+    if (duzenden && mapMode === 'shift') setMode(varsayilanMod());
     ['#smPanel', '#smChip'].forEach(q => { const e = $(q); if (e) e.remove(); });
     document.body.classList.remove('sm-on');
     if (had && map && $('#v-arazi').classList.contains('on')) drawPoly();
@@ -964,18 +1017,33 @@
     if (r.layout.mode !== 'parsel') return toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)'));
     sm.sec = j; vurgu = { j, r, fit: true }; showPlan = true;
     document.body.classList.add('sm-vurgu');
-    if (mapMode !== 'sinir') setMode('sinir');   // vurgu salt okunur: düzenleme modları kapanır
+    if (mapMode !== 'gor') setMode('gor');   // vurgu salt okunur: görüntüleme modu
     const desk = document.documentElement.classList.contains('desk');
     show('arazi');
     if (desk) smCiz(); else smKucult();
+  }
+  // 1.0.3 PR-2: Haritada düzenle — mevcut shift fırçası taslağa yazar; fırça seçili shift ile başlar
+  function smHaritadaDuzenle(j) {
+    const r = smGoster();
+    if (r.layout.mode !== 'parsel') return toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)'));
+    sm.sec = j; brush = j; vurgu = { j, r, fit: true, duzen: true }; showPlan = true;
+    document.body.classList.add('sm-vurgu');
+    const desk = document.documentElement.classList.contains('desk');
+    show('arazi'); setMode('shift'); drawPoly();
+    if (desk) smCiz(); else smKucult();
+  }
+  function smPaneleDon() {
+    if (vurgu && vurgu.duzen) { vurgu.duzen = false; vurgu = Object.assign(vurgu, { j: sm.sec, fit: false }); }
+    setMode(varsayilanMod()); if (map) drawPoly();
+    smCiz();
   }
   function smKucult() {
     const el = $('#smPanel'); if (el) el.classList.add('sm-min');
     document.body.classList.remove('sm-on');
     let c = $('#smChip');
     if (!c) { c = document.createElement('button'); c.id = 'smChip'; c.type = 'button'; c.className = 'btn primary sm-chip'; document.body.appendChild(c); }
-    c.innerHTML = `‹ ${esc(t('Shift Yönetimi'))} · Shift ${vurgu ? vurgu.j + 1 : ''}${sm && sm.r1 ? ' (' + esc(t('taslak')) + ')' : ''}`;
-    c.onclick = () => smCiz();
+    c.innerHTML = `‹ ${esc(t('Shift Yönetimi'))} · Shift ${vurgu ? vurgu.j + 1 : ''}${sm && (sm.r1 || smTaslakDuzen()) ? ' (' + esc(t('taslak')) + ')' : ''}`;
+    c.onclick = () => smTaslakDuzen() ? smPaneleDon() : smCiz();
   }
   function smCiz() {
     if (!sm) return smKapat();
@@ -987,7 +1055,11 @@
     const sira = SY.siraOf(T.sira, n), degisti = !SY.esit(T, sm.ilk), hata = sm.r1 && !sm.r1.ok ? sm.r1.err : null;
     const rec = sm.r0.sectorAlts.find(a => a.recommended), recNs = rec ? rec.Ns : null;
     const nsSec = T.manual ? 'elle' : String(T.Ns ?? recNs);
-    const satir = sm.o1 ? SY.karsilastir(sm.o0, sm.o1) : null;
+    // − / +: yalnız motorun hesapladığı otomatik shift sayısı seçenekleri arasında (gösterilen düzenin sayısına göre)
+    const nsList = sm.r0.sectorAlts.filter(a => !a.manual).map(a => a.Ns).sort((a, b) => a - b);
+    const nsEksi = nsList.filter(x => x < n).pop() ?? null, nsArti = nsList.find(x => x > n) ?? null;
+    const satir = sm.o1 ? SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(0, 2).concat(SY.karsilastir(sm.o0, sm.o1), SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(2)) : null;
+    const bf = sm.o1 ? SY.bulguFarki(sm.o0, sm.o1) : null;
     const Qs = V0(cur.inp.Q), uyg = SY.uygunluk(o, Qs, cur.inp);
     const kv = rows => `<dl class="sm-kv">${rows.filter(Boolean).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
     // Hedef debi: hesaplanan debiden AYRI satırda, yalnız bilgi; hiçbir hesapta ve denetimde kullanılmaz
@@ -999,7 +1071,8 @@
         <header><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span><b>Shift ${j + 1}</b><span class="sm-sira">${t('Sıra')} ${i + 1}</span>${s.status !== 'ok' ? `<span class="tag ${s.status === 'bad' ? 'bad' : 'warn'}">${t(s.status === 'bad' ? 'Uygunsuz' : 'Sınırda')}</span>` : ''}
           <span class="sm-mv"><button type="button" class="btn sm" data-up="${i}" ${i === 0 ? 'disabled' : ''} aria-label="${esc(t('Sırada yukarı taşı'))}">↑</button><button type="button" class="btn sm" data-dn="${i}" ${i === n - 1 ? 'disabled' : ''} aria-label="${esc(t('Sırada aşağı taşı'))}">↓</button></span></header>
         ${kv([
-          [t('Alan'), `${fmt(s.A, 2)} da`],
+          [t('Gerçek alan (geometri)'), o.alanGeo ? `<span data-alan-geo="${o.alanGeo[j]}">${fmt(o.alanGeo[j], 2)} da</span>` : `<span class="ss-yok">${t('Hesaplanamadı')}</span>`],
+          o.alanGeo && Math.abs(o.alanGeo[j] - s.A) >= 0.005 ? [t('Hesap alan payı (debi oranı)'), `${fmt(s.A, 2)} da`] : null,
           [t('Debi (hesap)'), `<span class="${s.overSource ? 'bad' : ''}">${fmt(s.Q, 2)} m³/h${s.overSource ? ' ✗' : ''}</span>`],
           hedefSatir(s.Q),
           [t('Gerekli giriş basıncı'), `${fmt(s.H, 2)} m (${fmt(s.Hbar, 2)} bar)`],
@@ -1008,12 +1081,21 @@
           s.surplus > 5 ? [t('Fazla basınç'), `<span class="warn">${fmt(s.surplus, 1)} m · ${t('regülatör önerilir')}</span>`] : null,
           [t('Açılacak vanalar'), `${s.units.join(', ')} <small class="muted">(${esc(r.valve.v ? r.valve.v.cap : '—')})</small>`],
         ])}
-        <div class="row"><button type="button" class="btn sm" data-harita="${j}" style="flex:1">${t('Haritada göster')}</button><button type="button" class="btn sm" data-ac="${j}" aria-expanded="${on && sm.acik}" style="flex:1">${t('Alt üniteleri taşı')}</button></div>
+        <div class="row"><button type="button" class="btn sm" data-harita="${j}" style="flex:1">${t('Haritada göster')}</button><button type="button" class="btn sm" data-hduz="${j}" style="flex:1">${t('Haritada düzenle')}</button><button type="button" class="btn sm" data-ac="${j}" aria-expanded="${on && sm.acik}" style="flex:1">${t('Alt üniteleri taşı')}</button></div>
+        ${on ? `<label class="sm-ekle">${t('Bu shift’e alt ünite ekle')}<select data-smekle="${j}"><option value="">—</option>${r.units.map((u, k) => ({ u, k, s: SY.atamaOf(r)[k] })).filter(x => x.s !== j).map(x => `<option value="${x.k}">M${x.k + 1} · Shift ${x.s + 1} · ${fmt(x.u.Q, 1)} m³/h</option>`).join('')}</select></label>` : ''}
         ${on && sm.acik ? `<div class="scroll"><table><tr><th>${t('Alt ünite')}</th><th>${t('Debi')} m³/h</th><th>Lateral</th><th>Shift</th></tr>${r.sel.groups[j].map(k => `<tr><td>M${k + 1}</td><td>${fmt(r.units[k].Q, 2)}</td><td>${r.units[k].nLat}</td><td><select data-smunit="${k}" aria-label="M${k + 1}">${Array.from({ length: n + 1 }, (_, q) => `<option value="${q}" ${q === j ? 'selected' : ''}>${q + 1}${q === n ? ' (' + t('yeni') + ')' : ''}</option>`).join('')}</select></td></tr>`).join('')}</table></div>` : ''}
       </article>`;
     };
     const fark = x => x.fark == null ? (x.yon === 'bilgi' ? '≠' : '—') : `${x.fark > 0 ? '+' : ''}${fmt(x.fark, x.d)}`;
-    const cmp = satir ? `<div class="scroll"><table class="sm-cmp"><thead><tr><th>${t('Ölçüt')}</th><th>${t('Önce')}</th><th>${t('Sonra')}</th><th>${t('Fark')}</th></tr></thead><tbody>${satir.map(x => `<tr class="sm-${x.yon}" data-k="${x.k}"><td>${t(x.label)}${x.unit ? ` <small>${esc(t(x.unit))}</small>` : ''}</td><td>${fmt(x.once, x.d)}</td><td>${fmt(x.sonra, x.d)}</td><td>${fark(x)}</td></tr>`).join('')}</tbody></table></div>
+    const u0 = SY.uygunluk(sm.o0, Qs, cur.inp);
+    const uySat = satir ? `<tr class="sm-${uyg.genel === u0.genel ? 'ayni' : SY.uygunMu(uyg) && !SY.uygunMu(u0) ? 'iyi' : !SY.uygunMu(uyg) && SY.uygunMu(u0) ? 'kotu' : 'bilgi'}" data-k="uygunluk"><td>${t('Teknik uygunluk')}</td><td>${t(SM_GENEL[u0.genel][0])}</td><td>${t(SM_GENEL[uyg.genel][0])}</td><td>${uyg.genel === u0.genel ? '=' : '≠'}</td></tr>` : '';
+    const bulguLi = (x, cls) => `<li class="sm-bf-${cls}" data-kod="${esc(x.kod)}"><code>${esc(x.kod)}</code> ${esc(AS.text(x.baslik, t, fmt))} <small>(${t(AS.LEVEL_AD[x.seviye])}${x.onceki && x.onceki !== x.seviye ? ' ← ' + t(AS.LEVEL_AD[x.onceki]) : ''})</small></li>`;
+    const bfHtml = bf ? `<section class="sm-sec" id="smBulgu"><h3>${t('Mühendislik bulguları: önce → sonra')}</h3>
+      <div class="sm-bf"><h4 class="sm-bf-h-iyi">${t('Giderilen')} (${bf.giderilen.length})</h4><ul data-grup="giderilen">${bf.giderilen.map(x => bulguLi(x, 'iyi')).join('') || `<li class="muted">${t('Yok')}</li>`}</ul>
+      <h4 class="sm-bf-h-kotu">${t('Yeni oluşan')} (${bf.yeni.length})</h4><ul data-grup="yeni">${bf.yeni.map(x => bulguLi(x, 'kotu')).join('') || `<li class="muted">${t('Yok')}</li>`}</ul>
+      <h4>${t('Devam eden')} (${bf.devam.length})</h4><ul data-grup="devam">${bf.devam.map(x => bulguLi(x, 'ayni')).join('') || `<li class="muted">${t('Yok')}</li>`}</ul></div>
+      <p class="muted small">${t('Bulgular yalnız hesap sonucuyla kalkar; kullanıcı kararı (“Bilinerek kabul”) bir bulguyu kaldırmaz.')}</p></section>` : '';
+    const cmp = satir ? `<div class="scroll"><table class="sm-cmp"><thead><tr><th>${t('Ölçüt')}</th><th>${t('Önce')}</th><th>${t('Sonra')}</th><th>${t('Fark')}</th></tr></thead><tbody>${satir.map(x => `<tr class="sm-${x.yon}" data-k="${x.k}"><td>${t(x.label)}${x.k.startsWith('sec') ? ` (Shift ${sm.sec + 1})` : ''}${x.unit ? ` <small>${esc(t(x.unit))}</small>` : ''}</td><td>${fmt(x.once, x.d)}</td><td>${fmt(x.sonra, x.d)}</td><td>${fark(x)}</td></tr>`).join('')}${uySat}</tbody></table></div>
       <p class="muted small">${t('Yeşil: iyileşme · kırmızı: kötüleşme. Değerler taslak düzenin motorla yeniden hesabıdır; Uygula demeden projeye yazılmaz.')}</p>`
       : hata ? `<p class="note err small" id="smHata">${t('Taslak düzen hesaplanamadı; önce/sonra karşılaştırması yapılamıyor. Uygula kapalı.')}</p>`
       : `<p class="muted small" id="smAyni">${degisti ? t('Hidrolik düzen değişmedi: çalışma sırası ve hedef debi yalnız program ve rapor bilgisidir.') : t('Taslak mevcut düzenle aynı. Shift sayısını değiştirin, alt üniteleri taşıyın veya çalışma sırasını düzenleyin.')}</p>`;
@@ -1031,6 +1113,7 @@
       <header class="sm-head"><h2 id="smTitle">${t('Shift Yönetimi')}</h2>${degisti ? `<span class="tag warn">${t('taslak')}</span>` : ''}${T.manual ? `<span class="tag warn">${t('elle düzenlendi')}</span>` : `<span class="tag">${t('otomatik')}</span>`}<span class="dt-gap"></span><button type="button" class="btn sm" id="smX" aria-label="${esc(t('Kapat'))}">✕</button></header>
       <div class="sm-body">${ozetBar}
         <div class="sm-ctl">
+          <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${nsEksi == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${nsArti == null ? 'disabled' : ''}>+</button></div>
           <label>${t('Shift sayısı')}<select id="smNs">${T.manual ? `<option value="elle" selected>${t('Elle')} (${n})</option>` : ''}${sm.r0.sectorAlts.filter(a => !a.manual).map(a => `<option value="${a.Ns}" ${nsSec === String(a.Ns) ? 'selected' : ''}>${a.Ns}${a.recommended ? ' · ' + t('Önerilen') : ''}${a.feasible ? '' : ' ✗'}</option>`).join('')}</select></label>
           <label>${t('Hedef shift debisi')} <small>m³/h</small><input id="smHedef" inputmode="decimal" value="${T.hedef != null ? inVal(T.hedef) : ''}" placeholder="—"></label>
           ${T.manual ? `<button type="button" class="btn sm" id="smOto">${t('Otomatik düzene dön')}</button>` : ''}
@@ -1040,8 +1123,10 @@
         <section class="sm-sec" id="smUygunluk" data-genel="${uyg.genel}"><h3>${t('Uygunluk sınırları')}${sm.r1 ? ` <small class="muted">(${t('taslak')})</small>` : ''}</h3>
           <div class="sm-genel sm-genel-${uyg.genel}" id="smGenel" role="status"><b>${t(SM_GENEL[uyg.genel][0])}</b><br><small>${t(SM_GENEL[uyg.genel][1])}</small>${uyg.bulgular.length ? `<br><small>${t('Uygunsuz bulgular')}: ${uyg.bulgular.map(k => `<code>${esc(k)}</code>`).join(', ')}</small>` : ''}</div>
           ${uyg.map(x => `<div class="sm-uy sm-uy-${SM_DURUM[x.durum][0]}" data-k="${x.k}" data-durum="${x.durum}"><span class="sm-uy-i" aria-hidden="true">${SM_DURUM[x.durum][1]}</span><span><b>${t(x.ad)}</b>: ${fmt(x.deger, x.d)} ${esc(t(x.birim))} ${x.sinir != null ? `/ ${t('sınır')} ${fmt(x.sinir, x.d)} ${esc(t(x.birim))}` : `(${t('kaynak debisi girilmedi')})`} — <i>${t(SM_DURUM[x.durum][2])}</i><br><small>${t(x.not)}</small></span></div>`).join('')}
+          ${o.kontroller && o.kontroller.length ? `<details class="sm-kontrol" id="smKontrol"><summary>${t('Bütün mühendislik kontrolleri')} (${o.kontroller.length}) — ${o.kontroller.filter(c => c.level === 'bad').length} ✗ · ${o.kontroller.filter(c => c.level === 'warn').length} !</summary><ul>${o.kontroller.map(c => `<li class="sm-uy-${c.level === 'bad' ? 'bad' : c.level === 'warn' ? 'warn' : 'ok'}" data-kod="${esc(c.kod || '')}"><span class="sm-uy-i">${c.level === 'bad' ? '✗' : c.level === 'warn' ? '!' : '✓'}</span> <code>${esc(c.kod || '')}</code> ${esc(t(c.title))} — ${esc(t(c.text, Object.fromEntries(Object.entries(c.params || {}).map(([k, v]) => [k, Array.isArray(v) ? fmt(v[0], v[1]) : v]))))}</li>`).join('')}</ul></details>` : ''}
           ${uyg.genel === 'uygun-degil' ? `<div class="note err small" id="smUygunDegil">${t('Bu düzen proje verisine göre uygun değil. Uygulamak mümkündür ama teknik uygunluk sonucu değişmez; Sonuç ekranında ve raporlarda uygunsuz olarak kalır.')}</div>` : ''}</section>
         <section class="sm-sec" id="smOnceSonra"><h3>${t('Önce / sonra')}</h3>${cmp}</section>
+        ${bfHtml}
         <section class="sm-sec"><h3>${t('Shift’ler (çalışma sırasıyla)')}</h3><p class="muted small">${t('Çalışma sırası yalnız sulama programı ve rapor sırasıdır; hidrolik hesabı değiştirmez.')}</p>
           <div class="sm-list">${sira.map(kart).join('')}</div></section>
       </div>
@@ -1065,6 +1150,17 @@
     el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { T.sira = SY.siraTasi(sira, +b.dataset.up, -1); smCiz(); });
     el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { T.sira = SY.siraTasi(sira, +b.dataset.dn, 1); smCiz(); });
     el.querySelectorAll('[data-harita]').forEach(b => b.onclick = () => smHaritada(+b.dataset.harita));
+    el.querySelectorAll('[data-hduz]').forEach(b => b.onclick = () => smHaritadaDuzenle(+b.dataset.hduz));
+    const nsSecim = k => { T.Ns = k === recNs ? null : k; T.manual = null; T.sira = null; yeniden(); };
+    const ne = $('#smNsEksi'); if (ne) ne.onclick = () => { if (nsEksi != null) nsSecim(nsEksi); };
+    const na = $('#smNsArti'); if (na) na.onclick = () => { if (nsArti != null) nsSecim(nsArti); };
+    el.querySelectorAll('select[data-smekle]').forEach(x => x.onchange = () => {
+      if (x.value === '') return;
+      const j = +x.dataset.smekle, assign = SY.ataTasi(SY.atamaOf(r), +x.value, j);
+      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1);
+      // Boşalan shift numarası sıkıştırılırsa seçili shift'in yeni numarası: taşınan ünitenin yeni shift'i
+      sm.sec = assign[+x.value]; yeniden();
+    });
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const j = +b.dataset.ac; sm.acik = !(sm.sec === j && sm.acik); sm.sec = j; if (vurgu) { vurgu.j = j; vurgu.fit = true; } smCiz(); if (vurgu && map) drawPoly(); });
     el.querySelectorAll('select[data-smunit]').forEach(x => x.onchange = () => {
       const assign = SY.ataTasi(SY.atamaOf(r), +x.dataset.smunit, +x.value);      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1);
@@ -1111,7 +1207,7 @@
     ss.j = j; ssKapat();
     vurgu = { j, r, fit: true, kaynak: 'ss' }; showPlan = true;
     document.body.classList.add('sm-vurgu');
-    if (mapMode !== 'sinir') setMode('sinir');
+    if (mapMode !== 'gor') setMode('gor');   // salt okunur vurgu: görüntüleme modu
     show('arazi');
     let c = $('#ssChip');
     if (!c) { c = document.createElement('button'); c.id = 'ssChip'; c.type = 'button'; c.className = 'btn primary sm-chip'; document.body.appendChild(c); }
@@ -1140,7 +1236,8 @@
     return `<div class="ss-detay" data-j="${j}">
       <div class="ss-baslik"><span class="dot" style="background:${PALETTE[j % PALETTE.length]}"></span><b>Shift ${j + 1}</b><span class="ss-durum ss-durum-${durum[0]}" data-durum="${li.status}">${t(durum[1])}</span></div>
       ${satir([
-        [t('Alan'), geo ? `<b data-v="${geo.shift[j]}" id="ssAlan">${fmt(geo.shift[j], 2)} da</b>` : ssYok(), t('alt ünite geometrisinden')],
+        [t('Gerçek alan (geometri)'), geo ? `<b data-v="${geo.shift[j]}" id="ssAlan">${fmt(geo.shift[j], 2)} da</b>` : ssYok(), t('alt ünite poligonlarından')],
+        ...(geo && Math.abs(geo.shift[j] - d.A) >= 0.005 ? [[t('Hesap alan payı (debi oranı)'), `<span id="ssAlanPay" data-v="${d.A}">${N(d.A, 2, 'da')}</span>`, t('mevcut raporlardaki alan; hesap girdisi değildir')]] : []),
         [t('Hesaplanan debi'), `<b data-v="${d.Q}" id="ssDebi">${N(d.Q, 2, 'm³/h')}</b>`, t('motor sonucu; düzenlenemez')],
         [t('Hedef debi'), cur.shiftHedef > 0 ? `${N(cur.shiftHedef, 2, 'm³/h')}${hedefX != null ? ` · ${t('fark')} ${hedefX > 0 ? '+' : ''}${fmt(hedefX, 0)}%` : ''}` : `<span class="muted">${t('Girilmedi')}</span>`, t('bilgi; tasarım debisini değiştirmez')],
         [t('Gerekli giriş basıncı'), `<span data-v="${d.H}" id="ssBasinc">${N(d.H, 2, 'mSS')}</span> (${N(d.Hbar, 2, 'bar')})`, ''],

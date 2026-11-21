@@ -192,3 +192,33 @@ test('SY-12 Shift paneli gerçek alanı: alt ünite poligonlarından; toplam par
   }
   ok(n >= 15 && SY.geoAlan({ ok: false }, Gm) === null, 'senaryo ' + n);
 });
+
+// ---------- 1.0.3 PR-2: bulgu farkı, iki ayrı alan, seçili shift satırları ----------
+test('SY-13 Bulgu farkı: giderilen / yeni / devam eden yalnız hesap sonucundan; kullanıcı kararı bulguyu kaldırmaz', () => {
+  const Gm = require('./_lib').Gm;
+  const i0 = { crop: 'domates', area_da: 50, L: 400, W: 125, Q: 45, srcType: 'kuyu', depth: 40, region: 'akdeniz', slopeLong: 0, slopeShort: 0, hours: 20 };
+  const oz = (i, p) => { const r = E.design(i); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject(p || { inp: i }, r), Gm); };
+  const a = oz(i0), b = oz(Object.assign({}, i0, { Ns: 12 })), f = SY.bulguFarki(a, b);
+  const k = x => x.map(y => y.kod).sort().join();
+  ok(f.giderilen.some(x => x.kod === 'W-HIZ-01') && f.giderilen.some(x => x.kod === 'W-POM-01') && f.yeni.some(x => x.kod === 'W-KAP-01'), `12 shift: W-HIZ-01/W-POM-01 giderildi, W-KAP-01 yeni (${k(f.giderilen)} / ${k(f.yeni)})`);
+  ok(k(f.giderilen.concat(f.devam)) === k(a.bulguListe) && k(f.yeni.concat(f.devam)) === k(b.bulguListe), 'kümeler tam');
+  // "Bilinerek kabul" kararı bulguyu kaldırmaz
+  const i12 = Object.assign({}, i0, { Ns: 12 }), kabul = oz(i12, { inp: i12, akil: { onay: { 'W-KAP-01': 'kabul' } } });
+  ok(kabul.bulguListe.some(x => x.kod === 'W-KAP-01' && x.seviye === 'uygunsuz') && SY.bulguFarki(b, kabul).giderilen.length === 0, 'onay bulguyu kaldırmaz');
+  ok(SY.bulguFarki(a, null) === null, 'eksik özet');
+});
+
+test('SY-14 Alan: gerçek geometri ve hesap alan payı ayrı; seçili shift ve günlük su ihtiyacı satırları', () => {
+  const Gm = require('./_lib').Gm, SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
+  const r = E.design(s18.inp, null, s18.opt), o = SY.ozet(r, HV.build(r, { inp: s18.inp, Qsource: s18.inp.Q }), AS.forProject({ inp: s18.inp }, r), Gm);
+  ok(o.alanGeo && o.alanGeo.length === o.Ns && o.alanPay.length === o.Ns, 'iki alan dizisi');
+  o.alanPay.forEach((x, j) => near(x, r.sel.Qj[j] / r.sectors.Qfield * r.field.da, 1e-9, 'alan payı = debi oranı'));
+  near(o.alanGeo.reduce((t, x) => t + x, 0), r.field.da, 0.01 * r.field.da, 'geometri toplamı');
+  near(o.gunlukSu, r.sectors.Qfield * r.schedule.t / r.schedule.interval, 1e-9, 'günlük su');
+  const i2 = Object.assign({}, s18.inp, { Ns: 7 }), r2 = E.design(i2, null, s18.opt), o2 = SY.ozet(r2, HV.build(r2, { inp: i2, Qsource: i2.Q }), AS.forProject({ inp: i2 }, r2), Gm);
+  const S = SY.secSatirlar(o, o2, 1);
+  ok(S.map(x => x.k).join() === 'secAlan,secQ,gunlukSu' && Math.abs(S[0].once - o.alanGeo[1]) < 1e-12 && Math.abs(S[0].sonra - o2.alanGeo[1]) < 1e-12 && Math.abs(S[1].sonra - r2.sel.Qj[1]) < 1e-12, 'seçili shift satırları motor ve geometriden');
+  ok(o.alanGeo.every(x => x > 0), 'alanlar pozitif');
+  // Hiçbir alan alanı motor girdisine dönüşmez: tasarım aynı
+  ok(JSON.stringify(E.design(s18.inp, null, s18.opt).sel.Qj) === JSON.stringify(r.sel.Qj), 'motor sonucu aynı');
+});

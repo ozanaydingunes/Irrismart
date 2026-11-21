@@ -536,3 +536,21 @@ html.desk .ss-tut{left:auto;transform:none;right:calc(var(--right) + 16px);botto
 html.desk .ss-perde{display:none}
 html.desk .ss-sheet{left:auto;right:0;top:var(--top);bottom:0;width:min(480px,42vw);max-height:none;border-radius:0;border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(0,0,0,.12)}
 html.desk .ss-grab{display:none}
+
+/* ---------- 1.0.3 PR-2: manuel düzenleme ---------- */
+.sm-ns{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.sm-ns .btn{min-width:48px;min-height:48px;font-size:22px;font-weight:700;padding:0}
+.sm-ns-n{min-width:32px;text-align:center;font-size:20px;font-weight:700}
+.sm-ekle{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13px}
+.sm-bf h4{margin:8px 0 4px;font-size:13.5px}
+.sm-bf ul{margin:0;padding-left:18px;font-size:13.5px}
+.sm-bf-iyi code,.sm-bf-h-iyi{color:var(--pri)}
+.sm-bf-kotu code,.sm-bf-h-kotu{color:var(--err)}
+.sm-kontrol{margin:8px 0;font-size:13px}
+.sm-kontrol ul{list-style:none;margin:6px 0 0;padding:0}
+.sm-kontrol li{padding:3px 0;border-bottom:1px solid var(--line)}
+.m-karar{position:fixed;z-index:1700;left:16px;right:16px;top:calc(var(--top) + env(safe-area-inset-top) + 64px);max-width:520px;margin:0 auto;padding:14px;border:2px solid var(--warn);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.m-karar .row{gap:8px;flex-wrap:wrap}.m-karar .btn{min-height:44px}
+.m-karar p{margin:4px 0 8px}
+#mModes button[data-m=gor]{font-weight:600}
+#mUndo:disabled,#mClear:disabled{opacity:.45}
