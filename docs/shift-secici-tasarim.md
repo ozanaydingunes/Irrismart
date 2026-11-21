@@ -30,12 +30,31 @@
 - **Masaüstü:** Panel sağ çekmece olarak açılır.
 - **Alan:** `IrriShiftYonetimi.geoAlan`, motorun kullandığı aynı kırpma poligonlarından hesaplar. Toplam ≤ parsel alanı; aradaki fark yalnız sıra aralığına sığmayan kenar şeritleridir. Mevcut ekranlar, raporlar ve altın kayıtlar değişmez.
 
-## PR-2 (sonraki): manuel düzenleme iş akışı
-- **Shift Yönetimi'ne eklenecekler:** shift sayısı − / +; "Bu shift'e alt ünite ekle"; seçili shift'in gerçek alanı.
-- **"Haritada düzenle":** Arazi'nin mevcut shift fırçası taslağa yazar (önizleme / Uygula / İptal / Geri Al); fırça seçili shift olarak başlar.
-- **Arazi'de Görüntüle / Düzenle ayrımı:** Parsel tamamlanmışsa harita görüntüleme modunda açılır; sınıra köşe eklemek için "Düzenle" seçilmelidir. Bugün Sınır modunda parsel dışına dokunmak köşe ekliyor.
-- **Sınır düzenleme:** Yerleşimi değiştirdiği için taslakla birleşmez; taslak uyarıyla kapanır.
-- **Önce/sonra'ya eklenecekler:** seçili shift alanı, pompa debisi, günlük su gereksinimi; bütün resmî kontrollerin listesi; bulgu farkı (giderilen / yeni / devam eden).
+## PR-2 (1.0.4): manuel düzenleme iş akışı
+- **Shift sayısı:** − / + düğmeleri; yalnız motorun hesapladığı otomatik seçenekler arasında; uçlarda kapalı.
+- **"Bu shift'e alt ünite ekle":** seçili shift'in kartında, başka shift'lerin alt üniteleri listelenir; seçilen ünite taslakta bu shift'e taşınır.
+- **"Haritada düzenle":** Arazi'nin mevcut shift fırçası taslağa yazar.
+  - Fırça seçili shift ile başlar; dokunulan alt ünite taslakta taşınır ve motorla yeniden hesaplanır.
+  - Kayıtlı proje Uygula'ya kadar değişmez; Geri Al önceki atamayı getirir.
+  - Arazi'de bağımsız kullanılan Shift fırçası (Shift Yönetimi açık değilken) bugünkü gibi çalışır.
+- **Arazi modları:**
+  - "Görüntüle": parsel tamamlanmışsa varsayılan; dokunuş hiçbir şeyi değiştirmez, köşe tutamağı yok, Geri/Temizle kapalı, sürükleme yok.
+  - "Sınır / Kaynak / İstasyon / Ana hat": açık düzenleme.
+  - "Shift": atama.
+  - Yeni parsel (köşe < 3) bugünkü gibi Sınır modunda açılır.
+- **Taslak kararı:** Açık taslak varken Sınır, Kaynak, İstasyon veya Ana hat düzenlemesine geçişte "Taslağı uygula / Taslağı iptal et / Vazgeç" penceresi çıkar.
+- **Alan:**
+  - "Gerçek alan (geometri)": alt ünite poligonları.
+  - "Hesap alan payı (debi oranı)": mevcut raporlardaki değer, hesap girdisi değildir; yalnız farklıysa gösterilir.
+  - İkisi de motor girdisi değildir. Debi, basınç ve kayıplar yalnız motordan gelir.
+- **Önce/sonra:**
+  - seçili shift alanı ve hesaplanan debisi;
+  - maks./min./kritik debi, ana hat hızı, H maks., kritik ana hat kaybı;
+  - pompa debisi, basma yüksekliği ve motor gücü;
+  - süre, tur, enerji, günlük su ihtiyacı, teknik uygunluk.
+- **Bulgu farkı:** giderilen / yeni oluşan / devam eden (seviye değişimiyle). Kullanıcı kararı bulguyu kaldırmaz.
+- **Bütün mühendislik kontrolleri:** kaynak, kapasite, süre, tur, PN, hız, pompa vb. uygunluk bölümünde listelenir.
+- **Düzeltme:** Shift vurgusu sırasında Arazi'nin gecikmeli "parsele sığdır" çağrısı vurgunun yakınlaştırmasını eziyordu; artık atlanır.
 
 ## Kapsam dışı
 Eşzamanlı shift grupları, shift başına farklı süre (1.1); serbest poligon bölme (2.0); hesap motoru değişikliği; Play Store.

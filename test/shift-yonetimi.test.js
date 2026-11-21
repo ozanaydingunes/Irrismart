@@ -192,3 +192,48 @@ test('SY-12 Shift paneli gerçek alanı: alt ünite poligonlarından; toplam par
   }
   ok(n >= 15 && SY.geoAlan({ ok: false }, Gm) === null, 'senaryo ' + n);
 });
+
+// ---------- 1.0.3 PR-2: bulgu farkı, iki ayrı alan, seçili shift satırları ----------
+test('SY-13 Bulgu farkı: giderilen / yeni / devam eden yalnız hesap sonucundan; kullanıcı kararı bulguyu kaldırmaz', () => {
+  const Gm = require('./_lib').Gm;
+  const i0 = { crop: 'domates', area_da: 50, L: 400, W: 125, Q: 45, srcType: 'kuyu', depth: 40, region: 'akdeniz', slopeLong: 0, slopeShort: 0, hours: 20 };
+  const oz = (i, p) => { const r = E.design(i); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject(p || { inp: i }, r), Gm); };
+  const a = oz(i0), b = oz(Object.assign({}, i0, { Ns: 12 })), f = SY.bulguFarki(a, b);
+  const k = x => x.map(y => y.kod).sort().join();
+  ok(f.giderilen.some(x => x.kod === 'W-HIZ-01') && f.giderilen.some(x => x.kod === 'W-POM-01') && f.yeni.some(x => x.kod === 'W-KAP-01'), `12 shift: W-HIZ-01/W-POM-01 giderildi, W-KAP-01 yeni (${k(f.giderilen)} / ${k(f.yeni)})`);
+  ok(k(f.giderilen.concat(f.devam)) === k(a.bulguListe) && k(f.yeni.concat(f.devam)) === k(b.bulguListe), 'kümeler tam');
+  // "Bilinerek kabul" kararı bulguyu kaldırmaz
+  const i12 = Object.assign({}, i0, { Ns: 12 }), kabul = oz(i12, { inp: i12, akil: { onay: { 'W-KAP-01': 'kabul' } } });
+  ok(kabul.bulguListe.some(x => x.kod === 'W-KAP-01' && x.seviye === 'uygunsuz') && SY.bulguFarki(b, kabul).giderilen.length === 0, 'onay bulguyu kaldırmaz');
+  ok(SY.bulguFarki(a, null) === null, 'eksik özet');
+});
+
+test('SY-14 Alan: gerçek geometri ve hesap alan payı ayrı; seçili shift ve günlük su ihtiyacı satırları', () => {
+  const Gm = require('./_lib').Gm, SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
+  const r = E.design(s18.inp, null, s18.opt), o = SY.ozet(r, HV.build(r, { inp: s18.inp, Qsource: s18.inp.Q }), AS.forProject({ inp: s18.inp }, r), Gm);
+  ok(o.alanGeo && o.alanGeo.length === o.Ns && o.alanPay.length === o.Ns, 'iki alan dizisi');
+  o.alanPay.forEach((x, j) => near(x, r.sel.Qj[j] / r.sectors.Qfield * r.field.da, 1e-9, 'alan payı = debi oranı'));
+  near(o.alanGeo.reduce((t, x) => t + x, 0), r.field.da, 0.01 * r.field.da, 'geometri toplamı');
+  near(o.gunlukSu, r.sectors.Qfield * r.schedule.t / r.schedule.interval, 1e-9, 'günlük su');
+  const i2 = Object.assign({}, s18.inp, { Ns: 7 }), r2 = E.design(i2, null, s18.opt), o2 = SY.ozet(r2, HV.build(r2, { inp: i2, Qsource: i2.Q }), AS.forProject({ inp: i2 }, r2), Gm);
+  const S = SY.secSatirlar(o, o2, 1);
+  ok(S.map(x => x.k).join() === 'secAlan,secQ,gunlukSu' && Math.abs(S[0].once - o.alanGeo[1]) < 1e-12 && Math.abs(S[0].sonra - o2.alanGeo[1]) < 1e-12 && Math.abs(S[1].sonra - r2.sel.Qj[1]) < 1e-12, 'seçili shift satırları motor ve geometriden');
+  ok(o.alanGeo.every(x => x > 0), 'alanlar pozitif');
+  // Hiçbir alan alanı motor girdisine dönüşmez: tasarım aynı
+  ok(JSON.stringify(E.design(s18.inp, null, s18.opt).sel.Qj) === JSON.stringify(r.sel.Qj), 'motor sonucu aynı');
+});
+
+test('SY-15 Shift başına hedef debi: yalnız aynı shift sayısında geçerli; raporda bilgi sütunu; hesaba girmez', () => {
+  ok(SY.hedefler(null, 3) === null && SY.hedefler({ Ns: 4, deger: { 0: 50 } }, 3) === null, 'geçersiz kayıt');
+  const h = SY.hedefler({ Ns: 3, deger: { 0: 50, 2: 60, 5: 70, 1: -3 } }, 3);
+  ok(JSON.stringify(h) === JSON.stringify({ 0: 50, 2: 60 }), 'geçerli anahtarlar: ' + JSON.stringify(h));
+  ok(SY.hedefOf(h, 40, 0) === 50 && SY.hedefOf(h, 40, 1) === 40 && SY.hedefOf(null, null, 1) === null, 'shift hedefi yoksa genel hedef');
+  ok(SY.esit({ hedefler: { 0: 50 } }, { hedefler: null }) === false && SY.esit({ hedefler: {} }, { hedefler: null }) === true, 'taslak karşılaştırması');
+  const r = E.design(inp), n = r.sel.groups.length;
+  const p = proj({ shiftHedefler: { Ns: n, deger: { 0: 33.5 } }, shiftHedef: 40 }), T0 = RD.build(proj(), r), T1 = RD.build(p, r);
+  ok(T0.sektor[0].length === 4 && T1.sektor[0].length === 5 && T1.sektor[1][4] === 33.5 && T1.sektor[2][4] === 40 && T1.sektorDec.length === 5 && T1.sektorPdf.w.length === 5, 'rapor sütunu (shift 1: 33,5; diğerleri genel 40)');
+  ok(JSON.stringify(T0.hidrolik) === JSON.stringify(T1.hidrolik) && JSON.stringify(E.design(p.inp).sel.Qj) === JSON.stringify(r.sel.Qj), 'hesap aynı');
+  // Revizyon taşır
+  const q = proj({ id: 'h', rev: 0, revs: [], shiftHedefler: { Ns: 3, deger: { 0: 10 } } }); St.snapshot(q, 'a'); const r1 = q.rev; q.shiftHedefler = { Ns: 3, deger: { 0: 20 } }; St.snapshot(q, 'b');
+  ok(St.restoreRev(q, r1) && q.shiftHedefler.deger[0] === 10, 'revizyon');
+});
