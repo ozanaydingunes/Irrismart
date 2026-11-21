@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firma Katalogları Önizleme</title>
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--ink:#15231c;--muted:#5f6f66;--line:#dde5e0;--pri:#0f6b45;--pri2:#e3f2ea;--warn:#9a5b00;--warnbg:#fff4e0;--err:#a1242b;--errbg:#fdeaea}
+*{box-sizing:border-box}body{margin:0;background:#e7ece9;color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+h1{font-size:18px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px;max-width:900px}
+.grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+.ph{width:360px;max-width:100%;background:var(--bg);border:1px solid #c9d3cd;border-radius:22px;overflow:hidden;display:flex;flex-direction:column;height:740px;box-shadow:0 2px 10px #0001}
+.cap{font-weight:600;margin:0 0 6px;font-size:13px}
+.top{display:flex;align-items:center;gap:8px;background:#fff;border-bottom:1px solid var(--line);padding:10px 12px;height:58px}.top b{flex:1}.top .ic{font-size:20px;width:34px;text-align:center}
+.body{flex:1;overflow:hidden;padding:12px}
+.tabs{display:flex;background:#fff;border-top:1px solid var(--line);height:58px}.tabs span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10.5px;color:var(--muted)}.tabs span.on{color:var(--pri);font-weight:600}.tabs i{font-style:normal;font-size:17px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin:0 0 10px}
+.seg{display:flex;gap:6px;margin-bottom:10px}.seg span{flex:1;text-align:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 4px;font-size:12.5px;font-weight:600;color:var(--muted)}.seg span.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-size:13px;font-weight:500}.btn.p{background:var(--pri);color:#fff;border-color:var(--pri)}.btn.d{color:var(--err)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}.chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;background:#fff}.chip.on{background:var(--pri2);border-color:var(--pri);color:var(--pri);font-weight:600}
+.firm{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.firm:last-child{border:0}.av{width:34px;height:34px;border-radius:10px;background:var(--pri2);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700}.firm div{flex:1}.firm small{color:var(--muted);display:block}
+.tag{font-size:11px;border-radius:6px;padding:2px 6px;background:var(--pri2);color:var(--pri);font-weight:600}.tag.w{background:var(--warnbg);color:var(--warn)}.tag.e{background:var(--errbg);color:var(--err)}
+.doc{border:1px solid var(--line);border-radius:12px;padding:10px;margin:0 0 8px;background:#fff}.doc b{display:block}.doc .m{color:var(--muted);font-size:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin:0 0 8px}.f .in{display:block;border:1px solid var(--line);background:#fbfcfb;border-radius:10px;padding:9px;color:var(--ink);font-size:13.5px;margin-top:3px}
+.note{border-radius:10px;padding:9px;font-size:12.5px;margin:0 0 10px;background:var(--warnbg);color:var(--warn)}.note.i{background:var(--pri2);color:var(--pri)}
+.pdf{background:#5b625e;border-radius:10px;height:430px;padding:12px;display:flex;flex-direction:column;gap:10px}.pg{background:#fff;border-radius:4px;flex:1;padding:12px;font-size:10px;color:#444}.pg .l{height:7px;background:#e4e8e6;border-radius:3px;margin:6px 0}
+.tb{display:flex;gap:6px;align-items:center;margin-bottom:8px}.tb .in{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--muted);font-size:12.5px}
+.desk{width:1040px;max-width:100%;background:var(--bg);border:1px solid #c9d3cd;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px #0001}.dgrid{display:grid;grid-template-columns:250px 330px 1fr;gap:12px;padding:12px;height:560px}.dgrid>div{overflow:hidden}
+table{border-collapse:collapse;width:100%;font-size:12px}td,th{border-bottom:1px solid var(--line);padding:5px;text-align:left}th{color:var(--muted);font-weight:600}
+</style></head><body>
+<h1>IrriGrow · Firma Malzeme Katalogları (tasarım önizlemesi)</h1>
+<p class="lead">Taslak, çalışan kod değil. Kataloglar yalnız cihazda saklanır. Bölüm, Malzeme sekmesinin üstündeki ikinci sekmeden ve üst çubuktaki 📚 düğmesinden açılır. Proje malzeme listesi ilk sekmede değişmeden kalır. Katalog verisi hidrolik hesaba aktarılmaz.</p>
+<div class="grid">
+
+<div><p class="cap">1 · Firmalar (Android 360 px)</p><div class="ph"><div class="top"><span class="ic">≡</span><b>Firma Katalogları</b><span class="ic">📚</span><span class="ic">⚙</span></div><div class="body">
+<div class="seg"><span>Proje malzeme listesi</span><span class="on">Firma katalogları</span></div>
+<div class="tb"><span class="in">🔍 Firma, katalog veya ürün grubu ara</span><span class="btn p">＋ PDF yükle</span></div>
+<div class="chips"><span class="chip on">Tümü</span><span class="chip">Boru</span><span class="chip">Damla</span><span class="chip">Vana</span><span class="chip">Ek parça</span><span class="chip">Pompa</span><span class="chip">Filtre</span></div>
+<div class="card" style="padding:4px 12px">
+<div class="firm"><span class="av">F</span><div><b>Fırat</b><small>2 katalog · son: 20.10.2026</small></div><span class="tag">Fiyat listesi</span></div>
+<div class="firm"><span class="av">P</span><div><b>Poelsan</b><small>1 katalog · 10,2 MB</small></div></div>
+<div class="firm"><span class="av">P</span><div><b>Pimtaş</b><small>2 katalog · 161 MB</small></div><span class="tag w">büyük dosya</span></div>
+<div class="firm"><span class="av">S</span><div><b>Standart Pompa</b><small>1 katalog · 2024</small></div></div>
+<div class="firm"><span class="av">N</span><div><b>Netafim</b><small>1 katalog</small></div></div>
+</div>
+<div class="note i">Cihazda 5 firma · 7 katalog · 221 MB kullanılıyor. Kalıcı depolama: açık.</div>
+</div><div class="tabs"><span><i>▤</i>Projeler</span><span><i>◫</i>Arazi</span><span><i>✎</i>Veriler</span><span><i>∑</i>Sonuç</span><span><i>⊞</i>Hidrolik</span><span class="on"><i>☰</i>Malzeme</span><span><i>⌗</i>Proje</span></div></div></div>
+
+<div><p class="cap">2 · Firma → katalog listesi</p><div class="ph"><div class="top"><span class="ic">‹</span><b>Fırat</b><span class="ic">＋</span></div><div class="body">
+<div class="chips"><span class="chip on">Tümü (2)</span><span class="chip">Fiyat listesi</span><span class="chip">Ürün kataloğu</span></div>
+<div class="doc"><b>Tarımsal Sulama Fiyat Listesi</b><div class="m">Fiyat listesi · Belge tarihi 20.10.2026 · 32 sayfa · 1,7 MB</div><div class="m">Ürün grubu: Damla sulama, Boru, Ek parça, Vana</div><div class="m">Kaynak: firat.com (resmî site) · yüklendi 21.11.2026</div>
+<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="btn p">Aç</span><span class="btn">Düzenle</span><span class="btn">Güncelle</span><span class="btn d">Sil</span></div>
+<div style="margin-top:6px"><span class="tag w">Fiyatlar KDV hariç · 31 günlük</span></div></div>
+<div class="doc"><b>Ürün Kataloğu 2025</b><div class="m">Ürün kataloğu · 2025 · 88 sayfa · 24 MB</div><div class="m">Kaynak: bayi tarafından verildi</div><div style="margin-top:6px"><span class="tag e">Daha yeni sürümü var mı? Belge tarihi 1 yıldan eski</span></div></div>
+<div class="note">Katalog bilgileri bilgi amaçlıdır. Hidrolik hesap, programın doğrulanmış boru kütüphanesini kullanır; buradaki değerler hesaba aktarılmaz.</div>
+</div><div class="tabs"><span><i>▤</i>Projeler</span><span><i>◫</i>Arazi</span><span><i>✎</i>Veriler</span><span><i>∑</i>Sonuç</span><span><i>⊞</i>Hidrolik</span><span class="on"><i>☰</i>Malzeme</span><span><i>⌗</i>Proje</span></div></div></div>
+
+<div><p class="cap">3 · PDF yükleme / bilgi düzenleme</p><div class="ph"><div class="top"><span class="ic">✕</span><b>Katalog ekle</b><span class="btn p">Kaydet</span></div><div class="body f">
+<div class="card"><b>📄 POELSAN-URUN-KATALOGU-2026.pdf</b><div class="m" style="color:var(--muted);font-size:12px">10,2 MB · 144 sayfa · PDF imzası doğrulandı</div></div>
+<label>Katalog adı *<span class="in">Ürün Kataloğu TR-EN 2026</span></label>
+<label>Firma * (listeden seçin veya yeni yazın)<span class="in">Poelsan ▾</span></label>
+<label>Belge türü<span class="in">Ürün kataloğu ▾ (Fiyat listesi / Teknik föy / Sertifika / Diğer)</span></label>
+<label>Belge tarihi<span class="in">10.2026 (gün bilinmiyorsa ay/yıl)</span></label>
+<label>Ürün grupları<span class="in">☑ Ek parça ☑ Vana ☑ Damla ☐ Boru ☐ Pompa ☐ Filtre</span></label>
+<label>Kaynak<span class="in">Resmî site · poelsan.com</span></label>
+<label>Not<span class="in">—</span></label>
+<div class="note i">Dosya yalnız bu cihazda saklanır, internete veya GitHub'a gönderilmez.</div>
+</div><div class="tabs"><span><i>▤</i>Projeler</span><span><i>◫</i>Arazi</span><span><i>✎</i>Veriler</span><span><i>∑</i>Sonuç</span><span><i>⊞</i>Hidrolik</span><span class="on"><i>☰</i>Malzeme</span><span><i>⌗</i>Proje</span></div></div></div>
+
+<div><p class="cap">4 · Uygulama içi PDF görüntüleyici</p><div class="ph"><div class="top"><span class="ic">‹</span><b style="font-size:13px">Fırat · Fiyat Listesi 20.10.2026</b><span class="ic">⋯</span></div><div class="body">
+<div class="tb"><span class="in">🔍 Belgede ara: “Ø32”</span><span class="btn">3 / 17</span></div>
+<div class="pdf"><div class="pg"><b>YAĞMURLAMA - DAMLA SULAMA BORU FİYAT LİSTESİ</b><div class="l"></div><div class="l" style="width:70%"></div><div class="l" style="background:#ffe08a"></div><div class="l" style="width:85%"></div><div class="l"></div><div class="l" style="width:60%"></div></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><span class="btn">‹</span><span>Sayfa 7 / 32</span><span class="btn">›</span><span class="btn">− 100% ＋</span></div>
+<div style="margin-top:8px"><span class="btn">Teknik değer çıkar (deneysel)</span> <span class="btn">Başka uygulamada aç</span></div>
+</div><div class="tabs"><span><i>▤</i>Projeler</span><span><i>◫</i>Arazi</span><span><i>✎</i>Veriler</span><span><i>∑</i>Sonuç</span><span><i>⊞</i>Hidrolik</span><span class="on"><i>☰</i>Malzeme</span><span><i>⌗</i>Proje</span></div></div></div>
+
+<div><p class="cap">5 · Çıkarılan teknik değerler (doğrulama bekler)</p><div class="ph"><div class="top"><span class="ic">‹</span><b>Teknik değerler</b></div><div class="body">
+<div class="note">Bu değerler PDF metninden otomatik okundu ve <b>doğrulanmadı</b>. Hidrolik hesaba aktarılmaz.</div>
+<div class="card"><table><tr><th>Ürün kodu</th><th>Çap</th><th>PN</th><th>SDR</th><th>Sayfa</th><th>Durum</th></tr>
+<tr><td>—</td><td>32</td><td>6</td><td>—</td><td>7</td><td><span class="tag w">okundu</span></td></tr>
+<tr><td>—</td><td>40</td><td>6</td><td>—</td><td>7</td><td><span class="tag w">okundu</span></td></tr>
+<tr><td>—</td><td>50</td><td>10</td><td>17</td><td>8</td><td><span class="tag">kullanıcı onayladı</span></td></tr></table></div>
+<div class="m" style="color:var(--muted);font-size:12px">“Kullanıcı onayladı” yalnız katalog içinde işarettir; mühendislik doğrulaması değildir ve hesaba aktarılmaz.</div>
+</div><div class="tabs"><span><i>▤</i>Projeler</span><span><i>◫</i>Arazi</span><span><i>✎</i>Veriler</span><span><i>∑</i>Sonuç</span><span><i>⊞</i>Hidrolik</span><span class="on"><i>☰</i>Malzeme</span><span><i>⌗</i>Proje</span></div></div></div>
+
+<div style="width:100%"><p class="cap">6 · Masaüstü web (1280 px): firmalar | kataloglar | görüntüleyici</p><div class="desk"><div class="top"><b>IrriGrow · Firma Katalogları</b><span class="btn p">＋ PDF yükle (sürükle-bırak)</span></div><div class="dgrid">
+<div class="card"><div class="tb"><span class="in">🔍 Ara</span></div><div class="chips"><span class="chip on">Tümü</span><span class="chip">Boru</span><span class="chip">Damla</span><span class="chip">Vana</span><span class="chip">Pompa</span></div>
+<div class="firm"><span class="av">F</span><div><b>Fırat</b><small>2 katalog</small></div></div><div class="firm"><span class="av">P</span><div><b>Poelsan</b><small>1 katalog</small></div></div><div class="firm"><span class="av">P</span><div><b>Pimtaş</b><small>2 katalog</small></div></div><div class="firm"><span class="av">S</span><div><b>Standart Pompa</b><small>1 katalog</small></div></div></div>
+<div><div class="doc" style="border-color:var(--pri)"><b>Tarımsal Sulama Fiyat Listesi</b><div class="m">Fiyat listesi · 20.10.2026 · 32 s</div><div style="margin-top:6px"><span class="btn">Düzenle</span> <span class="btn">Güncelle</span> <span class="btn d">Sil</span></div></div><div class="doc"><b>Ürün Kataloğu 2025</b><div class="m">Ürün kataloğu · 2025 · 88 s</div></div></div>
+<div class="pdf" style="height:auto"><div class="tb" style="margin:0"><span class="in">🔍 Belgede ara</span><span class="btn">Sayfa 7 / 32</span></div><div class="pg"><b>YAĞMURLAMA - DAMLA SULAMA BORU FİYAT LİSTESİ</b><div class="l"></div><div class="l" style="width:70%"></div><div class="l"></div><div class="l" style="width:80%"></div><div class="l"></div></div></div>
+</div></div></div>
+</div></body></html>
