@@ -148,7 +148,9 @@ const EKRAN = [
     check(await pg.evaluate(() => document.querySelector('#v-arazi').classList.contains('on')) && await mod() === 'shift' && /taslak/.test(await pg.textContent('#mShiftBar')), `${ad} D7 harita taslak düzenleme modunda`);
     h = await harita();
     let B = JSON.parse(await pg.$eval('#map', e => e.dataset.birimler || '[]'));
-    const hedef = B.find(b => b.s !== 0 && b.x > 20 && b.y > 20 && b.x < h.w - 20 && b.y < h.h - 20);
+    // Masaüstünde sağdaki Shift Yönetimi çekmecesinin altında kalan bölge dokunulamaz: görünür alandan seç
+    const sag = desk ? await pg.$eval('#smPanel', e => e.getBoundingClientRect().left).catch(() => h.x + h.w) : h.x + h.w;
+    const hedef = B.find(b => b.s !== 0 && b.x > 20 && b.y > 20 && h.x + b.x < sag - 20 && b.y < h.h - 20);
     check(!!hedef, `${ad} D7 ekranda başka shift'e ait alt ünite var`);
     if (hedef) {
       await nokta(h.x + hedef.x, h.y + hedef.y); await pg.waitForTimeout(2500);

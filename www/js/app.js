@@ -319,11 +319,11 @@
     if (ro || duzen) {
       mapEl.dataset.vurgu = String(vj);
       if (secLL.length) {
-        const bb = L.latLngBounds(secLL), desk = document.documentElement.classList.contains('desk');
+        const bb = L.latLngBounds(secLL);
         if (vurgu.fit) {
           map.invalidateSize();
           // Masaüstünde sağdaki panel haritanın sağını örter; o kısım sığdırmada boş bırakılır
-          map.fitBounds(bb, { paddingTopLeft: [40, 72], paddingBottomRight: [desk ? Math.min(560, map.getSize().x * 0.5) : 40, 40], maxZoom: 19, animate: false });
+          map.fitBounds(bb, { paddingTopLeft: [40, 72], paddingBottomRight: [40, 40], maxZoom: 19, animate: false });
           vurgu.fit = false; vurgu.sigdi = true;
         }
         const a = map.latLngToContainerPoint(bb.getNorthWest()), b2 = map.latLngToContainerPoint(bb.getSouthEast());
@@ -932,6 +932,8 @@
   const smVm = r => HV.build(r, { inp: cur.inp, Qsource: V0(cur.inp.Q), assess: assessOf(r) });
   const smOzet = r => r && r.ok ? SY.ozet(r, smVm(r), assessOf(r), Gm) : null;
   const smKod = ['W-HIZ-01', 'W-POM-01'];
+  // Masaüstünde sağ çekmece açılıp kapanınca çalışma alanı daralır/genişler: harita boyutu yenilenir
+  const cekmeceBoyut = () => { if (map && document.documentElement.classList.contains('desk')) setTimeout(() => map.invalidateSize(), 60); };
   // Uygunluk durumları: [css, simge, etiket]; genel sonuç: [başlık, açıklama]
   const SM_DURUM = { uygun: ['ok', '✓', 'uygun'], sinirda: ['warn', '!', 'sınırda'], varsayim: ['na', '?', 'varsayımla'], 'veri-yok': ['na', '?', 'denetlenemedi'], 'uygun-degil': ['bad', '✗', 'uygun değil'] };
   const SM_GENEL = {
@@ -974,7 +976,7 @@
     sm = null; const had = !!vurgu; vurgu = null; document.body.classList.remove('sm-vurgu');
     if (duzenden && mapMode === 'shift') setMode(varsayilanMod());
     ['#smPanel', '#smChip'].forEach(q => { const e = $(q); if (e) e.remove(); });
-    document.body.classList.remove('sm-on');
+    document.body.classList.remove('sm-on'); cekmeceBoyut();
     if (had && map && $('#v-arazi').classList.contains('on')) drawPoly();
   }
   function smIptal() {
@@ -1050,6 +1052,7 @@
     let el = $('#smPanel');
     if (!el) { el = document.createElement('div'); el.id = 'smPanel'; el.className = 'sm-panel'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'smTitle'); document.body.appendChild(el); }
     el.classList.remove('sm-min'); const ch = $('#smChip'); if (ch) ch.remove();
+    if (!document.body.classList.contains('sm-on')) cekmeceBoyut();
     document.body.classList.add('sm-on');
     const T = sm.taslak, r = smGoster(), o = sm.r1 ? (sm.o1 || sm.o0) : sm.o0, n = r.sel.groups.length;
     const sira = SY.siraOf(T.sira, n), degisti = !SY.esit(T, sm.ilk), hata = sm.r1 && !sm.r1.ok ? sm.r1.err : null;
@@ -1191,7 +1194,7 @@
   function ssKapat() {
     if (ss) ss.acik = false;
     ['#ssSheet', '#ssPerde'].forEach(q => { const e = $(q); if (e) e.remove(); });
-    document.body.classList.remove('ss-acik');
+    document.body.classList.remove('ss-acik'); cekmeceBoyut();
     ssTutamak();
     const b = $('#ssTut'); if (b) b.focus();
   }
@@ -1263,6 +1266,7 @@
       const perde = document.createElement('div'); perde.id = 'ssPerde'; perde.className = 'ss-perde'; perde.onclick = ssKapat; document.body.appendChild(perde);
       el = document.createElement('div'); el.id = 'ssSheet'; el.className = 'ss-sheet'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'ssTitle'); document.body.appendChild(el);
     }
+    if (!document.body.classList.contains('ss-acik')) cekmeceBoyut();
     document.body.classList.add('ss-acik');
     const chip = x => `<button type="button" class="ss-chip${x.j === j ? ' on' : ''}" role="tab" aria-selected="${x.j === j}" data-ssj="${x.j}" style="--c:${PALETTE[x.j % PALETTE.length]}"><span class="dot" style="background:${PALETTE[x.j % PALETTE.length]}"></span><b>Shift ${x.no}</b><small>${fmt(x.Q, 1)} m³/h</small>${x.status !== 'ok' ? `<span class="ss-i ss-i-${x.status}" aria-label="${esc(t(x.status === 'bad' ? 'Uygunsuz' : 'Sınırda'))}">${x.status === 'bad' ? '✗' : '!'}</span>` : ''}</button>`;
     const kay = el.querySelector('.ss-body') ? el.querySelector('.ss-body').scrollTop : 0, kayX = el.querySelector('.ss-chips') ? el.querySelector('.ss-chips').scrollLeft : 0;

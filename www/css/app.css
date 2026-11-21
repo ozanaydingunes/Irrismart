@@ -554,3 +554,6 @@ html.desk .ss-grab{display:none}
 .m-karar p{margin:4px 0 8px}
 #mModes button[data-m=gor]{font-weight:600}
 #mUndo:disabled,#mClear:disabled{opacity:.45}
+/* 1.0.4 düzeltmesi: masaüstünde sağ çekmece (Shift Yönetimi / Shiftler) açıkken harita alt çubuğu çekmecenin altında kalmasın */
+html.desk body.sm-on main{right:max(var(--right),min(520px,46vw))}
+html.desk body.ss-acik main{right:max(var(--right),min(480px,42vw))}
