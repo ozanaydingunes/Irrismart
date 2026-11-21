@@ -157,7 +157,23 @@
   // Rapor sırası: geçerli sıra varsa shift dizinlerini o sırayla döndürür, yoksa null (raporlar değişmez)
   const raporSirasi = (p, r) => p && r && r.ok && siraGecerli(p.shiftSira, r.sel.groups.length) && !siraVarsayilanMi(p.shiftSira) ? p.shiftSira.slice() : null;
 
-  const api = Object.freeze({ uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // Shift başına GERÇEK alan (da): alt ünitelerin harita/yerleşim poligonlarından (motorun kullandığı aynı kırpma).
+  // Mevcut ekranlardaki "alan payı debi oranından" değeri değişmez; bu değer yalnız yeni Shift panelinde gösterilir.
+  // Geometri yoksa null (ekranda "Hesaplanamadı").
+  function geoAlan(r, Gm) {
+    const Ly = r && r.ok && r.layout; if (!Ly || !Ly.P || !Ly.bands || !Gm || !Gm.clipRect) return null;
+    const birim = r.units.map(u => { const b = Ly.bands[u.band]; if (!b) return NaN; const c = Gm.clipRect(Ly.P, b.x0, b.x1, u.y0, u.y1); let a = 0; for (let i = 0; i < c.length; i++) { const p = c[i], q = c[(i + 1) % c.length]; a += p[0] * q[1] - q[0] * p[1]; } return Math.abs(a) / 2 / 1000; });
+    if (birim.some(x => !fin(x))) return null;
+    return { birim, shift: r.sel.groups.map(g => g.reduce((t, k) => t + birim[k], 0)) };
+  }
+  // Alt ünitenin lateralleri: sayı ve en uzun boy (yerleşimden)
+  function birimLateral(r, k) {
+    const u = r.units[k], lo = Math.min(u.y0, u.y1) - 1e-6, hi = Math.max(u.y0, u.y1) + 1e-6;
+    const L = (r.layout.laterals || []).filter(l => l.band === u.band && l.y >= lo && l.y <= hi);
+    return { n: u.nLat, enUzun: L.length ? Math.max(...L.map(l => l.len)) : null };
+  }
+
+  const api = Object.freeze({ geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
