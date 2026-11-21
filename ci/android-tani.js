@@ -71,7 +71,9 @@ const PROJ = [
   for (const id of ['pb', 'p3', 'p1']) {
     log('==== proje', id);
     await page.evaluate(() => document.querySelector('nav.tabs [data-v=projeler]').click()); await page.waitForTimeout(800);
-    await dokun(`[data-open="${id}"]`, 'proje aç');
+    // Proje açma test edilen davranış değil: koordinatla dokunuş ekran dışındaki proje satırında başka projeye isabet ediyordu
+    await page.evaluate(i => document.querySelector(`[data-open="${i}"]`).click(), id); await page.waitForTimeout(800);
+    log('açılan proje', JSON.stringify(await page.evaluate(() => (document.querySelector('#projName') || {}).textContent)));
     await dokun('nav.tabs [data-v=hidrolik]', 'hidrolik sekmesi'); await page.waitForTimeout(4000);
     log('geniş öğeler', JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('#v-hidrolik *')].map(e => [e, e.getBoundingClientRect().width]).filter(([, w]) => w > innerWidth + 2).slice(0, 6).map(([e, w]) => (e.id || e.tagName) + '.' + String(e.className).slice(0, 30) + ':' + Math.round(w)))));
     await durum('hidrolik'); await tani('hidrolik'); await ekranGoruntusu(id + '-1-hidrolik');
@@ -107,6 +109,14 @@ const PROJ = [
       log('uygunluk', JSON.stringify(await page.evaluate(() => { const u = document.querySelector('#smUygunluk'), b = document.querySelector('#smBulgu'); return { u: !!u, genel: u && u.dataset.genel, bulguGrup: b ? b.querySelectorAll('ul[data-grup]').length : 0, cmpSatir: document.querySelectorAll('#smPanel .sm-cmp tr[data-k]').length }; })));
       if (await page.$('#smIptal')) await dokun('#smIptal', 'iptal');
     }
+    // Ekrandan bağımsız tanılama taraması (cihazdaki Ayarlar → Tanılama düğmesiyle aynı işlev)
+    await page.evaluate(() => document.querySelector('#btnSettings').click()); await page.waitForTimeout(800);
+    const tr = await page.evaluate(() => window.IrriTani && window.IrriTani.tara ? window.IrriTani.tara() : 'tarama yok');
+    log('TARAMA', JSON.stringify(tr).slice(0, 6000));
+    const A = tr && tr.adimlar || {}, sy = A.shiftYonetimi || {};
+    log((A.hidrolik && A.hidrolik.tutamak && A.hidrolik.tutamak.merkezdekiOge === 'kendisi') ? 'GEÇTİ' : 'KALDI', 'tarama: Hidrolik tutamağı dokunulabilir');
+    log((sy.arti && sy.arti.tamamenEkranda && sy.eksi && sy.eksi.tamamenEkranda && sy.baslangicKaydirma === 0) ? 'GEÇTİ' : 'KALDI', 'tarama: − / + ekranda, başlangıç kaydırma 0', JSON.stringify(sy.nsAdaylari));
+    log('tarama sonrası ekran', await page.evaluate(() => document.querySelector('.view.on').id));
     // Arazi tutamağı
     await dokun('nav.tabs [data-v=arazi]', 'arazi sekmesi'); await page.waitForTimeout(3000);
     await durum('arazi'); await tani('arazi'); await ekranGoruntusu(id + '-6-arazi');

@@ -9,6 +9,12 @@
   window.__sonHata = window.__sonHata || null;
   window.addEventListener('error', e => { window.__sonHata = { t: new Date().toISOString(), m: String(e.message || e.error || ''), k: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') + ':' + (e.colno || '') }; });
   window.addEventListener('unhandledrejection', e => { window.__sonHata = { t: new Date().toISOString(), m: 'Promise: ' + String(e.reason && e.reason.message || e.reason) }; });
+  // TANILAMA: son 40 gerçek dokunuş/tıklama ve Shift işleyici çağrısı (metin, proje adı veya değer içermez)
+  window.__taniOlay = window.__taniOlay || [];
+  const tOz = e => !e || !e.tagName ? '-' : (e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.dataset && Object.keys(e.dataset).length ? '[' + Object.keys(e.dataset).map(k => k + '=' + String(e.dataset[k]).slice(0, 4)).join(',') + ']' : '') + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '')) + (e.disabled ? ' (devre dışı)' : '');
+  const tOlay = (tur, ek) => { const a = window.__taniOlay; a.push([new Date().toISOString().slice(11, 23), tur, ek]); if (a.length > 40) a.shift(); };
+  ['pointerdown', 'click', 'change'].forEach(tp => document.addEventListener(tp, e => { const h = e.target, bu = h && h.closest ? h.closest('button,select,input,[data-ssj],[data-ac],.ss-tut') : null;
+    tOlay(tp, { gercekDokunus: e.isTrusted, hedef: tOz(h), dugme: bu && bu !== h ? tOz(bu) : undefined, xy: e.clientX != null && tp !== 'change' ? [Math.round(e.clientX), Math.round(e.clientY)] : undefined, ekran: (document.querySelector('.view.on') || {}).id }); }, true));
   const $ = s => document.querySelector(s);
   const KEY = 'irrismart.projects.v1', SKEY = 'irrismart.settings.v1', CKEY = 'irrismart.catalog.v1';
   const fmt = (v, d = 1) => (v == null || !Number.isFinite(Number(v))) ? '—' : Number(v).toLocaleString(I.locale, { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -950,6 +956,7 @@
     'uygun-degil': ['Uygun değil', 'En az bir sınır aşılıyor veya resmî değerlendirmede uygunsuz bulgu var.'],
   };
   function shiftYonetimiAc(j) {
+    tOlay('işleyici', 'shiftYonetimiAc ' + j);
     if (!cur) return toast(t('Önce bir proje açın veya oluşturun'));
     const r0 = lastRes && lastRes.ok ? lastRes : (cur.inp.Q ? compute() : null);
     if (!r0 || !r0.ok) return toast(t('Shift Yönetimi için önce hesabın tamamlanması gerekir.'));
@@ -1164,7 +1171,7 @@
     };
     $('#smX').onclick = smIptal; $('#smIptal').onclick = smIptal; $('#smUygula').onclick = smUygula;
     const gb = $('#smGeri'); if (gb) gb.onclick = smGeriAl;
-    function nsSecim(k) { T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
+    function nsSecim(k) { tOlay('işleyici', 'nsSecim ' + n + '→' + k); T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
     $('#smNs').onchange = e => { const v = e.target.value; if (v === 'elle') return; nsSecim(Number(v)); };
     $('#smHedef').onchange = e => { const x = SY.hedefOku(e.target.value); if (Number.isNaN(x)) { toast(t('Hedef debi pozitif bir sayı olmalı')); e.target.value = T.hedef != null ? inVal(T.hedef) : ''; return; } if (x === T.hedef) return; T.hedef = x; setTimeout(() => { if (sm) smCiz(); }, 0); };   // odak kaybında (yeniden çizim sırasında) iç içe çizim olmasın
     const kg = $('#smKartaGit'); if (kg) kg.onclick = () => { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); };
@@ -1176,6 +1183,7 @@
     // 1.0.4 düzeltmesi (cihaz testi): seçilen sayı "önerilen"e eşit diye kayıt silinmez. Motorun önerisi kayıtlı Ns'e bağlıdır
     // (kayıtlı sayı aday listesine eklenir); eski kural − ile başlangıca dönünce taslağı sessizce başka bir otomatik düzene
     // (ör. 9 yerine 18 shift) götürüyordu. Başlangıç sayısına dönülürse başlangıç kaydı aynen geri gelir; başka her seçim açık sayıdır.
+    sm.taniNs = { adaylar: nsList, eksi: nsEksi, arti: nsArti };
     const ne = $('#smNsEksi'); if (ne) ne.onclick = () => { if (nsEksi != null) nsSecim(nsEksi); };
     const na = $('#smNsArti'); if (na) na.onclick = () => { if (nsArti != null) nsSecim(nsArti); };
     el.querySelectorAll('input[data-smhedefj]').forEach(x => x.onchange = () => {
@@ -1185,6 +1193,7 @@
       T.hedefler = Object.keys(h).length ? h : null; setTimeout(() => { if (sm) smCiz(); }, 0);
     });
     el.querySelectorAll('select[data-smekle]').forEach(x => x.onchange = () => {
+      tOlay('işleyici', 'altÜniteEkle shift ' + (+x.dataset.smekle + 1));
       if (x.value === '') return;
       const j = +x.dataset.smekle, assign = SY.ataTasi(SY.atamaOf(r), +x.value, j);
       T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1);
@@ -1539,6 +1548,40 @@
       taslak: sm ? { Ns: sm.taslak.Ns, elle: !!sm.taslak.manual, degisti: !SY.esit(sm.taslak, sm.ilk), onizleme: sm.r1 ? (sm.r1.ok ? 'hesaplandı' : 'hata') : 'yok', gosterilen: smGoster().sel.groups.length } : null,
       sonHata: window.__sonHata };
   };
+  // TANILAMA: ekrandan bağımsız tarama. Hidrolik ve Arazi'yi sırayla açar, ölçer, Shift Yönetimi'ni açıp İptal ile kapatır,
+  // önceki ekrana döner. Projeyi değiştirmez (Uygula çağrılmaz); yalnız ekran koordinatı ve CSS değerleri raporlanır.
+  window.IrriTani.tara = async () => {
+    const bek = ms => new Promise(r => setTimeout(r, ms));
+    const olc = q => { const e = typeof q === 'string' ? document.querySelector(q) : q; if (!e) return 'yok'; const b = e.getBoundingClientRect(), cs = getComputedStyle(e);
+      const x = b.left + b.width / 2, y = b.top + b.height / 2, icinde = b.width > 0 && b.height > 0 && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight, ust = icinde ? document.elementFromPoint(x, y) : null;
+      return { kutu: [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)], display: cs.display, visibility: cs.visibility, opacity: cs.opacity, z: cs.zIndex, position: cs.position, pointerEvents: cs.pointerEvents, devreDisi: !!e.disabled,
+        tamamenEkranda: b.top >= 0 && b.left >= 0 && b.bottom <= innerHeight && b.right <= innerWidth, merkezdekiOge: !icinde ? 'ekran dışında' : ust === e || (ust && e.contains(ust)) ? 'kendisi' : 'ÖRTÜLÜ: ' + tOz(ust) }; };
+    const sonuc = { ekran: [innerWidth, innerHeight, devicePixelRatio], baslangic: (document.querySelector('.view.on') || {}).id, adimlar: {} }, A = sonuc.adimlar;
+    const onceki = (sonuc.baslangic || 'v-ayarlar').slice(2), oncekiMod = mapMode;
+    const r = lastRes && lastRes.ok ? lastRes : overlayRes && overlayRes.ok ? overlayRes : null;
+    sonuc.hesap = r ? { shift: r.sel.groups.length, elle: !!r.sel.manual, plan: r.layout ? r.layout.mode : '-' } : 'YOK';
+    if (!cur) { sonuc.hata = 'proje açık değil'; return sonuc; }
+    try {
+      show('hidrolik'); await bek(900);
+      const tasan = [...document.querySelectorAll('#v-hidrolik *')].filter(e => e.getBoundingClientRect().width > innerWidth + 1).length;
+      A.hidrolik = { tutamak: olc('#ssTut'), tutamakKosulu: { hesap: !!ssSonuc(), bodySinifi: document.body.className }, shiftYonetimiDugmesi: olc('#bShiftYon'), yatayTasanOge: tasan };
+      const sy = $('#bShiftYon');
+      if (sy) { shiftYonetimiAc(0); await bek(500); for (let i = 0; i < 60 && $('#smPanel') && $('#smPanel').getAttribute('aria-busy') === 'true'; i++) await bek(250);
+        const g = document.querySelector('#smPanel .sm-body');
+        A.shiftYonetimi = { panel: olc('#smPanel'), baslangicKaydirma: g ? g.scrollTop : 'yok', kaydirmaYuksekligi: g ? [g.scrollHeight, g.clientHeight] : null, eksi: olc('#smNsEksi'), arti: olc('#smNsArti'), sayi: $('#smNsN') ? +$('#smNsN').textContent : 'yok',
+          nsAdaylari: sm && sm.taniNs, uygunluk: olc('#smUygunluk h3'), ozetCubugu: olc('#smOzetBar'), altUniteEkle: olc('#smPanel select[data-smekle]'), altUniteSecenek: $('#smPanel select[data-smekle]') ? $('#smPanel select[data-smekle]').options.length - 1 : 'yok', karttaGit: olc('#smKartaGit'), uygula: olc('#smUygula') };
+        if (sm) smIptal(); await bek(300); }
+      if ($('#ssTut')) { $('#ssTut').click(); await bek(700); A.shiftlerPaneli = { panel: olc('#ssSheet'), cipler: [...document.querySelectorAll('[data-ssj]')].slice(0, 6).map(olc), duzenle: olc('#ssDuzenle') }; if (ss && ss.acik) ssKapat(); await bek(300); }
+      show('arazi'); await bek(1400);
+      A.arazi = { tutamak: olc('#ssTut'), tutamakKosulu: { plan: r && r.layout ? r.layout.mode : '-', vurgu: !!vurgu }, haritaAltCubugu: olc('#v-arazi .mapbar'), shiftModuDugmesi: olc('#mModes [data-m=shift]') };
+      setMode('shift'); await bek(500);
+      A.araziShift = { shiftCubugu: olc('#mShiftBar'), shiftYonetimiDugmesi: olc('#mSY'), tutamak: olc('#ssTut') };
+      setMode(oncekiMod || varsayilanMod()); await bek(200);
+    } catch (e) { sonuc.hata = String(e && e.message || e); }
+    show(onceki); await bek(300);
+    sonuc.sonOlaylar = window.__taniOlay.slice(-25);
+    return sonuc;
+  };
   function renderSettings() {
     const s = settings, inp = (k, v, lab) => `<label>${lab}<input data-k="${k}" type="text" inputmode="decimal" value="${String(v ?? '').replace('.', ',')}">${s.edited[k] ? '' : `<span class="muted small">${t('örnek değer')}</span>`}</label>`;
     const cnt = (a, f) => t('{n} kayıt ({m} doğrulanmış)', { n: a.length, m: a.filter(f || (x => x.dogrulandi)).length });
@@ -1559,11 +1602,12 @@
         <div class="row wrap"><label class="btn sm" style="flex-direction:row">${t('Katalog yükle (JSON)')}<input type="file" id="catFile" accept=".json,application/json" style="display:none"></label>
         <button class="btn sm" id="catTpl">${t('Şablon indir')}</button>${userCat ? `<button class="btn sm danger" id="catDel">${t('Kullanıcı kataloğunu kaldır')}</button>` : ''}</div></div>
       ${kaynakKarti()}
-      <div class="card small" id="taniKart"><h3>Tanılama (geçici)</h3><pre id="taniCikti" style="white-space:pre-wrap;font-size:11px;user-select:text">${esc(JSON.stringify(window.IrriTani(), null, 1))}</pre><button type="button" class="btn sm" id="taniYenile">Yenile</button> <button type="button" class="btn sm" id="taniKopya">Kopyala</button></div>
+      <div class="card small" id="taniKart"><h3>Tanılama (geçici)</h3><pre id="taniCikti" style="white-space:pre-wrap;font-size:11px;user-select:text">${esc(JSON.stringify(window.IrriTani(), null, 1))}</pre><button type="button" class="btn sm" id="taniYenile">Yenile</button> <button type="button" class="btn sm" id="taniKopya">Kopyala</button> <button type="button" class="btn sm primary" id="taniTara">Hidrolik + Arazi taraması</button><p class="muted">Tarama ekranları sırayla açar, Shift Yönetimi'ni açıp İptal ile kapatır; proje değişmez. Dokunuş kaydı için önce Hidrolik'te Shift Yönetimi'ni açıp − / + ve “alt ünite ekle”ye dokunun, sonra buraya dönüp Yenile'ye basın.</p></div>
       <div class="card small muted"><b>IrriGrow v${esc(window.IRRI_SURUM || "")}</b><br>${t('Hesaplar: FAO-56, Keller & Bliesner, Watters-Keller, Hazen-Williams. Sonuçlar ön projelendirme içindir; uygulama projesi bir sulama mühendisince kontrol edilmelidir.')}</div>`;
     bindLang('langSet');
     $('#themeSet').onchange = ev => { setTheme(ev.target.value); };
-    const ty = $('#taniYenile'); if (ty) ty.onclick = () => { $('#taniCikti').textContent = JSON.stringify(window.IrriTani(), null, 1); };
+    const ty = $('#taniYenile'); if (ty) ty.onclick = () => { $('#taniCikti').textContent = JSON.stringify(Object.assign(window.IrriTani(), { sonOlaylar: window.__taniOlay.slice(-25) }), null, 1); };
+    const tt = $('#taniTara'); if (tt) tt.onclick = async () => { tt.disabled = true; const o = await window.IrriTani.tara(); const c = $('#taniCikti'); if (c) c.textContent = JSON.stringify(Object.assign(window.IrriTani(), { tarama: o }), null, 1); else toast('Tarama bitti; Ayarlar ekranında Yenile'); };
     const tk = $('#taniKopya'); if (tk) tk.onclick = async () => { try { await navigator.clipboard.writeText($('#taniCikti').textContent); toast('Kopyalandı'); } catch (e) { const r = document.createRange(); r.selectNodeContents($('#taniCikti')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Metni seçip kopyalayın'); } };
     $('#settings').querySelectorAll('input[data-k]').forEach(el => el.onchange = () => {
       const [a, b] = el.dataset.k.split('.'); const v = V.parseNum(el.value);
