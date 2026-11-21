@@ -962,8 +962,12 @@
     };
     // n0: açılıştaki otomatik düzenin shift sayısı (elle düzende null). Kayıtlı Ns boşsa bu, motorun o anki önerisidir.
     sm = { taslak, ilk: JSON.parse(JSON.stringify(taslak)), r0, o0: smOzet(r0), r1: null, o1: null, sec: j != null && j < n ? j : 0, acik: false, n0: r0.sel.manual ? null : n };
+    // 1.0.5 düzeltmesi (gerçek WebView'da bulundu): panel her zaman EN ÜSTTEN açılır. Önceden seçili shift kartına
+    // kaydırılıyordu; shift sayısı − / +, uygunluk ve önce/sonra ekranın yukarısında kalıp görünmüyordu.
+    // Seçili shift yalnız vurgulanır; üstteki "Seçili shift kartına git" ile karta inilir.
+    sm.kartaGit = j != null;
     smCiz();
-    if (j != null) { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); }
+    const gv = document.querySelector('#smPanel .sm-body'); if (gv) gv.scrollTop = 0;
   }
   const smHidrolikAyni = () => (sm.taslak.Ns ?? null) === (sm.ilk.Ns ?? null) && JSON.stringify(sm.taslak.manual && sm.taslak.manual.assign) === JSON.stringify(sm.ilk.manual && sm.ilk.manual.assign);
   function smOnizle() {
@@ -1133,6 +1137,7 @@
           <label>${t('Hedef shift debisi')} <small>m³/h</small><input id="smHedef" inputmode="decimal" value="${T.hedef != null ? inVal(T.hedef) : ''}" placeholder="—"></label>
           ${T.manual ? `<button type="button" class="btn sm" id="smOto">${t('Otomatik düzene dön')}</button>` : ''}
         </div>
+        ${sm.kartaGit ? `<button type="button" class="btn sm" id="smKartaGit" style="margin:4px 0 8px">${t('Seçili shift kartına git')} (Shift ${sm.sec + 1}) ↓</button>` : ''}
         <p class="muted small">${t('Kaynak debisi')} ${fmt(Qs, 1)} m³/h · ${t('Toplam debi')} ${fmt(o.Qtoplam, 1)} m³/h · ${t('Bir tur süresi')} ${fmt(o.tur, 1)} h${o.feasible ? '' : ' ✗'}. ${t('Hedef debi yalnız bilgidir; hesabı değiştirmez.')}</p>
         ${hata ? `<div class="note err"><b>${t('Kesin sonuç verilemiyor')}</b><ul>${hata.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : ''}
         <section class="sm-sec" id="smUygunluk" data-genel="${uyg.genel}"><h3>${t('Uygunluk sınırları')}${sm.r1 ? ` <small class="muted">(${t('taslak')})</small>` : ''}</h3>
@@ -1162,6 +1167,7 @@
     function nsSecim(k) { T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
     $('#smNs').onchange = e => { const v = e.target.value; if (v === 'elle') return; nsSecim(Number(v)); };
     $('#smHedef').onchange = e => { const x = SY.hedefOku(e.target.value); if (Number.isNaN(x)) { toast(t('Hedef debi pozitif bir sayı olmalı')); e.target.value = T.hedef != null ? inVal(T.hedef) : ''; return; } if (x === T.hedef) return; T.hedef = x; setTimeout(() => { if (sm) smCiz(); }, 0); };   // odak kaybında (yeniden çizim sırasında) iç içe çizim olmasın
+    const kg = $('#smKartaGit'); if (kg) kg.onclick = () => { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); };
     const ob = $('#smOto'); if (ob) ob.onclick = () => { T.manual = null; T.sira = null; yeniden(); };
     el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { T.sira = SY.siraTasi(sira, +b.dataset.up, -1); smCiz(); });
     el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { T.sira = SY.siraTasi(sira, +b.dataset.dn, 1); smCiz(); });
