@@ -541,6 +541,7 @@ html.desk .ss-grab{display:none}
 .sm-ns{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 .sm-ns .btn{min-width:48px;min-height:48px;font-size:22px;font-weight:700;padding:0}
 .sm-ns-n{min-width:32px;text-align:center;font-size:20px;font-weight:700}
+.sm-ns-neden{margin:6px 0 0;padding-left:18px;flex-basis:100%}
 .sm-ekle{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13px}
 .sm-bf h4{margin:8px 0 4px;font-size:13.5px}
 .sm-bf ul{margin:0;padding-left:18px;font-size:13.5px}

@@ -14,7 +14,10 @@ const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
 let fails = 0, passes = 0;
 const check = (c, msg) => { if (c) passes++; else { fails++; console.log('✗ ' + msg); } };
 const lat = 37.0, lng = 35.0;
-const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [[lat, lng], [lat, lng + 0.0075], [lat + 0.0021, lng + 0.0078], [lat + 0.0027, lng + 0.0012], [lat + 0.0012, lng - 0.0006]], src: [lat - 0.0005, lng - 0.0005], station: null, route: [], inp: { crop: 'domates', geom: 'parsel', Q: 120, srcType: 'kuyu', depth: 40, region: 'akdeniz', hours: 20 } }];
+const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [[lat, lng], [lat, lng + 0.0075], [lat + 0.0021, lng + 0.0078], [lat + 0.0027, lng + 0.0012], [lat + 0.0012, lng - 0.0006]], src: [lat - 0.0005, lng - 0.0005], station: null, route: [], inp: { crop: 'domates', geom: 'parsel', Q: 120, srcType: 'kuyu', depth: 40, region: 'akdeniz', hours: 20 } },
+  // G5: küçük projeler — motor daha az shift üretmez (kaynak debisi) veya tek alt ünite vardır
+  { id: 'p3', name: 'Test 3 shift', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [], src: null, inp: { crop: 'domates', area_da: 20, L: 200, W: 100, Q: 40, srcType: 'kuyu', depth: 30, region: 'akdeniz', hours: 20 } },
+  { id: 'p1', name: 'Test tek shift', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [], src: null, inp: { crop: 'domates', area_da: 4, L: 80, W: 50, Q: 60, srcType: 'kuyu', depth: 20, region: 'akdeniz', hours: 20 } }];
 
 (async () => {
   const srv = http.createServer((q, r) => { const u = decodeURIComponent(q.url.split('?')[0]); const f = path.join(ROOT, u === '/' ? 'index.html' : u); fs.readFile(f, (e, d) => { if (e) { r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' }); r.end(d); }); }).listen(0);
@@ -74,6 +77,21 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
     await git('arazi'); await pg.evaluate(() => document.querySelector('#mModes [data-m=shift]').click()); await pg.waitForTimeout(500);
     await pg.evaluate(() => document.querySelector('#mShiftBar [data-b="2"]').click()); await pg.waitForTimeout(300);
     await pg.evaluate(() => document.querySelector('#mSY').click()); await ustBolum('Arazi');
+    // G5 Pasif − / + ve boş "alt ünite ekle" listesinin nedeni ekranda yazılı olmalı (cihaz testi: soluk düğme "çalışmıyor" gibi görünüyordu)
+    for (const [pid, beklenen] of [['p3', { eksi: true, arti: false, neden: 1, ekleYok: false }], ['p1', { eksi: true, arti: true, neden: 2, ekleYok: true }]]) {
+      await git('projeler'); await pg.evaluate(i => document.querySelector(`[data-open="${i}"]`).click(), pid); await pg.waitForTimeout(300); await git('hidrolik');
+      await pg.evaluate(() => document.querySelector('#bShiftYon').click()); await pg.waitForSelector('#smPanel'); await pg.waitForTimeout(500);
+      const d = await pg.evaluate(() => ({ eksi: document.querySelector('#smNsEksi').disabled, arti: document.querySelector('#smNsArti').disabled, neden: [...document.querySelectorAll('#smNsNeden li')].map(x => x.textContent), ekleYok: !!document.querySelector('[data-smekle-yok]'), ekle: !!document.querySelector('select[data-smekle]') }));
+      check(d.eksi === beklenen.eksi && d.arti === beklenen.arti, `${ad} G5 ${pid}: − / + durumu (${JSON.stringify(d)})`);
+      check(d.neden.length === beklenen.neden, `${ad} G5 ${pid}: pasif düğme nedeni yazılı (${d.neden.join(' | ')})`);
+      if (pid === 'p3') check(/Daha az shift mümkün değil/.test(d.neden[0] || ''), `${ad} G5 p3: − nedeni kaynak debisi`);
+      if (pid === 'p1') check(d.neden.some(x => /alt ünite sayısı 1/.test(x)), `${ad} G5 p1: + nedeni alt ünite sayısı`);
+      check(d.neden.length === 0 || ekranda(await kutu('#smNsNeden')), `${ad} G5 ${pid}: neden metni kaydırmadan görünür`);
+      check(d.ekleYok === beklenen.ekleYok && d.ekle === !beklenen.ekleYok, `${ad} G5 ${pid}: boş "alt ünite ekle" listesi yerine neden`);
+      const n0 = await pg.textContent('#smNsN'); const e = await kutu('#smNsEksi'); await pg.touchscreen.tap(e.x, e.y); await pg.waitForTimeout(400);
+      check(await pg.textContent('#smNsN') === n0, `${ad} G5 ${pid}: pasif − dokunuşu sayıyı değiştirmez`);
+      await pg.evaluate(() => document.querySelector('#smIptal').click()); await pg.waitForTimeout(300);
+    }
     check(!errs.length, `${ad} sayfa hatası: ${errs.join(' | ')}`);
     await ctx.close();
   }
