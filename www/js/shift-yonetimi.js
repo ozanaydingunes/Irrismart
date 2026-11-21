@@ -182,7 +182,7 @@
 
   // Taslak ile mevcut kayıt aynı mı (Uygula düğmesi için)
   function esit(a, b) {
-    const n = x => JSON.stringify({ Ns: x.Ns ?? null, manual: x.manual ? x.manual.assign : null, sira: x.sira || null, hedef: x.hedef ?? null });
+    const n = x => JSON.stringify({ Ns: x.Ns ?? null, manual: x.manual ? x.manual.assign : null, sira: x.sira || null, hedef: x.hedef ?? null, hedefler: x.hedefler && Object.keys(x.hedefler).length ? x.hedefler : null });
     return n(a) === n(b);
   }
 
@@ -205,7 +205,15 @@
     return { n: u.nLat, enUzun: L.length ? Math.max(...L.map(l => l.len)) : null };
   }
 
-  const api = Object.freeze({ bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // 1.0.4: shift başına hedef debi (yalnız bilgi). Kayıt { Ns, deger: { "0": 70, … } }; yalnız aynı shift sayısında geçerli.
+  function hedefler(kayit, n) {
+    if (!kayit || typeof kayit !== 'object' || kayit.Ns !== n || !kayit.deger || typeof kayit.deger !== 'object') return null;
+    const d = {}; for (const [k, v] of Object.entries(kayit.deger)) { const j = Number(k); if (Number.isInteger(j) && j >= 0 && j < n && fin(v) && v > 0) d[j] = v; }
+    return Object.keys(d).length ? d : null;
+  }
+  const hedefOf = (hs, genel, j) => hs && fin(hs[j]) ? hs[j] : fin(genel) && genel > 0 ? genel : null;
+
+  const api = Object.freeze({ hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -70,6 +70,13 @@
     const sektorDec = sira ? [0, 0, 0, 2, 2] : [0, 0, 2, 2];
     const sektorPdf = sira ? { w: [24, 22, 26, 34, 34], num: [1, 2, 3, 4] } : { w: [30, 30, 40, 40], num: [1, 2, 3] };
     const sektorXls = sira ? [12, 10, 12, 14, 14] : [10, 12, 14, 14];
+    // 1.0.4: shift başına hedef debi (bilgi) girilmişse tabloya son sütun olarak eklenir; yoksa tablo değişmez
+    const HS = SY ? SY.hedefler(p && p.shiftHedefler, sel.groups.length) : null;
+    if (HS) {
+      sektor[0].push(T('Hedef debi (bilgi, m³/h)'));
+      sektor.slice(1).forEach(row => { const j = row[sira ? 1 : 0] - 1; row.push(SY.hedefOf(HS, p.shiftHedef, j) ?? ''); });
+      sektorDec.push(2); sektorPdf.w.push(30); sektorPdf.num.push(sektor[0].length - 1); sektorXls.push(16);
+    }
     // Hedef shift debisi yalnız bilgidir (hesabı değiştirmez); yalnız girilmişse rapora yazılır
     if (p && Number.isFinite(p.shiftHedef) && p.shiftHedef > 0) ozet.push([T('Hedef shift debisi (bilgi; hesabı değiştirmez)'), p.shiftHedef, 'm³/h', 2]);
     const altSek = [[T('Shift sayısı'), T('En büyük shift (m³/h)'), T('Tur süresi (h)'), T('Süreye sığar'), T('Ana hat'), T('Maks. H (m)'), T('Motor (kW)'), T('Enerji (kWh/yıl)'), T('Karşılaştırma (TL/yıl)'), T('Durum')]]

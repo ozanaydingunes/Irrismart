@@ -26,6 +26,9 @@ const PROJ = [
   { id: 'pb', name: 'Büyük parsel', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly, src: [lat - 0.0005, lng - 0.0005], station: null, route: [], inp: Object.assign({}, temel) },
   { id: 'pn', name: 'Yeni çizim', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [], src: null, station: null, route: [], inp: Object.assign({}, temel) },
   { id: 'ps', name: 'S01', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [], src: null, inp: { crop: 'domates', area_da: 50, L: 400, W: 125, Q: 45, srcType: 'kuyu', depth: 40, region: 'akdeniz', slopeLong: 0, slopeShort: 0, hours: 20 } },
+  // Cihaz testi hatası: kayıtlı Ns (9) motorun otomatik aday aralığının (18–25) dışında; − ile 9'a dönünce 18'e atlıyordu
+  { id: 'p9', name: '225 da · 9 shift', created: 1, updated: 2, schema: 2, rev: 0, revs: [], poly: [[36.9, 30.7], [36.9, 30.7105], [36.9021, 30.7112], [36.9035, 30.706], [36.903, 30.7005]], src: [36.8996, 30.6996], station: [36.8998, 30.6998], route: [[36.8999, 30.7]],
+    inp: { crop: 'domates', geom: 'parsel', Q: 90, srcType: 'kuyu', depth: 40, region: 'akdeniz', soil: 'tinli', hours: 20, Ns: 9 } },
   ...eski,
 ];
 const EKRAN = [
@@ -183,6 +186,47 @@ const EKRAN = [
         await dokun('#mModes [data-m=gor]'); await pg.waitForTimeout(300);
       }
     }
+
+    // ---------- D10 Cihaz testi hatası: − / + başlangıç sayısına geri döner (9 → 18 → 9; 18'e atlamaz) ----------
+    await ac('p9', 'hidrolik'); await dokun('#bShiftYon'); await pg.waitForSelector('#smPanel'); await pg.waitForTimeout(300);
+    const k9 = await tasarim('p9');
+    check(await pg.textContent('#smNsN') === '9', `${ad} D10 başlangıç 9 shift`);
+    await dokun('#smNsArti'); await bosta(); await pg.waitForTimeout(200);
+    const arti = await pg.textContent('#smNsN');
+    await dokun('#smNsEksi'); await bosta(); await pg.waitForTimeout(200);
+    const kartSay = (await pg.$$('#smPanel .sm-shift')).length;
+    check(+arti > 9 && await pg.textContent('#smNsN') === '9' && kartSay === 9 && await pg.isDisabled('#smUygula'), `${ad} D10 + (${arti}) sonra − ile 9'a dönülür; taslak başlangıçla aynı (${await pg.textContent('#smNsN')})`);
+    const op9 = await pg.$$eval('#smPanel select[data-smekle] option', o => o.map(x => x.value).filter(Boolean));
+    await pg.selectOption('#smPanel select[data-smekle]', { value: op9[0] }); await bosta(); await pg.waitForTimeout(200);
+    const n9 = +(await pg.textContent('#smNsN'));
+    check(n9 === 9 || n9 === 8, `${ad} D10 alt ünite ekleme 9 shift'lik düzen üzerinden (${n9})`);
+    check(await tasarim('p9') === k9, `${ad} D10 kayıt değişmedi`);
+    await dokun('#smIptal'); await pg.waitForTimeout(300);
+
+    // ---------- D11 Arazi'den doğrudan erişim ----------
+    await ac('pb', 'arazi'); await pg.waitForTimeout(800);
+    check(await pg.isVisible('#ssTut'), `${ad} D11 Arazi'de Shiftler tutamağı görünür`);
+    const tutAlt = await pg.$eval('#ssTut', e => e.getBoundingClientRect().bottom), barUst = await pg.$eval('#v-arazi .mapbar', e => e.getBoundingClientRect().top);
+    check(tutAlt <= barUst + 1, `${ad} D11 tutamak harita alt çubuğunu örtmez (${tutAlt} / ${barUst})`);
+    await dokun('#mModes [data-m=shift]'); await pg.waitForTimeout(500);
+    await dokun('#mShiftBar [data-b="2"]'); await pg.waitForTimeout(300);
+    await dokun('#ssTut'); await pg.waitForSelector('#ssSheet'); await pg.waitForTimeout(300);
+    check(await pg.$eval('.ss-chip.on', e => e.dataset.ssj) === '2', `${ad} D11 Shift modunda tutamak seçili fırçanın shift'ini (3) açar`);
+    await dokun('#ssX'); await pg.waitForTimeout(300);
+    check(await pg.isVisible('#mSY'), `${ad} D11 Shift çubuğunda Shift Yönetimi düğmesi`);
+    await dokun('#mSY'); await pg.waitForSelector('#smPanel'); await pg.waitForTimeout(300);
+    check(await pg.$eval('#smPanel .sm-shift.on', e => e.dataset.j) === '2', `${ad} D11 Shift Yönetimi aynı shift seçili açılır`);
+
+    // ---------- D12 Shift başına hedef debi: taslak → Uygula; Geri Al ----------
+    await pg.fill('#smPanel input[data-smhedefj="2"]', '55,5'); await pg.dispatchEvent('#smPanel input[data-smhedefj="2"]', 'change'); await pg.waitForTimeout(300);
+    check(/55,50/.test(await pg.$eval('#smPanel .sm-shift.on', e => e.textContent)) && !(await pg.isDisabled('#smUygula')), `${ad} D12 shift 3 hedefi taslakta gösterilir`);
+    check(!(await P('pb')).shiftHedefler, `${ad} D12 taslak kaydı değiştirmez`);
+    await dokun('#smUygula'); await pg.waitForTimeout(1200);
+    const ph = await P('pb');
+    check(ph.shiftHedefler && ph.shiftHedefler.deger['2'] === 55.5, `${ad} D12 Uygula shift hedefini kaydeder (${JSON.stringify(ph.shiftHedefler)})`);
+    check(JSON.stringify(ph.inp) === JSON.stringify(PROJ[0].inp) && !ph.shiftEdit, `${ad} D12 hedef hesap girdisini değiştirmez`);
+    await git('hidrolik'); await dokun('#bShiftGeri'); await pg.waitForTimeout(1000);
+    check(!(await P('pb')).shiftHedefler, `${ad} D12 Geri Al hedefi kaldırır`);
 
     // ---------- D9 Eski JSON projesi ----------
     const eskiId = eski[0].id;

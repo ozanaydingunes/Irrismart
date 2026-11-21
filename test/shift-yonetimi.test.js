@@ -222,3 +222,18 @@ test('SY-14 Alan: gerçek geometri ve hesap alan payı ayrı; seçili shift ve g
   // Hiçbir alan alanı motor girdisine dönüşmez: tasarım aynı
   ok(JSON.stringify(E.design(s18.inp, null, s18.opt).sel.Qj) === JSON.stringify(r.sel.Qj), 'motor sonucu aynı');
 });
+
+test('SY-15 Shift başına hedef debi: yalnız aynı shift sayısında geçerli; raporda bilgi sütunu; hesaba girmez', () => {
+  ok(SY.hedefler(null, 3) === null && SY.hedefler({ Ns: 4, deger: { 0: 50 } }, 3) === null, 'geçersiz kayıt');
+  const h = SY.hedefler({ Ns: 3, deger: { 0: 50, 2: 60, 5: 70, 1: -3 } }, 3);
+  ok(JSON.stringify(h) === JSON.stringify({ 0: 50, 2: 60 }), 'geçerli anahtarlar: ' + JSON.stringify(h));
+  ok(SY.hedefOf(h, 40, 0) === 50 && SY.hedefOf(h, 40, 1) === 40 && SY.hedefOf(null, null, 1) === null, 'shift hedefi yoksa genel hedef');
+  ok(SY.esit({ hedefler: { 0: 50 } }, { hedefler: null }) === false && SY.esit({ hedefler: {} }, { hedefler: null }) === true, 'taslak karşılaştırması');
+  const r = E.design(inp), n = r.sel.groups.length;
+  const p = proj({ shiftHedefler: { Ns: n, deger: { 0: 33.5 } }, shiftHedef: 40 }), T0 = RD.build(proj(), r), T1 = RD.build(p, r);
+  ok(T0.sektor[0].length === 4 && T1.sektor[0].length === 5 && T1.sektor[1][4] === 33.5 && T1.sektor[2][4] === 40 && T1.sektorDec.length === 5 && T1.sektorPdf.w.length === 5, 'rapor sütunu (shift 1: 33,5; diğerleri genel 40)');
+  ok(JSON.stringify(T0.hidrolik) === JSON.stringify(T1.hidrolik) && JSON.stringify(E.design(p.inp).sel.Qj) === JSON.stringify(r.sel.Qj), 'hesap aynı');
+  // Revizyon taşır
+  const q = proj({ id: 'h', rev: 0, revs: [], shiftHedefler: { Ns: 3, deger: { 0: 10 } } }); St.snapshot(q, 'a'); const r1 = q.rev; q.shiftHedefler = { Ns: 3, deger: { 0: 20 } }; St.snapshot(q, 'b');
+  ok(St.restoreRev(q, r1) && q.shiftHedefler.deger[0] === 10, 'revizyon');
+});

@@ -1438,6 +1438,8 @@
 ["Seçili shift alanı (geometri)", "Selected shift area (geometry)", "Fläche der gewählten Schicht (Geometrie)", "Área del turno seleccionado (geometría)", "Площадь выбранной смены (геометрия)", "Area del turno selezionato (geometria)", "שטח המשמרת הנבחרת (גאומטריה)", "所选轮灌组面积（几何）"],
 ["Seçili shift hesaplanan debisi", "Selected shift calculated flow", "Berechneter Durchfluss der gewählten Schicht", "Caudal calculado del turno seleccionado", "Расчётный расход выбранной смены", "Portata calcolata del turno selezionato", "ספיקה מחושבת של המשמרת הנבחרת", "所选轮灌组计算流量"],
 ["Günlük su ihtiyacı", "Daily water requirement", "Täglicher Wasserbedarf", "Necesidad diaria de agua", "Суточная потребность в воде", "Fabbisogno idrico giornaliero", "צריכת מים יומית", "每日需水量"],
+["Bu shift’in hedef debisi", "Target flow of this shift", "Zieldurchfluss dieser Schicht", "Caudal objetivo de este turno", "Целевой расход этой смены", "Portata obiettivo di questo turno", "ספיקת היעד של משמרת זו", "此轮灌组目标流量"],
+["Hedef debi (bilgi, m³/h)", "Target flow (information, m³/h)", "Zieldurchfluss (Information, m³/h)", "Caudal objetivo (informativo, m³/h)", "Целевой расход (справочно, м³/ч)", "Portata obiettivo (informativa, m³/h)", "ספיקת יעד (מידע, מ״ק/שעה)", "目标流量（仅供参考，m³/h）"],
   ];
   const D = {};
   for (const row of R) { const e = {}; L.forEach((l, i) => { if (row[i + 1]) e[l] = row[i + 1]; }); D[row[0]] = e; }
