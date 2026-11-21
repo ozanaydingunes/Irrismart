@@ -1,0 +1,61 @@
+name: Android tanılama (geçici)
+# Yalnız tanılama dalında çalışır; main'e birleştirilmeyecek. APK'yı gerçek Android WebView'da (emülatör) çalıştırır.
+on:
+  push:
+    branches: [claude/android-tani]
+  workflow_dispatch:
+
+jobs:
+  tani:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 34]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: APK derlemesi
+        env:
+          APK_OUT: ${{ github.workspace }}/tani.apk
+        run: bash ci/build-apk.sh
+      - name: APK içindeki www ile depo karşılaştırması
+        run: |
+          mkdir -p apkx && cd apkx && unzip -q ../tani.apk 'assets/public/*' && cd ..
+          echo "[TANI] commit ${GITHUB_SHA}"
+          fark=0; for f in $(cd www && find . -type f | sort); do a=$(sha256sum "www/$f" | cut -c1-64); b=$(sha256sum "apkx/assets/public/$f" 2>/dev/null | cut -c1-64); if [ "$a" != "$b" ]; then echo "[TANI] FARK $f"; fark=$((fark+1)); fi; done
+          echo "[TANI] www dosyası: $(cd www && find . -type f | wc -l), APK'da farklı: $fark"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/aapt" dump badging tani.apk | head -2 | sed 's/^/[TANI] /'
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Emülatörde çalıştır
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install -r tani.apk
+            TANI_OUT=tani-${{ matrix.api }} node ci/android-tani.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-tani-${{ matrix.api }}
+          path: tani-${{ matrix.api }}
+          if-no-files-found: ignore
