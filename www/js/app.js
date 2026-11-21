@@ -48,17 +48,20 @@
     if (ss && ss.acik && v !== 'arazi') ssKapat();
     // Taslak, verinin değişebileceği ekranlara geçilince kapanır (eski sonuçla Uygula yapılamaz)
     if (sm && ['projeler', 'veri', 'ayarlar'].includes(v)) { smKapat(); toast(t('Shift Yönetimi taslağı kapatıldı (uygulanmadı)')); }
-    if (v !== 'projeler' && v !== 'ayarlar' && !cur) { toast(t('Önce bir proje açın veya oluşturun')); v = 'projeler'; }
+    // Firma katalogları projeden bağımsızdır (proje açmadan da kullanılır)
+    if (v !== 'projeler' && v !== 'ayarlar' && v !== 'katalog' && !cur) { toast(t('Önce bir proje açın veya oluşturun')); v = 'projeler'; }
     if (v !== 'arazi') document.body.classList.remove('mapfull');
     document.querySelectorAll('.view').forEach(e => e.classList.toggle('on', e.id === 'v-' + v));
-    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
-    safely(() => ({ projeler: renderProjects, arazi: openMap, veri: renderForm, sonuc: renderResult, malzeme: renderBom, ayarlar: renderSettings, hidrolik: renderHydro, teknik: renderTech })[v](), t('Ekran'));
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === (v === 'katalog' ? 'malzeme' : v)));
+    safely(() => ({ projeler: renderProjects, arazi: openMap, veri: renderForm, sonuc: renderResult, malzeme: renderBom, ayarlar: renderSettings, hidrolik: renderHydro, teknik: renderTech, katalog: () => window.IrriKatalogUI.render() })[v](), t('Ekran'));
     if (window.IrriDesk) window.IrriDesk.refresh();
     ssTutamak();
   }
   document.querySelectorAll('nav.tabs button[data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
   $('#btnBack').onclick = () => show('projeler');
   $('#btnSettings').onclick = () => show('ayarlar');
+  $('#btnKatalog').onclick = () => { if (window.IrriKatalogUI) window.IrriKatalogUI.sifirla(); show('katalog'); };
+  document.querySelectorAll('#malzSeg [data-malz]').forEach(b => b.onclick = () => { if (b.dataset.malz === 'katalog') show('katalog'); });
 
   // ---------- Projeler ----------
   function newProject() {
@@ -1453,7 +1456,7 @@
   applyTheme(themeOf());
   if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeOf() === 'sistem') applyTheme('sistem'); }; if (mq.addEventListener) mq.addEventListener('change', f); }
 
-  window.IrriApp = { toast };
+  window.IrriApp = { toast, show };
   window.addEventListener('error', e => toast(t('Hata: ') + (e.message || '?')));
   window.addEventListener('unhandledrejection', e => toast(t('Hata: ') + ((e.reason && e.reason.message) || '?')));
   I.apply();

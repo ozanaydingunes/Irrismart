@@ -8,7 +8,7 @@ const DYN = ['Kuyu', 'Yüzey suyu', 'Şebeke / hidrant', 'Su kaynağı', 'Göl/k
   'Parsel', 'Ekipman', 'Etiketler', 'Shift kutuları', 'Tablolar', 'Müşteri / işletme', 'İl', 'İlçe', 'Mevki', 'Proje mühendisi', 'Proje tarihi', 'Pafta no', 'Yatay', 'Dikey', 'Renkli', 'Siyah-beyaz', 'Tek pafta', 'Çoklu pafta', 'Otomatik', 'yatay', 'dikey'];
 function keys() {
   const out = new Set();
-  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js', 'platform.js', 'desk.js', 'shift-yonetimi.js']) {
+  for (const f of ['app.js', 'report.js', 'report-data.js', 'validate.js', 'drawing.js', 'assess.js', 'assess-view.js', 'platform.js', 'desk.js', 'shift-yonetimi.js', 'katalog-ui.js']) {
     const s = fs.readFileSync(W(f), 'utf8');
     for (const m of s.matchAll(/\b(?:t|T|tr|sn)\(\s*'((?:[^'\\]|\\.)*)'/g)) out.add(m[1].replace(/\\'/g, "'"));
   }
@@ -24,6 +24,10 @@ function keys() {
   for (const m of form.matchAll(/^\s*\['([^']+)', \[/gm)) out.add(m[1]);
   const d = fs.readFileSync(W('data.js'), 'utf8');
   for (const m of d.matchAll(/ad: '([^']+)'/g)) out.add(m[1]);
+  // Firma katalogları: grup/belge türü/kaynak adları ve geri yükleme hata metinleri değişkenle çevrilir
+  const ku = fs.readFileSync(W('katalog-ui.js'), 'utf8');
+  for (const satir of ku.split('\n').filter(x => /^\s*const (GRUP|TUR|KAYNAK) = /.test(x))) for (const m of satir.matchAll(/: '([^']+)'/g)) out.add(m[1]);
+  for (const m of fs.readFileSync(W('katalog-model.js'), 'utf8').matchAll(/hata: '([^']+)'/g)) out.add(m[1]);
   // değişkenle çevrilen metinler (t(x) biçiminde, kaynakta sabit olarak yazılı)
   for (const k of DYN) out.add(k);
   return [...out].filter(k => k.trim() && !SKIP.has(k));
