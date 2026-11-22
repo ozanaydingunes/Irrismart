@@ -7,6 +7,20 @@ IrriGrow hem Android telefonda (APK) hem masaüstü bilgisayarda (web) çalış�
 2. **Teknik ürün veritabanı** (PR #41): firma ve katalog kaydı; ürün ekle / düzenle / sil; teknik değer ve performans eğrisi (katalog + sayfa zorunlu, özgün değer ve birim saklanır); kullanıcı incelemesi ve ayrı mühendislik doğrulaması (tamlık, tutarlılık, EN 12201 / EN ISO 1452 serileri, işletme koşulu, doğrulayan kişi); arama ve filtre; PDF sayfa referansı.
 3. **Akıllı ekipman seçimi** (PR #42): pompa, filtre, vana, PE/PVC boru, bağlantı elemanları; uygun / verisi eksik / uygun değil ve gerekçeleri; malzeme listesine ekleme (PDF/Excel raporunda görünür); hidroliği etkileyen seçimde taslak hesap → önce/sonra → Uygula / İptal / Geri Al.
 
+## İki seviyeli ekipman önerisi
+Malzeme → Ekipman önerileri ekranında her kategori (pompa, filtre, vana, boru, bağlantı elemanı) iki bölümden oluşur:
+
+**A. Projem İçin Gereken Teknik Özellikler** — katalog gerekmez, her hesaplanmış projede görünür. Değerler motorun hidrolik sonucundan gelir; her satırın kaynağı yazılır (hesap / proje verisi / varsayım / jenerik motor verisi). Marka veya model önermez.
+- Pompa: tasarım debisi, TDH, kritik shift, her shift'in Q–H çalışma noktası, kaynağa göre pompa tipleri, hidrolik güç, yaklaşık mil gücü aralığı (%60–75 verim varsayımı açıkça yazılır), emme koşulu; hesapta kullanılan jenerik pompa eğrisi "gerçek ürün değil" diye işaretlenir. Kuyuda dinamik su seviyesi / daldırma derinliği eksik veri olarak yazılır.
+- Filtre: işletme debisi ve aynı anda çalışan shift (1), gerekli kapasite, su kaynağı, filtrasyon aşamaları, istasyon çıkışı işletme ve kapama basıncı, PN sınıfı, bağlantı hat çapı, hesapta kullanılan filtre kaybı ve kaynağı. Su kalitesi ve damlatıcı üreticisinin filtrasyon şartı eksik veri olarak yazılır.
+- Vana: alt ünite ve shift debileri, ana hat debisi, PN sınıfı (ana hat / manifold ayrı), hat çapları, en küçük Kv (0,2 bar izin verilen kayıp varsayımıyla); açma-kapama, ana kesme, çekvalf, hava tahliye, yıkama, basınç düzenleme ve emniyet işlevleri ayrı ayrı (adetler malzeme listesinden).
+- Boru: her ana hat segmenti için uzunluk, debi, malzeme/çap/PN, gerçek iç çap, hız, sürtünme kaybı; alternatif ana hat çapları; manifold ve lateral; hesap varsayımları.
+- Bağlantı elemanı: malzeme uyumu (PVC-U ↔ PE geçiş), PN sınıfı, gerekli bağlantı elemanları. Güzergâh parsel çizilmeden yaklaşık ise adetlerin kesin olmadığı yazılır.
+
+"Teknik şartnameyi malzeme listesine ekle" ile kategori şartnamesi malzeme listesine ve PDF/Excel raporuna "Teknik şartname" satırı olarak girer; rapor metni her seferinde güncel proje hesabından üretilir.
+
+**B. Uygun Üretici ve Modeller** — doğrulanmış ürünlerle otomatik eşleştirme (uygun / verisi eksik / uygun değil, gerekçe, katalog sayfası). Eşleşme yoksa "Kayıtlı kataloglarda doğrulanmış eşleşme bulunamadı." yazılır; A bölümü yine görünür.
+
 ## Sonradan eklenen katalog ve ürünler
 Öneri motoru hiçbir üreticiye sabitlenmemiştir. Yeni firma/katalog eklenip ürünün teknik bilgileri girildiğinde ve ürün **mühendislik doğrulamasından geçtiğinde**, ürün kod değişikliği veya yeni sürüm gerekmeden önerilere otomatik dahil olur. Yalnız PDF'i yüklenmiş ya da yalnız kullanıcı incelemesinden geçmiş ürün "doğrulanmış" sayılmaz ve uygun listesine girmez.
 
@@ -29,6 +43,8 @@ Uygulamayı kaldırmak / uygulama verilerini temizlemek (Android) veya tarayıc�
 - Pompa NPSH denetimi proje verisinde emme koşulu olmadığı için uyarı olarak gösterilir; sahada denetlenmelidir.
 - Katalog borusu hesaba yalnız motorun doğrulanmış boru kütüphanesinde aynı malzeme/çap/PN/et kalınlığıyla karşılığı varsa aktarılır; yoksa yalnız malzeme listesine eklenir.
 - Bağlantı elemanları hidrolik hesaba girmez (uyumluluk denetimi ve malzeme listesi).
+- Teknik şartname satır başlıkları ve değer metinleri Türkçe üretilir; diğer arayüz dillerinde bu satırlar Türkçe görünebilir.
+- Kv gereksinimi 0,2 bar izin verilen vana kaybı, mil gücü aralığı %60–75 pompa verimi varsayımına dayanır (ekranda ve raporda yazılır).
 - Filtrasyon µm ↔ mesh dönüşümü yapılmaz; proje gereksinimi mesh ise µm verili ürün "verisi eksik" görünür.
 - 300 MB PDF Android 11'de gerçek dosya seçicisiyle denenmedi (emülatörde bellekte üretilen test dosyası okunamadı; Android 14'te geçti).
 - Masaüstü testleri Chromium ile yapıldı; Firefox ve Safari bu ortamda test edilmedi.

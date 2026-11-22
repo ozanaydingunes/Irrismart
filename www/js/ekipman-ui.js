@@ -8,13 +8,14 @@
   const f2 = (v, d = 2) => v == null || !Number.isFinite(v) ? '—' : v.toLocaleString((g.IrriI18n && g.IrriI18n.locale) || 'tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const KAT = [['pompa', 'Pompa'], ['filtre', 'Filtre'], ['vana', 'Vana'], ['boru', 'Boru'], ['baglanti', 'Bağlantı elemanı']];
   const HIDROLIK = { pompa: 1, filtre: 1, vana: 1, boru: 1 };
-  let S = { kat: 'pompa', taslak: null }, host = null, veri = null, sonuc = null;
+  let S = { kat: 'pompa', taslak: null }, host = null, veri = null, sonuc = null, sartname = null;
 
   async function render(el) {
     host = el; const A = g.IrriApp && g.IrriApp.ekipmanBaglam ? g.IrriApp.ekipmanBaglam() : null;
     if (!A || !A.cur || !A.r || !A.r.ok) { host.innerHTML = ''; return; }
     try { veri = await g.IrriKatalogDepo.urunListele(); } catch (e) { veri = { urunler: [], degerler: [], egriler: [] }; }
     sonuc = g.IrriEsles.oneriler(A.r, A.cur.inp, veri);
+    sartname = g.IrriEsles.teknikOzellikler(A.r, A.cur.inp);
     ciz(A);
   }
 
@@ -42,7 +43,25 @@
     if (!L) return '';
     const bolum = (ad, arr) => arr.length ? `<h4>${t(ad)} (${arr.length})</h4>${arr.map(x => kart(kat, x, (L.uygun.concat(L.eksik, L.uygunDegil)).indexOf(x), segId)).join('')}` : '';
     const top = L.uygun.length + L.eksik.length + L.uygunDegil.length;
-    return top ? bolum('Uygun', L.uygun) + bolum('Verisi eksik', L.eksik) + bolum('Uygun değil', L.uygunDegil) : `<p class="small muted">${t('Bu kategoride kayıtlı ürün yok. Firma katalogları → Ürünler bölümünden ekleyebilirsiniz.')}</p>`;
+    return top ? bolum('Uygun', L.uygun) + bolum('Verisi eksik', L.eksik) + bolum('Uygun değil', L.uygunDegil) : `<p class="small muted" id="ekEslesmeYok">${t('Kayıtlı kataloglarda doğrulanmış eşleşme bulunamadı.')} ${t('Firma katalogları → Ürünler bölümünden ürün ekleyip mühendislik doğrulamasından geçirdiğinizde burada otomatik değerlendirilir.')}</p>`;
+  }
+  // A bölümü: katalogdan bağımsız teknik özellikler (her zaman gösterilir)
+  const KAYNAK = { hesap: 'hesap', proje: 'proje verisi', varsayim: 'varsayım', 'motor-katalog': 'jenerik motor verisi' };
+  function deger(s) { const v = s.deger; return typeof v === 'number' ? f2(v, s.birim === 'bar' || s.birim === 'm' && v < 20 ? 2 : 1) : esc(v); }
+  function sartnameHtml(kat) {
+    const T = sartname && sartname[kat]; if (!T) return '';
+    const sat = T.satirlar.map(s => `<tr><td>${t(s.ad)}</td><td><b>${deger(s)}</b>${s.birim ? ' ' + esc(s.birim) : ''}${s.not ? `<br><span class="muted">${t(s.not)}</span>` : ''}</td><td class="muted">${t(KAYNAK[s.kaynak] || s.kaynak)}</td></tr>`).join('');
+    const tablo = (bas, rows) => `<div class="scroll"><table class="small"><tr>${bas.map(b => `<th>${t(b)}</th>`).join('')}</tr>${rows}</table></div>`;
+    let ek = '';
+    if (kat === 'vana' && T.islevler) ek = `<h5>${t('Vana işlevleri (ayrı ayrı)')}</h5>` + tablo(['İşlev', 'Kalem', 'Miktar'], T.islevler.map(([ad, L]) => L.length ? L.map((k, j) => `<tr><td>${j ? '' : t(ad)}</td><td>${esc(k.kalem)}</td><td>${k.miktar == null ? t('gerekirse') : esc(k.miktar) + ' ' + esc(k.birim)}</td></tr>`).join('') : `<tr><td>${t(ad)}</td><td class="muted">${t('bu projede gerekmiyor')}</td><td></td></tr>`).join(''));
+    if (kat === 'boru') ek = `<h5>${t('Ana hat segmentleri')}</h5>` + tablo(['Segment', 'L (m)', 'Q (m³/h)', 'Boru', 'İç çap (mm)', 'v (m/s)', 'hf (m)'], T.segmentler.map(s => `<tr><td>${esc(s.id)}</td><td>${f2(s.L, 0)}</td><td>${f2(s.Qmax, 1)}</td><td>${esc(s.malzeme)} Ø${s.od} PN${s.pn}${s.sdr ? ' SDR' + s.sdr : ''}</td><td>${f2(s.ic, 1)}</td><td>${f2(s.v)}</td><td>${f2(s.hf)}</td></tr>`).join(''))
+      + `<h5>${t('Alternatif ana hat çapları (motor karşılaştırması)')}</h5>` + tablo(['Ana hat', 'v (m/s)', 'hf (m)', 'Basma yüksekliği (m)', 'Yıllık enerji (kWh)', ''], T.alternatifler.map(a => `<tr><td>Ø${a.od} PN${a.pn}</td><td>${f2(a.v)}</td><td>${f2(a.hf)}</td><td>${f2(a.Hmax, 1)}</td><td>${f2(a.kWh, 0)}</td><td class="muted">${esc(a.etiket)}</td></tr>`).join(''));
+    if (kat === 'baglanti' && T.kalemler) ek = `<h5>${t('Gerekli bağlantı elemanları')}</h5>` + tablo(['Kalem', 'Miktar'], T.kalemler.map(k => `<tr><td>${esc(k.kalem)}</td><td>${esc(k.miktar)} ${esc(k.birim)}${k.miktar != null ? ' ' + t('(yaklaşık)') : ''}</td></tr>`).join(''));
+    const liste2 = (bas, L, cls) => L.length ? `<div class="note small ${cls}"><b>${t(bas)}</b><ul>${L.map(x => `<li>${t(x)}</li>`).join('')}</ul></div>` : '';
+    return `<div class="ek-sartname" id="ekSartname" data-kat="${kat}"><h4 class="ek-bolum">${t('A. Projem İçin Gereken Teknik Özellikler')}</h4>
+      <p class="small muted">${t('Proje hidrolik hesabından üretilir; üretici kataloğu gerekmez. Marka veya model önermez.')}</p>
+      ${tablo(['Özellik', 'Değer', 'Kaynak'], sat)}${ek}${liste2('Varsayımlar', T.varsayimlar, '')}${liste2('Eksik veriler', T.eksikler, 'warn')}
+      <div class="row wrap"><button type="button" class="btn sm" id="ekSartnameEkle" data-kat="${kat}">${t('Teknik şartnameyi malzeme listesine ekle')}</button></div></div>`;
   }
   function ciz(A) {
     const c = A.cur, es = c.ekipmanSecimi || null, kalem = c.katalogKalemleri || [];
@@ -53,8 +72,9 @@
       ${es ? `<div class="note small" id="ekUygulanan">${t('Hesaba uygulanan ekipman')}: ${esc(Object.values(es.ad || {}).join(', '))} <button type="button" class="btn sm" id="ekKaldir">${t('Hesaptan kaldır (Geri Al)')}</button></div>` : ''}
       <div class="kat-cipler" role="tablist">${KAT.map(([k, ad]) => `<button type="button" class="chip ${S.kat === k ? 'on' : ''}" data-ekkat="${k}">${t(ad)}</button>`).join('')}</div>
       ${S.taslak ? taslakHtml() : ''}
-      <div id="ekListe">${katHtml}</div></div>
-      <div class="card" id="katalogKalemleri"><h3>${t('Katalog kalemleri')} (${kalem.length})</h3>${kalem.length ? `<div class="scroll"><table class="small"><tr><th>${t('Kalem')}</th><th>${t('Miktar')}</th><th></th></tr>${kalem.map((k, i) => `<tr><td>${esc(k.uretici)} · ${esc(k.model || k.urunKodu)}${k.urunKodu ? ' (' + esc(k.urunKodu) + ')' : ''}<br><span class="muted">${t(KAT.find(x => x[0] === k.kategori)[1])} · ${esc(k.kaynak || '')}${k.durum !== 'uygun' ? ` · <b class="bad">${t('kullanıcı kararı: uygunluk doğrulanmadı')}</b>` : ''}</span></td><td><input class="price" data-kmiktar="${i}" inputmode="decimal" value="${k.miktar}"> ${esc(k.birim)}</td><td><button type="button" class="btn sm danger" data-ksil="${i}">✕</button></td></tr>`).join('')}</table></div>` : `<p class="small muted">${t('Henüz katalog kalemi yok.')}</p>`}</div>`;
+      ${sartnameHtml(S.kat)}
+      <div id="ekListe"><h4 class="ek-bolum">${t('B. Uygun Üretici ve Modeller')}</h4>${katHtml}</div></div>
+      <div class="card" id="katalogKalemleri"><h3>${t('Katalog kalemleri')} (${kalem.length})</h3>${kalem.length ? `<div class="scroll"><table class="small"><tr><th>${t('Kalem')}</th><th>${t('Miktar')}</th><th></th></tr>${kalem.map((k, i) => `<tr><td>${k.tur === 'sartname' ? `<b>${t('Teknik şartname')}</b> · ${t(KAT.find(x => x[0] === k.kategori)[1])}<br><span class="muted">${t('IrriGrow proje hesabı (katalogdan bağımsız teknik özellik; marka / model değildir)')}</span>` : `${esc(k.uretici)} · ${esc(k.model || k.urunKodu)}${k.urunKodu ? ' (' + esc(k.urunKodu) + ')' : ''}<br><span class="muted">${t(KAT.find(x => x[0] === k.kategori)[1])} · ${esc(k.kaynak || '')}${k.durum !== 'uygun' ? ` · <b class="bad">${t('kullanıcı kararı: uygunluk doğrulanmadı')}</b>` : ''}</span>`}</td><td><input class="price" data-kmiktar="${i}" inputmode="decimal" value="${k.miktar}"> ${esc(k.birim)}</td><td><button type="button" class="btn sm danger" data-ksil="${i}">✕</button></td></tr>`).join('')}</table></div>` : `<p class="small muted">${t('Henüz katalog kalemi yok.')}</p>`}</div>`;
     bagla(A);
   }
   function taslakHtml() {
@@ -89,6 +109,12 @@
       A.kaydet('katalog kalemi', c => { (c.katalogKalemleri = c.katalogKalemleri || []).push({ urunId: x.urunId, kategori: kat, uretici: x.uretici, model: x.model, urunKodu: x.urunKodu, kaynak: (x.kaynakSayfalar || []).join(', '), durum: x.durum, miktar: kat === 'boru' && seg ? Math.round(seg.L) : 1, birim: kat === 'boru' ? 'm' : 'adet', eklenme: Date.now() }); });
       g.IrriApp.toast(t('Malzeme listesine eklendi'));
     });
+    const se = q('#ekSartnameEkle'); if (se) se.onclick = () => {
+      const kat = se.dataset.kat, T = sartname && sartname[kat]; if (!T) return;
+      if ((A.cur.katalogKalemleri || []).some(k => k.tur === 'sartname' && k.kategori === kat)) { g.IrriApp.toast(t('Bu kategorinin teknik şartnamesi malzeme listesinde zaten var')); return; }
+      A.kaydet('teknik şartname', c => { (c.katalogKalemleri = c.katalogKalemleri || []).push({ tur: 'sartname', kategori: kat, uretici: '', model: '', urunKodu: '', kaynak: 'IrriGrow proje hesabı', durum: 'sartname', ozet: g.IrriEsles.sartnameOzeti(kat, T), miktar: 1, birim: 'adet', eklenme: Date.now() }); });
+      g.IrriApp.toast(t('Teknik şartname malzeme listesine eklendi'));
+    };
     host.querySelectorAll('[data-kmiktar]').forEach(i => i.onchange = () => { const v = Number(String(i.value).replace(',', '.')); if (!(v > 0)) { g.IrriApp.toast(t('Geçerli, pozitif bir miktar girin')); return; } A.kaydet(null, c => { c.katalogKalemleri[+i.dataset.kmiktar].miktar = v; }); });
     host.querySelectorAll('[data-ksil]').forEach(b => b.onclick = () => A.kaydet('katalog kalemi silindi', c => { c.katalogKalemleri.splice(+b.dataset.ksil, 1); if (!c.katalogKalemleri.length) delete c.katalogKalemleri; }));
     host.querySelectorAll('[data-hesap]').forEach(b => b.onclick = () => {

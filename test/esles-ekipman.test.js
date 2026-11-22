@@ -109,3 +109,33 @@ test('EK-09 Bağımsızlık: modül motoru değiştirmez, ikinci ürün modeli t
   const s = fs.readFileSync(W('esles-ekipman.js'), 'utf8').replace(/\/\/.*$/gm, '');
   ok(!/E\.design|IrriEngine|localStorage/.test(s) && /IrriKatalogUrun/.test(s) && !/yeniUrun/.test(s), 'bağımsız');
 });
+
+test('EK-10 Seviye 1: katalog boşken beş kategoride de teknik şartname; değerler motor sonucuyla aynı; varsayım ve eksik veri açık', () => {
+  const once = JSON.stringify(r0), T = X.teknikOzellikler(r0, inp), bos = X.oneriler(r0, inp, { urunler: [], degerler: [], egriler: [] });
+  for (const k of ['pompa', 'filtre', 'vana', 'boru', 'baglanti']) ok(T[k] && T[k].satirlar.length >= 3 && T[k].satirlar.every(s => s.ad && s.kaynak), k + ' şartnamesi');
+  ok(['pompa', 'filtre', 'vana', 'baglanti'].every(k => bos[k].uygun.length + bos[k].eksik.length + bos[k].uygunDegil.length === 0), 'katalog boş: B bölümü boş');
+  const d = ad => T.pompa.satirlar.find(s => s.ad.startsWith(ad));
+  ok(Math.abs(d('Tasarım debisi').deger - Math.max(...r0.sel.Qj)) < 1e-9 && Math.abs(d('Toplam dinamik').deger - Math.max(...r0.main.sel.Hp)) < 1e-9, 'Q ve TDH motorla aynı');
+  ok(d('Yaklaşık mil gücü').kaynak === 'varsayim' && T.pompa.varsayimlar.some(v => /%60–75/.test(v)), 'verim varsayımı açık');
+  ok(T.pompa.satirlar.some(s => s.kaynak === 'motor-katalog' && /gerçek ürün değil/.test(s.not)), 'jenerik pompa gerçek ürün değil');
+  ok(T.pompa.eksikler.some(e => /Dinamik su seviyesi/.test(e)), 'kuyu: dinamik seviye eksik');
+  ok(T.filtre.eksikler.some(e => /Su kalitesi/.test(e)) && T.filtre.eksikler.some(e => /Damlatıcı/.test(e)), 'filtre: su kalitesi ve damlatıcı şartı eksik');
+  ok(T.filtre.satirlar.find(s => /kaybı/.test(s.ad)).deger === r0.head.filter, 'filtre kaybı motorla aynı');
+  ok(T.vana.islevler.length >= 5 && T.vana.islevler.find(x => /shift/.test(x[0]))[1].length >= 1 && T.vana.satirlar.some(s => /Kv/.test(s.ad) && s.kaynak === 'varsayim'), 'vana işlevleri ayrı; Kv varsayımı');
+  ok(T.boru.segmentler.length === r0.main.net.filter(s => !s.virtual && s.L > 0).length && T.boru.segmentler.every(s => s.ic > 0 && s.v > 0 && s.hf >= 0) && T.boru.alternatifler.length >= 2, 'boru segmentleri ve alternatifler');
+  ok(T.baglanti.kalemler.length >= 1 && T.baglanti.eksikler.some(e => /kesin değildir/.test(e)), 'bağlantı adetleri kesin sunulmaz');
+  ok(!JSON.stringify(T).match(/Üretici|marka:/), 'marka / model yok');
+  ok(JSON.stringify(r0) === once, 'motor sonucu değişmedi');
+});
+
+test('EK-11 Şebeke kaynağı ve pompa gerekmeyen proje: şartname yine üretilir', () => {
+  const i2 = { crop: 'domates', area_da: 10, L: 100, W: 100, Q: 30, srcType: 'sebeke', Havail: 60, region: 'akdeniz' }, r2 = E.design(i2), T = X.teknikOzellikler(r2, i2);
+  ok(r2.ok && T.pompa.satirlar.length >= 1 && T.filtre.satirlar.length >= 3 && T.vana.satirlar.length >= 3, 'şebeke şartnamesi');
+});
+
+test('EK-12 Şartname malzeme listesi ve PDF/Excel rapor satırı (güncel hesaptan)', () => {
+  const R = require(W('report-data.js'));
+  const p = { id: 'x', name: 'x', inp, katalogKalemleri: [{ tur: 'sartname', kategori: 'pompa', uretici: '', model: '', kaynak: 'IrriGrow proje hesabı', durum: 'sartname', ozet: 'eski', miktar: 1, birim: 'adet' }] };
+  const rap = R.build(p, r0), sat = rap.bomU.find(s => /Teknik şartname/.test(s[0]));
+  ok(sat && /Tasarım debisi/.test(sat[1]) && !/eski/.test(sat[1]) && /marka \/ model değildir/.test(sat[1]) && !/uygunluk doğrulanmadı/.test(sat[1]), 'rapor satırı: ' + (sat && sat[1]).slice(0, 120));
+});

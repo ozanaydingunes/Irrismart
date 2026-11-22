@@ -62,7 +62,7 @@
     return qh.map(e => {
       const kosul = (e.kosul.devir ? e.kosul.devir + ' d/dk' : '') + (e.kosul.carkCapi ? ' Ø' + e.kosul.carkCapi + ' mm çark' : '');
       const neden = [], uyari = [], eksik = [], noktalar = [];
-      if (!req.pompaTipleri.includes(P.V.pompa_tipi)) neden.push(`pompa tipi ${P.V.pompa_tipi}; kaynak için uygun tipler: ${req.pompaTipleri.join(', ')}`);
+      if (!req.pompaTipleri.includes(P.V.pompa_tipi)) neden.push(`pompa tipi ${P.V.pompa_tipi}; kaynak için uygun tipler: ${req.pompaTipleri.map(x => TIP[x] || x).join(', ')}`);
       let Pmax = 0;
       for (const d of req.gorevler) {
         const H = U().egriDeger(e, d.Q);
@@ -165,6 +165,83 @@
     return { req, pompa: req.pompaGerekli ? pompa : Object.assign(pompa, { bilgi: 'Bu projede pompa gerekmiyor' }), filtre, vana, baglanti, boru: B ? B.alternatifler(r, veri.urunler, veri.degerler) : null };
   }
 
+  // ---------- Katalogdan bağımsız teknik şartname (her hesaplanmış proje için) ----------
+  // Yalnız motor sonucu ve proje verisi kullanılır. Her satırın kaynağı: 'hesap' (motor), 'proje' (kullanıcı verisi),
+  // 'varsayim' (açıkça belirtilen varsayım), 'motor-katalog' (motorun jenerik/varsayılan katalog verisi — gerçek ürün değil).
+  // Eksik veri "eksikler" listesinde yazılır; kesin model/marka iddiası yoktur.
+  const PN_SINIF = [4, 6, 10, 12.5, 16, 20, 25];
+  const pnSec = bar => PN_SINIF.find(p => p >= bar - 1e-9) || null;
+  function teknikOzellikler(r, inp) {
+    const req = gereksinim(r, inp); if (!req) return null;
+    const n = (v, d = 1) => (+v).toFixed(d).replace('.', ',');
+    const TIP = { dalgic: 'dalgıç', santrifuj: 'yatay santrifüj', dikey: 'dikey milli', booster: 'booster (hidrofor)' };
+    const S = (ad, deger, birim, kaynak, not) => ({ ad, deger, birim: birim || '', kaynak, not: not || '' });
+    const m = r.main.sel, Hp = m.Hp || [], Qj = r.sel.Qj, src = req.srcType, depth = r.head.depth || 0;
+    const kritik = Hp.length ? Hp.indexOf(Math.max(...Hp)) : Qj.indexOf(Math.max(...Qj));
+    const calisma_bar = (m.Pop || 0) / M_BAR, kapama_bar = (m.Pshut || 0) / M_BAR, pnIst = pnSec(req.anaPnGerek_bar), manPn = Math.max(0, ...r.units.map(u => (u.pipe && u.pipe.pn) || 0));
+    const kalem = gruplar => r.bom.filter(b => gruplar.includes(b.grup)).map(b => ({ kalem: b.kalem, miktar: b.miktar, birim: b.birim, grup: b.grup }));
+    const yaklasik = r.layout && r.layout.mode !== 'parsel';
+    // POMPA
+    const pompa = { satirlar: [], varsayimlar: [], eksikler: [] };
+    if (!req.pompaGerekli) pompa.satirlar.push(S('Pompa ihtiyacı', (r.pump && r.pump.text) || 'Pompa gerekmez', '', 'hesap'));
+    else {
+      const Phyd = G * req.Qd / 3600 * req.Hd;
+      pompa.satirlar.push(S('Tasarım debisi (en büyük shift)', req.Qd, 'm³/h', 'hesap'), S('Toplam dinamik basma yüksekliği (kritik shift)', req.Hd, 'm', 'hesap'),
+        S('Kritik shift', `Shift ${kritik + 1}: ${n(Qj[kritik])} m³/h @ ${n(Hp[kritik] || 0)} m`, '', 'hesap'),
+        S('Çalışma noktaları (Q–H)', req.gorevler.map((d, j) => `S${j + 1}: ${n(d.Q)} m³/h @ ${n(d.H)} m`).join('; '), '', 'hesap'),
+        S('Uygun pompa tipleri (kaynağa göre)', req.pompaTipleri.map(x => TIP[x] || x).join(', '), '', 'hesap'),
+        S('Hidrolik güç', Phyd, 'kW', 'hesap'),
+        S('Yaklaşık mil gücü aralığı', `${n(Phyd / 0.75)} – ${n(Phyd / 0.60)}`, 'kW', 'varsayim', 'pompa verimi %60–75 varsayımıyla'));
+      pompa.varsayimlar.push('Mil gücü aralığı %60–75 pompa verimi varsayımına dayanır; motor gücü üretici Q–H ve verim eğrisiyle doğrulanmalıdır.');
+      if (src === 'kuyu') { pompa.satirlar.push(S('Emme koşulu', `kuyu — statik su seviyesi derinliği ${depth} m`, '', 'proje')); pompa.eksikler.push('Dinamik su seviyesi ve pompa daldırma derinliği proje verisinde yok (dalgıç pompa NPSH / soğutma koşulu denetlenemez).'); }
+      else if (src === 'yuzey') { pompa.satirlar.push(S('Emme koşulu', `yüzey suyu — emme derinliği ${depth} m`, '', 'proje')); pompa.eksikler.push('Emme borusu kayıpları ve su sıcaklığı proje verisinde yok: NPSHa hesaplanamaz.'); }
+      else pompa.satirlar.push(S('Emme koşulu', `şebeke / hidrant — mevcut basınç ${n(r.head.Havail / M_BAR, 2)} bar`, '', 'proje'));
+      if (r.pump && !r.pump.verified) pompa.satirlar.push(S('Hesapta kullanılan jenerik pompa eğrisi', r.pump.text, '', 'motor-katalog', 'gerçek ürün değil; tip ve motor kesinleşmiş değildir'));
+    }
+    // FİLTRE
+    const filtre = { satirlar: [S('İşletme debisi (aynı anda tek shift)', req.Qd, 'm³/h', 'hesap'), S('Gerekli filtre kapasitesi', `≥ ${n(req.Qd)}`, 'm³/h', 'hesap'),
+      S('Su kaynağı', { kuyu: 'kuyu', yuzey: 'yüzey suyu', sebeke: 'şebeke / hidrant' }[src] || src, '', 'proje'),
+      S('Filtrasyon yaklaşımı (aşamalar)', req.filtreAsamalari.map(a => a.tip + (a.mesh ? ` (${a.mesh} mesh)` : '')).join(' + ') || '—', '', inp && inp.waterQ ? 'proje' : 'varsayim'),
+      S('İstasyon çıkışı işletme basıncı (en yüksek)', calisma_bar, 'bar', 'hesap'), S('Kapama basıncı', kapama_bar, 'bar', 'hesap'), S('Gerekli basınç sınıfı', pnIst ? 'PN ≥ ' + pnIst : '—', '', 'hesap', 'PN × 10,2 m ≥ max(1,25 × işletme, kapama)'),
+      S('Bağlantı (istasyon) hat çapı', req.anaHat.length ? `Ø${req.anaHat[0].od} (${req.anaHat[0].malzeme})` : '—', '', 'hesap'),
+      S('Filtre kaybı (hesapta kullanılan)', r.head.filter, 'm', 'motor-katalog', 'jenerik filtre verisi: temiz kayıp + kirlenme payı')], varsayimlar: [], eksikler: [] };
+    if (!(inp && inp.waterQ)) filtre.eksikler.push('Su kalitesi (kum, yosun, organik madde) proje verisinde yok: filtrasyon planı kaynak türüne göre varsayıldı.');
+    filtre.eksikler.push('Damlatıcı üreticisinin filtrasyon şartı proje verisinde yok: mesh değeri motorun genel damla sulama varsayımıdır; damlatıcı kataloğuyla doğrulanmalıdır.');
+    filtre.varsayimlar.push('Filtre kaybı jenerik filtre verisinden (temiz kayıp ve kirlenme payı) hesaplandı; gerçek ürünün temiz ve kirli kayıp eğrisiyle değişebilir.');
+    // VANA
+    const kvMin = q => q / Math.sqrt(0.2), vanaKalem = kalem(['Vana']);
+    const vana = { satirlar: [S('Alt ünite (manifold) vanası debisi — en büyük', req.vanaQ, 'm³/h', 'hesap'), S('Shift toplam debileri', Qj.map((q, j) => `S${j + 1}: ${n(q)}`).join('; '), 'm³/h', 'hesap'),
+      S('Ana hat vanası debisi', req.Qd, 'm³/h', 'hesap'), S('Gerekli basınç sınıfı (ana hat / istasyon)', pnIst ? 'PN ≥ ' + pnIst : '—', '', 'hesap', `işletme ${n(calisma_bar, 2)} bar, kapama ${n(kapama_bar, 2)} bar`), S('Gerekli basınç sınıfı (manifold / shift vanası)', manPn ? 'PN ≥ ' + manPn : '—', '', 'hesap', 'motorun manifold PN seçimi'),
+      S('Hat çapları', `ana hat Ø${[...new Set(req.anaHat.map(s => s.od))].join('/')}; manifold Ø${req.manifoldCaplari.join('/')}`, 'mm', 'hesap'),
+      S('Shift vanası en küçük Kv', kvMin(req.vanaQ), 'm³/h/√bar', 'varsayim', '0,2 bar izin verilen vana kaybı varsayımıyla'),
+      S('Ana hat vanası en küçük Kv', kvMin(req.Qd), 'm³/h/√bar', 'varsayim', '0,2 bar izin verilen kayıp varsayımıyla')], varsayimlar: ['Kv gereksinimi 0,2 bar izin verilen vana kaybı varsayımıyla hesaplandı (Kv = Q / √ΔP); hesapta kullanılan vana kaybı ' + n(r.head.valve, 2) + ' m (jenerik vana verisi).'], eksikler: [],
+      islevler: [['Açma / kapama (shift vanası)', vanaKalem.filter(k => /Shift vanası/.test(k.kalem))], ['Ana kesme', vanaKalem.filter(k => /sürgülü|kesme/i.test(k.kalem))], ['Geri akış önleme (çekvalf)', vanaKalem.filter(k => /Çekvalf/i.test(k.kalem))],
+        ['Hava tahliye / vakum kırıcı', vanaKalem.filter(k => /Hava/i.test(k.kalem))], ['Yıkama', kalem(['Manifold', 'Ana hat']).filter(k => /yıkama/i.test(k.kalem))],
+        ['Basınç düzenleme', r.warn.some(w => /regülatör|frekans/i.test(w)) ? [{ kalem: 'Basınç düzenleyici / regülatör (motor uyarısı: küçük shift’lerde fazla basınç)', miktar: null, birim: '' }] : []],
+        ['Emniyet (tahliye)', r.warn.some(w => /emniyet \(tahliye\)/i.test(w)) ? [{ kalem: 'Emniyet / tahliye vanası (motor uyarısı: kapama basıncı PN sınıfını aşıyor)', miktar: null, birim: '' }] : []]] };
+    // BORU
+    const boru = { satirlar: [], varsayimlar: ['Sürtünme kaybı Hazen-Williams (C = 150) + %10 yerel kayıp; hız sınırı 2,0 m/s; PN ölçütü PN × 10,2 m ≥ max(1,25 × işletme, kapama basıncı).'], eksikler: [],
+      segmentler: r.main.net.filter(s => !s.virtual && s.L > 0).map(s => ({ id: s.id, L: s.L, Qmax: s.Qmax, od: s.od, pn: s.pn, sdr: s.pipe && s.pipe.sdr || null, malzeme: s.pipe && s.pipe.malzeme || 'PVC-U', ic: s.ic, v: s.v, hf: s.hf })),
+      alternatifler: (r.main.alts || []).slice(0, 6).map(a => ({ od: a.od, pn: a.pn, ic: a.ic, v: a.v, hf: a.hf, Hmax: a.Hmax, kWh: a.kWh, etiket: (a.tags || []).join(', ') })),
+      manifold: [...new Set(r.units.map(u => u.pipe && `${u.pipe.malzeme || 'PE100'} Ø${u.pipe.od} PN${u.pipe.pn}`).filter(Boolean))], lateral: `Ø${r.lateral.d}, en uzun ${n(r.lateral.Lmax, 0)} m` };
+    boru.satirlar.push(S('Ana hat basınç gereksinimi', req.anaPnGerek_bar, 'bar', 'hesap'), S('Manifold boruları', boru.manifold.join('; '), '', 'hesap'), S('Lateral', boru.lateral, '', 'hesap'));
+    // BAĞLANTI ELEMANLARI
+    const bk = kalem(['Ana hat', 'Manifold', 'Lateral']).filter(k => !/boru|Damla borusu/i.test(k.kalem));
+    const baglanti = { satirlar: [S('Ana hat malzemesi', [...new Set(req.anaHat.map(s => s.malzeme))].join(', '), '', 'hesap'), S('Manifold malzemesi', 'PE100', '', 'hesap'),
+      S('Bağlantı uyumu', req.anaHat.some(s => /PVC/.test(s.malzeme)) ? 'PVC-U ana hat ↔ PE manifold: geçiş parçası gerekir; PVC: yapıştırma / contalı, PE: elektrofüzyon / alın kaynak / kompresyon' : 'PE ana hat ve manifold: elektrofüzyon / alın kaynak / kompresyon', '', 'hesap'),
+      S('Gerekli basınç sınıfı', `ana hat PN ≥ ${pnIst || '—'}; manifold PN ≥ ${manPn || '—'}`, '', 'hesap')],
+      kalemler: bk, varsayimlar: [], eksikler: [] };
+    if (yaklasik) baglanti.eksikler.push('Güzergâh geometrisi yaklaşık (parsel çizilmeden dikdörtgen yerleşim): bağlantı adetleri kesin değildir, saha / bağlantı planıyla doğrulanmalıdır.');
+    else baglanti.varsayimlar.push('Bağlantı adetleri motorun yerleşim modelinden çıkarıldı; saha bağlantı planıyla doğrulanmalıdır.');
+    return { pompa, filtre, vana, boru, baglanti };
+  }
+  // Şartname özeti: malzeme listesi / rapor satırı için tek satırlık metin
+  function sartnameOzeti(kat, T) {
+    const f = (v, d = 1) => typeof v === 'number' ? v.toFixed(d).replace('.', ',') : v;
+    return T.satirlar.filter(s => s.deger !== '' && s.deger != null).map(s => `${s.ad}: ${f(s.deger, s.birim === 'bar' ? 2 : 1)}${s.birim ? ' ' + s.birim : ''}${s.kaynak === 'varsayim' ? ' (varsayım)' : s.kaynak === 'motor-katalog' ? ' (jenerik motor verisi, gerçek ürün değil)' : ''}`).join('; ')
+      + (T.eksikler.length ? ` — Eksik veri: ${T.eksikler.length}` : '');
+  }
+
   // ---------- Motor biçimine çevirme (yeniden hesap için; yalnız doğrulanmış ve uygun ürün) ----------
   function motorPompa(P, egriId) {
     const e = P.es.find(x => x.id === egriId), verim = P.es.find(x => x.tur === 'verim');
@@ -194,7 +271,7 @@
     return k;
   }
 
-  const api = Object.freeze({ gereksinim, urunPaketleri, pompaDegerlendir, filtreDegerlendir, vanaDegerlendir, baglantiDegerlendir, oneriler, motorKatalogu, katalogBirlestir });
+  const api = Object.freeze({ gereksinim, urunPaketleri, pompaDegerlendir, filtreDegerlendir, vanaDegerlendir, baglantiDegerlendir, oneriler, teknikOzellikler, sartnameOzeti, motorKatalogu, katalogBirlestir });
   g.IrriEsles = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
