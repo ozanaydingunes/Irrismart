@@ -50,6 +50,6 @@ module.exports = {
     const wb = window.IrriReportData.workbook && window.XLSX ? window.IrriReportData.workbook(window.XLSX, proj, r) : null;
     const urunler = veri.urunler.map(u => [u.id, u.kategori, u.inceleme, u.muhendislik]).sort();
     return yuv({ hesap: ozet(r), manuel: ozet(rm), urunler, degerSayisi: veri.degerler.length, oneriler: { pompa: oz(o.pompa), filtre: oz(o.filtre), vana: oz(o.vana), baglanti: oz(o.baglanti), boru: o.boru.segmentler.map(sg => oz(sg)) },
-      pompaUygulanmis: ozet(rp), rapor: { ozet: rapor.ozet, hidrolik: rapor.hidrolik, sektor: rapor.sektor, bomP: rapor.bomP, bomU: rapor.bomU, akil: rapor.akil.sheet }, excelSayfa: wb && wb.SheetNames ? wb.SheetNames.map(n => [n, JSON.stringify(window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 })).length]) : null });
+      pompaUygulanmis: ozet(rp), rapor: { ozet: rapor.ozet, hidrolik: rapor.hidrolik, sektor: rapor.sektor, bomP: rapor.bomP, bomU: rapor.bomU, akil: rapor.akil.sheet }, excelSayfa: wb && wb.SheetNames ? wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 })]) : null });
   },
 };

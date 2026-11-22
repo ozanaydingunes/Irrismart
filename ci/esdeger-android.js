@@ -43,7 +43,15 @@ const SONUC = (ad, ok, ek) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad + (ek !=
   fs.writeFileSync(process.env.ESDEGER_OUT || 'esdeger-android.json', json);
   const masa = fs.existsSync('esdeger-masaustu.json') ? fs.readFileSync('esdeger-masaustu.json', 'utf8') : null, hm = masa ? crypto.createHash('sha256').update(masa).digest('hex') : null;
   log('android parmak izi', h, 'masaüstü', hm);
-  if (masa && masa !== json) { const a = JSON.parse(masa), b = iz; for (const k of Object.keys(a)) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) log('FARK', k, JSON.stringify(a[k]).slice(0, 200), '≠', JSON.stringify(b[k]).slice(0, 200)); }
+  if (masa && masa !== json) {
+    const a = JSON.parse(masa), b = iz;
+    for (const k of Object.keys(a)) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) {
+      if (k === 'excelSayfa' && Array.isArray(a[k]) && Array.isArray(b[k])) {
+        a[k].forEach(([ad, rows], i) => { const r2 = (b[k][i] || [])[1] || []; if (JSON.stringify(rows) === JSON.stringify(r2)) return;
+          for (let y = 0; y < Math.max(rows.length, r2.length); y++) { const x1 = JSON.stringify(rows[y]), x2 = JSON.stringify(r2[y]); if (x1 !== x2) { log('FARK Excel', ad, 'satır', y + 1, 'masaüstü:', String(x1).slice(0, 220), '| android:', String(x2).slice(0, 220)); break; } } });
+      } else log('FARK', k, JSON.stringify(a[k]).slice(0, 200), '≠', JSON.stringify(b[k]).slice(0, 200));
+    }
+  }
   SONUC('Android ve masaüstü aynı mühendislik sonuçları (hesap, otomatik/manuel shift, ürünler, öneriler, malzeme, rapor/Excel verisi)', !!masa && masa === json);
   log('BİTTİ'); await device.close();
 })().catch(e => { console.log('[ESD] BETİK HATASI', e && e.stack || e); process.exit(1); });
