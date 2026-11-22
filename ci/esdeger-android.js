@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // TEST (1.0.7 sürüm dalı): Android emülatöründe
-//  1) telefondaki kurulumu taklit eden eski APK (versionCode 20) kurulur; proje + katalog PDF kaydı oluşturulur,
-//  2) 1.0.7 APK (versionCode 21) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
+//  1) telefondaki kurulumu taklit eden eski APK (telefondaki 1.0.7, versionCode 21) kurulur; proje + katalog PDF kaydı oluşturulur,
+//  2) yeni 1.0.7 APK (versionCode 22) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
 //  3) masaüstüyle aynı eşdeğerlik parmak izi (ci/parmak-izi.js) gerçek WebView'da hesaplanır ve masaüstü özetiyle karşılaştırılır.
 const { _android: android } = require('playwright');
 const { execSync } = require('child_process');
@@ -33,7 +33,7 @@ const SONUC = (ad, ok, ek) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad + (ek !=
   SONUC('1.0.7 APK eski kurulumun üzerine kuruldu (kaldırma yok)', /Success/.test(cikti), cikti.trim().split('\n').pop());
   if (!/Success/.test(cikti)) process.exit(1);
   await baslat();
-  SONUC('1.0.7 çalışıyor (versionCode 21)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 21, await page.evaluate(() => window.IRRI_SURUM));
+  SONUC('yeni 1.0.7 çalışıyor (versionCode 22)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 22, await page.evaluate(() => window.IRRI_SURUM));
   SONUC('proje verisi bayt bayt korundu', await page.evaluate(() => localStorage.getItem('irrismart.projects.v1')) === eski.proje);
   const kat = await page.evaluate(async id => { const D = window.IrriKatalogDepo; const v = await D.listele(); const k = v.kataloglar.find(x => x.id === id); const db = await D.db(); return { var: !!k, sha: k && k.dosya.sha256, dogru: k ? (await D.dosyaDogrula(k.dosya)).ok : false, surum: db.version, depolar: [...db.objectStoreNames].sort() }; }, eski.katalogId);
   SONUC('katalog ve PDF korundu; ürün veritabanı geçişi (IndexedDB sürüm 2)', kat.var && kat.sha === eski.sha && kat.dogru && kat.surum === 2 && ['urunler', 'degerler', 'egriler'].every(x => kat.depolar.includes(x)), kat);

@@ -3,6 +3,14 @@
 (function (g) {
   const D = g.IRRI_DATA || (typeof require !== 'undefined' ? require('./data.js') : null);
   const E = () => g.IrriEngine;
+  // Teknik şartname kalemi (katalogdan bağımsız): metin her raporda güncel proje hesabından üretilir (IrriEsles.teknikOzellikler)
+  const SART_KAT = { pompa: 'Pompa', filtre: 'Filtre', vana: 'Vana', boru: 'Boru', baglanti: 'Bağlantı elemanı' };
+  function sartnameMetni(k, p, r, T) {
+    const X = g.IrriEsles || (typeof require !== 'undefined' ? (() => { try { return require('./esles-ekipman.js'); } catch (e) { return null; } })() : null);
+    let oz = k.ozet || '';
+    try { const TO = X && r && r.ok ? X.teknikOzellikler(r, p.inp) : null; if (TO && TO[k.kategori]) oz = X.sartnameOzeti(k.kategori, TO[k.kategori]); } catch (e) { /* kayıtlı özet kullanılır */ }
+    return `${T(SART_KAT[k.kategori] || k.kategori)} — ${oz} — ${T('kaynak')}: ${T('IrriGrow proje hesabı (katalogdan bağımsız teknik özellik; marka / model değildir)')}`;
+  }
   const AS = () => g.IrriAssess || (typeof require !== 'undefined' ? require('./assess.js') : null);
   const nfmt = (v, d) => (typeof v === 'number' && Number.isFinite(v)) ? v.toLocaleString('tr-TR', { minimumFractionDigits: d ?? 1, maximumFractionDigits: d ?? 1 }) : '—';
 
@@ -103,7 +111,7 @@
     const bomP = [bomHead].concat(priced.map(b => [T(b.grup), b.kalem + (b.opsiyonel ? ' (' + T('opsiyonel') + ')' : ''), b.miktar, T(b.birim), b.fiyat, b.tutar, SRC()[b.kaynak] || '']));
     const bomU = [[T('Grup'), T('Kalem'), T('Miktar'), T('Birim')]].concat(unpriced.map(b => [T(b.grup), b.kalem + (b.opsiyonel ? ' (' + T('opsiyonel') + ')' : ''), b.miktar, T(b.birim)]))
       // Katalog kalemleri (ekipman önerilerinden): üretici, model, kod ve kaynak katalog/sayfa; uygunluğu doğrulanmayan kalem açıkça belirtilir
-      .concat(((p && p.katalogKalemleri) || []).map(k => [T('Katalog kalemi'), `${k.uretici} ${k.model || ''}${k.urunKodu ? ' (' + k.urunKodu + ')' : ''} — ${T('kaynak')}: ${k.kaynak || '—'}${k.durum !== 'uygun' ? ' — ' + T('kullanıcı kararı: uygunluk doğrulanmadı') : ''}`, k.miktar, T(k.birim)]));
+      .concat(((p && p.katalogKalemleri) || []).map(k => k.tur === 'sartname' ? [T('Teknik şartname'), sartnameMetni(k, p, r, T), k.miktar, T(k.birim)] : [T('Katalog kalemi'), `${k.uretici} ${k.model || ''}${k.urunKodu ? ' (' + k.urunKodu + ')' : ''} — ${T('kaynak')}: ${k.kaynak || '—'}${k.durum !== 'uygun' ? ' — ' + T('kullanıcı kararı: uygunluk doğrulanmadı') : ''}`, k.miktar, T(k.birim)]));
     const bomDec = [null, null, 0, null, 2, 0, null];
     const toplam = [
       [T('Fiyatlı kalemler ara toplamı (opsiyoneller hariç)'), r.cost.subtotal, 'TL', 0],
