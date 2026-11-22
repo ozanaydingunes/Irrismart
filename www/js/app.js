@@ -655,7 +655,9 @@
     lastRes = r; overlayRes = r; return r;
   }
   const mainSizes = r => { const m = new Map(); r.main.net.forEach(sg => m.set(`Ø${sg.od} PN${sg.pn}`, (m.get(`Ø${sg.od} PN${sg.pn}`) || 0) + sg.L)); return [...m].map(([k, L]) => `${k} ${fmt(L, 0)} m`).join(', '); };
-  const designOpt = () => ({ poly: cur.poly, src: cur.src, station: cur.station, route: cur.route, catalog });
+  // Hesaba uygulanan katalog ekipmanı (pompa / filtre / vana) projede motor biçiminde saklanır; motor aynı katalog arayüzüyle hesaplar
+  const projeKatalogu = () => cur && cur.ekipmanSecimi && cur.ekipmanSecimi.katalog && window.IrriEsles ? window.IrriEsles.katalogBirlestir(catalog, cur.ekipmanSecimi.katalog) : catalog;
+  const designOpt = () => ({ poly: cur.poly, src: cur.src, station: cur.station, route: cur.route, catalog: projeKatalogu() });
   const PALETTE = ['#8fd19e', '#7cc5e8', '#f5c26b', '#e99aa8', '#b8a6e8', '#9fe0d3', '#d9d47a', '#f0a875', '#a3c2f0', '#c9e39a', '#e0b0d5', '#b5d99c'];
   function sectorIndex(r) { const m = []; r.sel.groups.forEach((gr, j) => gr.forEach(k => { m[k] = j; })); return m; }
   // Ana hat: kaynak → başlık → bant eksenleri boyunca en uzak alt ünite girişine
@@ -878,6 +880,7 @@
       ${unpriced.length ? `<div class="card"><h3>${t('Fiyatı eksik kalemler')} (${unpriced.length})</h3><div class="scroll"><table>${head}${unpriced.map(x => row(x, false)).join('')}</table></div></div>` : ''}
       <div class="card"><h3>${t('Fiyatlı kalemler')} (${priced.length})</h3><div class="scroll"><table>${head}${priced.map(x => row(x, true)).join('')}</table></div>
       <p class="muted small">${t('Miktarlara %2–3 fire payı eklidir. Girdiğiniz birim fiyatlar tüm projelerde kullanılır.')}</p></div>
+      <div id="ekipmanHost"></div>
       <div class="row"><button class="btn primary" style="flex:1" id="bPdf2">${t('PDF rapor')}</button><button class="btn" style="flex:1" id="bXls2">Excel</button></div>`;
     $('#bom').querySelectorAll('input.price').forEach(inp => inp.onchange = () => {
       const k = inp.dataset.key, v = V.parseNum(inp.value);
@@ -887,6 +890,7 @@
       saveSettings(); lastRes = null; renderBom();
     });
     bindExport('#bPdf2', '#bXls2', r);
+    if (window.IrriEkipmanUI) window.IrriEkipmanUI.render($('#ekipmanHost'));
   }
 
   // ---------- Hidrolik Hesap Tablosu (Excel SİSTEM + IRRIFRICT) ----------
@@ -1640,7 +1644,13 @@
   applyTheme(themeOf());
   if (window.matchMedia) { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeOf() === 'sistem') applyTheme('sistem'); }; if (mq.addEventListener) mq.addEventListener('change', f); }
 
-  window.IrriApp = { toast, show };
+  // Ekipman önerileri bağlamı (ekipman-ui.js): proje, güncel sonuç, temel katalog, taslak hesap ve kaydetme (revizyon anlık görüntüsüyle)
+  const ekipmanBaglam = () => cur ? {
+    cur, r: lastRes && lastRes.ok ? lastRes : compute(), temelKatalog: catalog,
+    hesapla: (inp, kat) => E.design(inp, settings, Object.assign({}, designOpt(), { catalog: kat })),
+    kaydet: (etiket, fn) => { if (etiket) St.snapshot(cur, etiket); fn(cur); invalidateDesign(); persist(); renderBom(); },
+  } : null;
+  window.IrriApp = { toast, show, ekipmanBaglam };
   window.addEventListener('error', e => toast(t('Hata: ') + (e.message || '?')));
   window.addEventListener('unhandledrejection', e => toast(t('Hata: ') + ((e.reason && e.reason.message) || '?')));
   I.apply();

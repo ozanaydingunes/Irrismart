@@ -39,3 +39,5 @@ Thumbs.db
 
 # Not: android/app/irrismart-debug.keystore bilinçli olarak depodadır (sabit debug imzası;
 # güncellemelerin eski sürümün üzerine kurulabilmesi için). Yayın anahtarı ASLA depoya eklenmez.
+esdeger-masaustu.json
+esdeger-android.json
