@@ -19,7 +19,18 @@ const PROJ = [
   const sh = async c => (await device.shell(c)).toString().trim();
   const surum = async () => (await sh(`dumpsys package ${PKG}`)).split('\n').filter(l => /versionCode|versionName/.test(l)).map(s => s.trim()).slice(0, 2).join(' ');
   let page;
-  const baslat = async () => { await sh(`am force-stop ${PKG}`); await sh(`monkey -p ${PKG} -c android.intent.category.LAUNCHER 1`); const wv = await device.webView({ pkg: PKG }, { timeout: 90000 }); page = await wv.page(); await page.waitForFunction(() => window.IrriEngine && window.IRRI_SURUM, null, { timeout: 60000 }); await page.waitForTimeout(1500); };
+  // Uygulamayı başlat; güncelleme sonrası ilk açılışta WebView bir kez yeniden oluşabilir → en çok 3 deneme
+  const baslat = async () => {
+    for (let d = 1; d <= 3; d++) {
+      try {
+        await sh(`am force-stop ${PKG}`); await sh(`monkey -p ${PKG} -c android.intent.category.LAUNCHER 1`);
+        await new Promise(r => setTimeout(r, 3000));
+        const wv = await device.webView({ pkg: PKG }, { timeout: 90000 }); page = await wv.page();
+        await page.waitForFunction(() => window.IrriEngine && window.IRRI_SURUM, null, { timeout: 60000 }); await page.waitForTimeout(1500);
+        return;
+      } catch (e) { log('başlatma denemesi', d, 'başarısız:', String(e.message).split('\n')[0]); if (d === 3) throw e; }
+    }
+  };
   // Hesap parmak izi: her projenin motor sonucu (kayıtlı girdilerle) — eski ve yeni sürümde aynı olmalı
   const parmakIzi = () => page.evaluate(() => { const ps = JSON.parse(localStorage.getItem('irrismart.projects.v1') || '[]'); return ps.map(p => { const r = window.IrriEngine.design(p.inp, null, p.poly && p.poly.length >= 3 ? { poly: p.poly, src: p.src, station: p.station, route: p.route } : {}); return { id: p.id, ok: r.ok, Ns: r.ok ? r.sel.groups.length : null, Qj: r.ok ? r.sel.Qj.map(q => +q.toFixed(4)) : null, H: r.ok && r.pump ? +(r.pump.H || 0).toFixed(3) : null }; }); });
 
