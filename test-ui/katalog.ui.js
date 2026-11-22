@@ -121,6 +121,15 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
     await pg.setInputFiles('[data-bagla]', { name: 'dogru.pdf', mimeType: 'application/pdf', buffer: P2 }); await pg.waitForTimeout(1000);
     v = await D(); check(!v.kataloglar[0].dosya.bekliyor && v.kataloglar[0].dosya.sha256 === sha(P2) && (await pg.evaluate(k => window.IrriKatalogDepo.dosyaDogrula(k.dosya), v.kataloglar[0])).ok, `${ad} doğru PDF eşleşir ve doğrulanır`);
 
+    // 9b) Dosyası silinmiş kayıt tam kayıt gibi gösterilmez
+    await pg.evaluate(async () => { const { kataloglar } = await window.IrriKatalogDepo.listele(); await window.IrriKatalogDepo.dosyaSil(kataloglar[0].dosya); });
+    await pg.click('#btnKatalog'); await pg.waitForTimeout(300); await pg.click('.kat-firma'); await pg.waitForTimeout(800);
+    check(await pg.isVisible('[data-pdfeksik]') && await pg.isDisabled('[data-ac]'), `${ad} PDF'i eksik kayıt uyarıyla gösterilir, “Aç” pasif`);
+    await pg.setInputFiles('[data-guncelle]', { name: 'yeni.pdf', mimeType: 'application/pdf', buffer: P1 }); await pg.waitForTimeout(1500);
+    check(!(await pg.$('[data-pdfeksik]')) && (await pg.evaluate(async () => { const { kataloglar } = await window.IrriKatalogDepo.listele(); return window.IrriKatalogDepo.dosyaVarMi(kataloglar[0].dosya); })), `${ad} güncelleme ile PDF yeniden eklenir`);
+    // 9c) Masaüstü üst çubuğu taşmaz: araç çubuğu çok genişlese de ⚙ ve 📚 ekranda kalır (CI'da uzun dillerde ⚙ ekran dışına çıkıyordu)
+    if (ad === 'masaüstü') { await pg.evaluate(() => { const t = document.querySelector('#deskTools'); if (t) { const x = document.createElement('span'); x.id = 'genisTest'; x.style.cssText = 'display:inline-block;width:2000px;flex:none'; t.appendChild(x); } });
+      check(await ekranda('#btnSettings') && await ekranda('#btnKatalog'), `${ad} geniş araç çubuğunda ⚙ ve 📚 ekranda`); await pg.evaluate(() => { const x = document.querySelector('#genisTest'); if (x) x.remove(); }); }
     // 10) Örnek veriler gerçek kataloglardan ayrı
     await pg.evaluate(async () => { const M = window.IrriKatalogModel, D = window.IrriKatalogDepo; const f = M.yeniFirma('Örnek Firma', true); await D.firmaKaydet(f); await D.katalogKaydet(Object.assign(M.yeniKatalog({ ad: 'Örnek katalog', firmaId: f.id, dosya: { ad: 'o.pdf', boyut: 1, sha256: 'b'.repeat(64), anahtar: 'yok' }, ornek: true }))); });
     await pg.click('#btnKatalog'); await pg.waitForTimeout(400);
