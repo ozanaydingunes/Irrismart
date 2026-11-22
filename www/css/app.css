@@ -536,3 +536,37 @@ html.desk .ss-tut{left:auto;transform:none;right:calc(var(--right) + 16px);botto
 html.desk .ss-perde{display:none}
 html.desk .ss-sheet{left:auto;right:0;top:var(--top);bottom:0;width:min(480px,42vw);max-height:none;border-radius:0;border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(0,0,0,.12)}
 html.desk .ss-grab{display:none}
+
+/* ---------- Firma Malzeme Katalogları ---------- */
+#malzSeg,#katSeg{margin-bottom:12px}
+.kat-arac{display:flex;gap:8px;align-items:stretch;margin-bottom:8px}
+.kat-arac input[type=search]{flex:1 1 auto;min-width:0}
+.kat-yukle{flex:0 0 auto;display:flex;align-items:center;white-space:nowrap}
+.kat-cipler{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:6px}
+.kat-cipler .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;min-height:36px}
+.kat-cipler .chip.on{background:var(--pri2);border-color:var(--pri);color:var(--pri);font-weight:600}
+.kat-firmalar{padding:4px 12px}
+.kat-firma{display:flex;align-items:center;gap:10px;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:start;min-height:56px}
+.kat-firma:last-child{border-bottom:0}
+.kat-av{width:36px;height:36px;border-radius:10px;background:var(--pri2);color:var(--pri);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+.kat-fb{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}.kat-fb small{color:var(--muted)}
+.kat-ust{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}.kat-ust h2{flex:1 1 auto;margin:0;font-size:17px;min-width:0}
+.kat-doc .kat-islem{margin-top:8px}
+.kat-doc>div{margin-top:2px}
+.kat-surum{margin-top:8px}.kat-surum .row{margin-top:6px}
+.kat-gruplar{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px 14px}
+.kat-gruplar legend{font-size:13px;color:var(--muted);padding:0 4px}
+.kat-cb{flex-direction:row !important;align-items:center;gap:6px;min-height:36px}
+.kat-ilerleme{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:8px 0 4px}.kat-ilerleme span{display:block;height:100%;background:var(--pri);transition:width .2s}
+.kat-not{margin:10px 0}
+html.desk #katalog{max-width:1180px}
+html.desk .kat-firmalar{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 18px}
+html.desk .kat-firma:last-child{border-bottom:1px solid var(--line)}
+
+/* Üst çubuk: düğmeler küçülmez, başlık taşarsa kısalır (katalog düğmesi eklendi; uzun dillerde ⚙ ekran dışına çıkıyordu) */
+header.top{min-width:0}
+header.top>*{min-width:0}
+header.top>.icon,header.top>button{flex:0 0 auto}
+header .ttl{min-width:0;overflow:hidden}
+html.desk #deskTools{flex:1 1 auto;overflow-x:auto;scrollbar-width:none}
+html.desk #deskTools::-webkit-scrollbar{display:none}
