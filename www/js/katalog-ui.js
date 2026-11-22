@@ -203,7 +203,15 @@
     const yd = $('#katYedek'); if (yd) yd.onclick = yedekIndir;
     const gy = $('#katGeri'); if (gy) gy.onchange = () => { if (gy.files[0]) yedekYukle(gy.files[0]); };
     const kc = $('#katKalici'); if (kc) kc.onclick = async () => { const r = await D.kalicilikIste(); toast(r ? t('Kalıcı depolama açıldı') : t('Tarayıcı kalıcı depolama iznini vermedi')); alanCiz(); };
-    alanCiz();
+    alanCiz(); dosyaDurumu();
+  }
+  // Kaydı olan ama PDF dosyası cihazda bulunmayan (silinmiş/bozulmuş) kataloglar tam kayıt gibi gösterilmez
+  async function dosyaDurumu() {
+    for (const el of g.document.querySelectorAll('.kat-doc[data-kat]')) {
+      const k = S.veri.kataloglar.find(x => x.id === el.dataset.kat); if (!k || !k.dosya || k.dosya.bekliyor) continue;
+      let var1 = false; try { var1 = await D.dosyaVarMi(k.dosya); } catch (e) { var1 = false; }
+      if (!var1 && !el.querySelector('[data-pdfeksik]')) { const n = g.document.createElement('div'); n.className = 'note err'; n.dataset.pdfeksik = '1'; n.textContent = t('PDF dosyası bu cihazda bulunamadı: kayıt yalnız bilgi içeriyor. “Güncelle (yeni PDF)” ile dosyayı yeniden ekleyin.'); el.insertBefore(n, el.querySelector('.kat-islem')); const ac = el.querySelector('[data-ac]'); if (ac) ac.disabled = true; }
+    }
   }
 
   // Açılışta yarım kalmış yazımları temizle (kayıtlarda adı geçmeyen dosyalar)
