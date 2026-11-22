@@ -25,7 +25,7 @@ const PROJ = [
       try {
         await sh(`am force-stop ${PKG}`); await sh(`monkey -p ${PKG} -c android.intent.category.LAUNCHER 1`);
         await new Promise(r => setTimeout(r, 3000));
-        const wv = await device.webView({ pkg: PKG }, { timeout: 90000 }); page = await wv.page();
+        const wv = await device.webView({ pkg: PKG }, { timeout: 90000 }); page = await wv.page(); page.on('dialog', dl => dl.accept().catch(() => {}));
         await page.waitForFunction(() => window.IrriEngine && window.IRRI_SURUM, null, { timeout: 60000 }); await page.waitForTimeout(1500);
         return;
       } catch (e) { log('başlatma denemesi', d, 'başarısız:', String(e.message).split('\n')[0]); if (d === 3) throw e; }
@@ -76,7 +76,7 @@ const PROJ = [
   SONUC('Manuel Shift modu yüklü', await page.evaluate(() => !!(window.IrriShiftYonetimi && window.IrriShiftYonetimi.manuelAdaylar && window.IrriShiftYonetimi.bolumle)));
 
   // ---------- Gerçek WebView'da manuel mod etkileşimi (dokunuşlar Playwright tap ile WebView'a gönderilir) ----------
-  page.on('dialog', d => d.accept());
+  // onay pencereleri her başlatmada yeni sayfaya bağlanır (baslat içinde)
   // Gerçek dokunuş: `adb input tap`. CSS pikseli → ekran pikseli; WebView ofseti bilinen bir noktaya dokunularak ölçülür.
   const [EW, EH] = (await sh('wm size')).match(/(\d+)x(\d+)/).slice(1).map(Number);
   let OX = 0, OY = 0, DPR = 1;

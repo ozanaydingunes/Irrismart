@@ -47,7 +47,7 @@ jobs:
           disable-animations: true
           script: node ci/guncelleme-android.js
       - uses: actions/upload-artifact@v4
-        if: matrix.api == 34
+        if: always() && matrix.api == 34
         with:
           name: IrriGrow-1.0.6-test.20-manuel-shift-apk
           path: yeni.apk
