@@ -7,7 +7,7 @@ const pkg = JSON.parse(R('package.json')), lock = JSON.parse(R('package-lock.jso
 const gradle = R('android/app/build.gradle'), cap = JSON.parse(R('capacitor.config.json')), wf = R('.github/workflows/apk.yml');
 
 test('K6-01 Sürüm 1.0.6 her yerde aynı: package.json, package-lock, version.js, Android versionName', () => {
-  ok(pkg.version === '1.0.6' && V.surum === '1.0.6', `package.json ${pkg.version} / version.js ${V.surum}`);
+  ok(pkg.version === '1.0.6-test.20' && V.surum === '1.0.6-test.20', `package.json ${pkg.version} / version.js ${V.surum}`);
   ok(lock.version === pkg.version && lock.packages[''].version === pkg.version, 'package-lock');
   const vn = gradle.match(/versionName "([^"]+)"/)[1];
   ok(vn === pkg.version, `versionName ${vn}`);
@@ -15,7 +15,7 @@ test('K6-01 Sürüm 1.0.6 her yerde aynı: package.json, package-lock, version.j
 
 test('K6-02 versionCode artar (0.6.1 = 9 → 1.0.0 RC1 = 10 → RC2 = 11 → RC3 = 12 → 1.0.1 = 13 → 1.0.2 = 14 → 1.0.3 = 15 → 1.0.4 = 16 → 1.0.5 = 17 → 1.0.5-test.18 = 18 → 1.0.6 = 19); version.js ile aynı', () => {
   const vc = +gradle.match(/^\s*versionCode (\d+)$/m)[1];
-  ok(vc === 19 && V.kod === vc, `versionCode ${vc} / ${V.kod}`);
+  ok(vc === 20 && V.kod === vc, `versionCode ${vc} / ${V.kod}`);
 });
 
 test('K6-03 Uygulama kimliği ve imza anahtarı değişmedi (eski kurulumun üzerine güncelleme, veriler korunur)', () => {
