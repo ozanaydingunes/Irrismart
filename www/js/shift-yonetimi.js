@@ -275,7 +275,27 @@
     return { assign };
   }
 
-  const api = Object.freeze({ minShift, bolumle, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // Manuel mod başlangıç dağılımı adayları (hepsi gerçek atama; motor her birini ayrıca hesaplar):
+  //  'debi'   — debi dengeli bitişik bölme (en büyük shift debisini en aza indirir)
+  //  'basinc' — gerekli basıncı (yükselti + giriş basıncı) benzer alt üniteler aynı shift'te: pompanın küçük
+  //             shift'lerde fazla basınç üretmesini azaltır; sıra içinde yine debi dengeli bölünür
+  function manuelAdaylar(units, k, partition) {
+    const Qu = units.map(u => u.Q), a = bolumle(Qu, k, partition);
+    if (a.neden) return { neden: a.neden };
+    const out = [{ kod: 'debi', assign: a.assign }];
+    const sira = units.map((u, i) => i).sort((x, y) => ((units[y].rise || 0) + (units[y].hIn || 0)) - ((units[x].rise || 0) + (units[x].hIn || 0)) || x - y);
+    const b = bolumle(sira.map(i => Qu[i]), k, partition);
+    if (b.assign) { const as = new Array(Qu.length); sira.forEach((i, x) => { as[i] = b.assign[x]; }); if (as.join() !== a.assign.join()) out.push({ kod: 'basinc', assign: as }); }
+    return { adaylar: out };
+  }
+  // Aday sıralaması: istenen sayıda hesaplanan > daha iyi uygunluk > daha az enerji > daha düşük en büyük basınç
+  const GENEL_SIRA = ['uygun', 'sinirda', 'varsayimla', 'dogrulanamadi', 'uygun-degil'];
+  function adaySirala(list, k) {
+    const puan = x => [x.hesap && x.n === k ? 0 : 1, GENEL_SIRA.indexOf(x.genel) < 0 ? 9 : GENEL_SIRA.indexOf(x.genel), x.kWh ?? Infinity, x.Hmax ?? Infinity];
+    return list.slice().sort((p, q) => { const a = puan(p), b = puan(q); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
+  }
+
+  const api = Object.freeze({ minShift, bolumle, manuelAdaylar, adaySirala, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

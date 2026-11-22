@@ -381,7 +381,7 @@
     // 1.0.3 PR-2: Shift Yönetimi'nden "Haritada düzenle" ile gelindiyse atama TASLAĞA yazılır (proje değişmez)
     if (smTaslakDuzen()) {
       const rt = smGoster(), a = SY.ataTasi(SY.atamaOf(rt), k, brush), T = sm.taslak;
-      T.manual = { sig: rt.layout.sig, assign: a }; T.sira = SY.siraUyar(T.sira, Math.max(...a) + 1);
+      T.manual = { sig: rt.layout.sig, assign: a }; T.sira = SY.siraUyar(T.sira, Math.max(...a) + 1); if (sm) { sm.istenen = null; sm.adaylar = null; }
       brush = Math.min(brush, Math.max(...a)); sm.sec = brush; vurgu.j = brush;
       const not = $('#mTaslakNot'); if (not) not.textContent = t('Hesaplanıyor…');
       setTimeout(() => { if (!sm) return; try { smOnizle(); } catch (e) { toast(t('Önizleme hesaplanamadı') + ': ' + e.message); } vurgu.r = smGoster(); setMode('shift'); drawPoly(); const ch = $('#smChip'); if (ch) smKucult(); else if (document.documentElement.classList.contains('desk')) smCiz(); }, 30);
@@ -1004,9 +1004,12 @@
     // 1.0.1 düzeltmesi: uygun olmayan, doğrulanamayan veya yalnız varsayımla uygun düzende onay istenir.
     // Onay yalnız kaydetmeye izin verir; teknik uygunluk sonucu (W-KAP-01 vb.) değişmez.
     const uT = oT ? SY.uygunluk(oT, V0(cur.inp.Q), cur.inp) : null;
+    if (sm.istenen != null && T.manual && smGoster().sel.groups.length !== sm.istenen) return;
     if (uT && !SY.uygunMu(uT) && !confirm(t(SM_GENEL[uT.genel][0]) + '. ' + t('Bu düzen yine de kaydedilsin mi? Teknik uygunluk sonucu değişmez.'))) return;
     St.snapshot(cur, 'shift yönetimi öncesi');
-    cur.shiftGeriAl = { t: Date.now(), Ns: cur.inp.Ns ?? null, mainOd: cur.inp.mainOd ?? null, shiftEdit: cur.shiftEdit || null, shiftEditYedek: cur.shiftEditYedek || null, shiftSira: cur.shiftSira || null, shiftHedef: cur.shiftHedef ?? null, shiftHedefler: cur.shiftHedefler || null };
+    cur.shiftGeriAl = { t: Date.now(), Ns: cur.inp.Ns ?? null, mainOd: cur.inp.mainOd ?? null, shiftEdit: cur.shiftEdit || null, shiftEditYedek: cur.shiftEditYedek || null, shiftSira: cur.shiftSira || null, shiftHedef: cur.shiftHedef ?? null, shiftHedefler: cur.shiftHedefler || null, shiftKullaniciKarari: cur.shiftKullaniciKarari || null };
+    // Kullanıcı kararı: uygun olmayan düzen kaydedilirse karar ayrıca saklanır; teknik uygunluk her açılışta yeniden hesaplanır, kararla değişmez
+    if (uT && !SY.uygunMu(uT)) cur.shiftKullaniciKarari = { t: Date.now(), genel: uT.genel, bulgular: (uT.bulgular || []).slice(), Ns: smGoster().sel.groups.length }; else delete cur.shiftKullaniciKarari;
     if (T.manual) cur.shiftEdit = { sig: T.manual.sig, assign: T.manual.assign.slice() };
     else if (cur.shiftEdit) { cur.shiftEditYedek = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; }
     if (T.Ns == null) delete cur.inp.Ns; else cur.inp.Ns = T.Ns;
@@ -1024,7 +1027,7 @@
     St.snapshot(cur, 'shift geri alma öncesi');
     const yaz = (o, k, v) => { if (v == null) delete o[k]; else o[k] = v; };
     yaz(cur.inp, 'Ns', g0.Ns); yaz(cur.inp, 'mainOd', g0.mainOd);
-    ['shiftEdit', 'shiftEditYedek', 'shiftSira', 'shiftHedef', 'shiftHedefler'].forEach(k => yaz(cur, k, g0[k]));
+    ['shiftEdit', 'shiftEditYedek', 'shiftSira', 'shiftHedef', 'shiftHedefler', 'shiftKullaniciKarari'].forEach(k => yaz(cur, k, g0[k]));
     delete cur.shiftGeriAl; invalidateDesign(); persist(); smKapat(); smYenile();
     toast(t('Shift Yönetimi değişikliği geri alındı'));
   }
@@ -1090,7 +1093,14 @@
     const nsList = sm.r0.sectorAlts.filter(a => !a.manual).map(a => a.Ns).sort((a, b) => a - b);
     const nsEksi = nsList.filter(x => x < n).pop() ?? null, nsArti = nsList.find(x => x > n) ?? null;
     // Pasif − / + düğmelerinin nedeni kullanıcıya yazılır (cihaz testinde soluk düğme "çalışmıyor" gibi görünüyordu)
-    const nsS = SY.nsSinirlari(sm.r0, cur.inp.Q), nsNeden = [SY.nsPasifNedeni(nsS, n, -1), SY.nsPasifNedeni(nsS, n, 1)].filter(Boolean).map(nsNedenMetni);
+    const nsS = SY.nsSinirlari(sm.r0, cur.inp.Q), manuel = !!T.manual;
+    // Manuel mod: shift sayısı 1 … alt ünite sayısı (gerçek atamayla); otomatik mod: motorun adayları
+    const mEksi = manuel && n > 1 ? n - 1 : null, mArti = manuel && n < nsS.nU ? n + 1 : null;
+    const nsNeden = (manuel ? [n <= 1 ? { kod: 'en-az-bir' } : null, n >= nsS.nU ? { kod: 'alt-unite', nU: nsS.nU } : null]
+      : [SY.nsPasifNedeni(nsS, n, -1), SY.nsPasifNedeni(nsS, n, 1)]).filter(Boolean).map(x => nsNedenMetni(x));
+    const otoDisi = manuel && !nsS.oto.includes(n), altSinirAlti = manuel && nsS.min != null && n < nsS.min;
+    // İstenen sayı sessizce değişmez: manuel modda hesaplanan shift sayısı istenenden farklıysa Uygula kapalı
+    const istenenHata = manuel && sm.istenen != null && n !== sm.istenen ? t('İstenen {k} shift hesaplanamadı (hesaplanan {n}); bu düzen uygulanamaz.', { k: sm.istenen, n }) : null;
     const satir = sm.o1 ? SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(0, 2).concat(SY.karsilastir(sm.o0, sm.o1), SY.secSatirlar(sm.o0, sm.o1, sm.sec).slice(2)) : null;
     const bf = sm.o1 ? SY.bulguFarki(sm.o0, sm.o1) : null;
     const Qs = V0(cur.inp.Q), uyg = SY.uygunluk(o, Qs, cur.inp);
@@ -1107,6 +1117,7 @@
           [t('Gerçek alan (geometri)'), o.alanGeo ? `<span data-alan-geo="${o.alanGeo[j]}">${fmt(o.alanGeo[j], 2)} da</span>` : `<span class="ss-yok">${t('Hesaplanamadı')}</span>`],
           o.alanGeo && Math.abs(o.alanGeo[j] - s.A) >= 0.005 ? [t('Hesap alan payı (debi oranı)'), `${fmt(s.A, 2)} da`] : null,
           [t('Debi (hesap)'), `<span class="${s.overSource ? 'bad' : ''}">${fmt(s.Q, 2)} m³/h${s.overSource ? ' ✗' : ''}</span>`],
+          Qs > 0 ? [t('Kaynak kapasitesi kullanımı'), `<span class="${s.Q > Qs + 1e-9 ? 'bad' : ''}" data-kaynak-oran="${j}">%${fmt(s.Q / Qs * 100, 0)}${s.Q > Qs + 1e-9 ? ' ✗ ' + t('kaynak debisi aşılıyor') : ''}</span>`] : null,
           hedefSatir(s.Q, j),
           [t('Gerekli giriş basıncı'), `${fmt(s.H, 2)} m (${fmt(s.Hbar, 2)} bar)`],
           [t('Süre · hacim'), `${fmt(s.dur, 2)} h · ${fmt(s.vol, 1)} m³`],
@@ -1150,7 +1161,11 @@
       <header class="sm-head"><h2 id="smTitle">${t('Shift Yönetimi')}</h2>${degisti ? `<span class="tag warn">${t('taslak')}</span>` : ''}${T.manual ? `<span class="tag warn">${t('elle düzenlendi')}</span>` : `<span class="tag">${t('otomatik')}</span>`}<span class="dt-gap"></span><button type="button" class="btn sm" id="smX" aria-label="${esc(t('Kapat'))}">✕</button></header>
       <div class="sm-body">${ozetBar}
         <div class="sm-ctl">
-          <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${nsEksi == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${nsArti == null ? 'disabled' : ''}>+</button></div>
+          <div class="seg sm-mod" id="smMod" role="group" aria-label="${esc(t('Shift modu'))}"><button type="button" data-smmod="oto" class="${manuel ? '' : 'on'}">${t('Otomatik')}</button><button type="button" data-smmod="manuel" class="${manuel ? 'on' : ''}">${t('Manuel')}</button></div>
+          ${manuel ? `<div class="sm-mod-etiket"><span class="tag warn" id="smManuelEtiket">${t('Manuel tasarım')}</span>${otoDisi ? ` <span class="tag" id="smOtoDisi">${t('otomatik aralık dışı')}</span>` : ''}${altSinirAlti ? ` <span class="tag bad" id="smKaynakAlti">${t('kaynak debisi sınırının altında')}</span>` : ''}</div>` : ''}
+          <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${(manuel ? mEksi : nsEksi) == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${(manuel ? mArti : nsArti) == null ? 'disabled' : ''}>+</button></div>
+          ${istenenHata ? `<div class="note err small" id="smIstenenHata">${esc(istenenHata)}</div>` : ''}
+          ${manuel && sm.adaylar && sm.adaylar.k === n ? `<div class="sm-adaylar" id="smAdaylar"><small class="muted">${t('Başlangıç dağılımı')}:</small> ${sm.adaylar.list.map((a, i) => `<button type="button" class="btn sm${a.kod === sm.adaylar.secili ? ' primary' : ''}" data-smaday="${i}">${t(a.kod === 'basinc' ? 'Basınç gruplu' : 'Debi dengeli')} · <span class="sm-genel-cip sm-genel-${a.genel}">${t(SM_GENEL[a.genel] ? SM_GENEL[a.genel][0] : 'Hesaplanamadı')}</span>${a.kWh != null ? ` · ${fmt(a.kWh, 0)} kWh` : ''}</button>`).join(' ')}</div>` : ''}
           ${nsNeden.length ? `<ul class="sm-ns-neden small muted" id="smNsNeden">${[...new Set(nsNeden)].map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
           <label>${t('Shift sayısı')}<select id="smNs">${T.manual ? `<option value="elle" selected>${t('Elle')} (${n})</option>` : ''}${sm.r0.sectorAlts.filter(a => !a.manual).map(a => `<option value="${a.Ns}" ${nsSec === String(a.Ns) ? 'selected' : ''}>${a.Ns}${a.recommended ? ' · ' + t('Önerilen') : ''}${a.feasible ? '' : ' ✗'}</option>`).join('')}</select></label>
           <label>${t('Hedef shift debisi')} <small>m³/h</small><input id="smHedef" inputmode="decimal" value="${T.hedef != null ? inVal(T.hedef) : ''}" placeholder="—"></label>
@@ -1169,7 +1184,7 @@
         <section class="sm-sec"><h3>${t('Shift’ler (çalışma sırasıyla)')}</h3><p class="muted small">${t('Çalışma sırası yalnız sulama programı ve rapor sırasıdır; hidrolik hesabı değiştirmez.')}</p>
           <div class="sm-list">${sira.map(kart).join('')}</div></section>
       </div>
-      <footer class="sm-foot"><button type="button" class="btn primary" id="smUygula" ${degisti && !hata ? '' : 'disabled'}>${t('Uygula')}</button><button type="button" class="btn" id="smIptal">${t('İptal')}</button>${cur.shiftGeriAl ? `<button type="button" class="btn" id="smGeri">${t('Geri Al')}</button>` : ''}</footer>
+      <footer class="sm-foot"><button type="button" class="btn primary" id="smUygula" ${degisti && !hata && !istenenHata ? '' : 'disabled'}>${t('Uygula')}</button><button type="button" class="btn" id="smIptal">${t('İptal')}</button>${cur.shiftGeriAl ? `<button type="button" class="btn" id="smGeri">${t('Geri Al')}</button>` : ''}</footer>
     </div>`;
     const govde = el.querySelector('.sm-body'); if (govde && kaydirma) govde.scrollTop = kaydirma;
     const og = $('#smOzetGit'); if (og) og.onclick = () => { const c = $('#smOnceSonra'); if (c) c.scrollIntoView({ block: 'start' }); };
@@ -1195,8 +1210,28 @@
     // 1.0.4 düzeltmesi (cihaz testi): seçilen sayı "önerilen"e eşit diye kayıt silinmez. Motorun önerisi kayıtlı Ns'e bağlıdır
     // (kayıtlı sayı aday listesine eklenir); eski kural − ile başlangıca dönünce taslağı sessizce başka bir otomatik düzene
     // (ör. 9 yerine 18 shift) götürüyordu. Başlangıç sayısına dönülürse başlangıç kaydı aynen geri gelir; başka her seçim açık sayıdır.
-    const ne = $('#smNsEksi'); if (ne) ne.onclick = () => { if (nsEksi != null) nsSecim(nsEksi); };
-    const na = $('#smNsArti'); if (na) na.onclick = () => { if (nsArti != null) nsSecim(nsArti); };
+    const ne = $('#smNsEksi'); if (ne) ne.onclick = () => { if (manuel) { if (mEksi != null) manuelSec(mEksi); } else if (nsEksi != null) nsSecim(nsEksi); };
+    const na = $('#smNsArti'); if (na) na.onclick = () => { if (manuel) { if (mArti != null) manuelSec(mArti); } else if (nsArti != null) nsSecim(nsArti); };
+    el.querySelectorAll('[data-smmod]').forEach(b => b.onclick = () => {
+      if (b.dataset.smmod === 'manuel') { if (T.manual) return; T.manual = { sig: r.layout.sig, assign: SY.atamaOf(r).slice() }; sm.istenen = n; sm.adaylar = null; }
+      else { if (!T.manual) return; T.manual = null; T.sira = null; sm.istenen = null; sm.adaylar = null; }
+      yeniden();
+    });
+    el.querySelectorAll('[data-smaday]').forEach(b => b.onclick = () => { const a = sm.adaylar.list[+b.dataset.smaday]; sm.adaylar.secili = a.kod; T.manual = { sig: sm.r0.layout.sig, assign: a.assign.slice() }; yeniden(); });
+    // Manuel shift sayısı: gerçek atama adayları üretilir, her biri motorla hesaplanır; en iyisi başlangıç olur, kullanıcı değiştirebilir
+    function manuelSec(k) {
+      const c = SY.manuelAdaylar(sm.r0.units, k, window.IrriLayout.partition);
+      if (c.neden) return toast(nsNedenMetni({ kod: c.neden === 'bolunemez' ? 'alt-unite' : c.neden, n: k, nU: nsS.nU }, true));
+      const inp = Object.assign({}, cur.inp); delete inp.Ns;
+      const list = c.adaylar.map(a => { const rr = E.design(inp, settings, Object.assign({}, designOpt(), { manual: { sig: sm.r0.layout.sig, assign: a.assign } }));
+        if (!rr.ok) return Object.assign({}, a, { hesap: false, genel: 'dogrulanamadi' });
+        const oo = smOzet(rr), uu = SY.uygunluk(oo, V0(cur.inp.Q), cur.inp);
+        return Object.assign({}, a, { hesap: true, n: rr.sel.groups.length, genel: uu.genel, kWh: rr.sel.kWh, Hmax: rr.sel.pump && rr.sel.pump.H != null ? rr.sel.pump.H : null }); });
+      const sira = SY.adaySirala(list, k);
+      sm.adaylar = { k, list: sira, secili: sira[0].kod }; sm.istenen = k;
+      T.manual = { sig: sm.r0.layout.sig, assign: sira[0].assign.slice() }; T.Ns = null; T.sira = null; T.hedefler = null;
+      yeniden();
+    }
     el.querySelectorAll('input[data-smhedefj]').forEach(x => x.onchange = () => {
       const j = +x.dataset.smhedefj, v = SY.hedefOku(x.value);
       if (Number.isNaN(v)) { toast(t('Hedef debi pozitif bir sayı olmalı')); x.value = T.hedefler && T.hedefler[j] != null ? inVal(T.hedefler[j]) : ''; return; }
@@ -1206,13 +1241,13 @@
     el.querySelectorAll('select[data-smekle]').forEach(x => x.onchange = () => {
       if (x.value === '') return;
       const j = +x.dataset.smekle, assign = SY.ataTasi(SY.atamaOf(r), +x.value, j);
-      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1);
+      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1); sm.istenen = null; sm.adaylar = null;
       // Boşalan shift numarası sıkıştırılırsa seçili shift'in yeni numarası: taşınan ünitenin yeni shift'i
       sm.sec = assign[+x.value]; yeniden();
     });
     el.querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const j = +b.dataset.ac; sm.acik = !(sm.sec === j && sm.acik); sm.sec = j; if (vurgu) { vurgu.j = j; vurgu.fit = true; } smCiz(); if (vurgu && map) drawPoly(); });
     el.querySelectorAll('select[data-smunit]').forEach(x => x.onchange = () => {
-      const assign = SY.ataTasi(SY.atamaOf(r), +x.dataset.smunit, +x.value);      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1);
+      const assign = SY.ataTasi(SY.atamaOf(r), +x.dataset.smunit, +x.value);      T.manual = { sig: r.layout.sig, assign }; T.sira = SY.siraUyar(T.sira, Math.max(...assign) + 1); sm.istenen = null; sm.adaylar = null;
       sm.sec = Math.min(+x.value, Math.max(...assign)); yeniden();
     });
   }
