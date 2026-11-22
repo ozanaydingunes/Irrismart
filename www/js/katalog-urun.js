@@ -37,7 +37,7 @@
     kayip_temiz: 'basinc_bar', kayip_kirli: 'basinc_bar', geri_yikama_esigi: 'basinc_bar',
     devir: 'devir_rpm', cark_capi: 'uzunluk_mm', guc_motor: 'guc_kw', verim_max: 'yuzde',
   };
-  const METIN_SECENEK = { pompa_tipi: ['dalgic', 'santrifuj'], filtre_tipi: ['disk', 'elek', 'kum', 'hidrosiklon'], baglanti: ['elektrofuzyon', 'alin-kaynak', 'kompresyon', 'yapistirma', 'contali', 'flans', 'disli'] };
+  const METIN_SECENEK = { pompa_tipi: ['dalgic', 'santrifuj', 'dikey', 'booster'], filtre_tipi: ['disk', 'elek', 'kum', 'hidrosiklon'], baglanti: ['elektrofuzyon', 'alin-kaynak', 'kompresyon', 'yapistirma', 'contali', 'flans', 'disli'] };
   const MALZEME = ['PE80', 'PE100', 'PE100-RC', 'PVC-U', 'PP', 'PP-R', 'LDPE', 'pirinç', 'dökme demir', 'paslanmaz', 'diger'];
 
   const kirp = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
@@ -177,7 +177,7 @@
       }
       if (!(egriler || []).some(e => e.tur === 'NPSHr')) ekle('eksik-npsh', 'tamlık', 'uyari', 'NPSHr eğrisi yok: emme koşulu denetlenemez (seçimde uyarı olarak gösterilir)');
       if (!(egriler || []).some(e => e.tur === 'verim')) ekle('eksik-verim', 'tamlık', 'uyari', 'verim eğrisi yok: güç ve enerji hesaplanamaz (seçimde verisi eksik sayılır)');
-      if (v('pompa_tipi') == null) ekle('eksik-pompa_tipi', 'tamlık', 'eksik', 'pompa tipi (dalgıç / santrifüj) yok');
+      if (v('pompa_tipi') == null) ekle('eksik-pompa_tipi', 'tamlık', 'eksik', 'pompa tipi (dalgıç / santrifüj / dikey / booster) yok');
     }
     const gecti = !K.some(k => k.durum === 'kaldi' || k.durum === 'eksik');   // 'uyari' doğrulamayı engellemez
     return { gecti, kurallar: K };
