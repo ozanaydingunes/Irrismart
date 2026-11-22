@@ -288,10 +288,11 @@
     if (b.assign) { const as = new Array(Qu.length); sira.forEach((i, x) => { as[i] = b.assign[x]; }); if (as.join() !== a.assign.join()) out.push({ kod: 'basinc', assign: as }); }
     return { adaylar: out };
   }
-  // Aday sıralaması: istenen sayıda hesaplanan > daha iyi uygunluk > daha az enerji > daha düşük en büyük basınç
+  // Aday sıralaması (ekranda da açıklanır): istenen sayıda hesaplanan > daha iyi teknik uygunluk > tur süresi günlük çalışma
+  // süresine sığan > daha kısa toplam tur (tüm shift'lerin sulama süreleri toplamı) > daha az enerji > daha düşük en büyük basınç
   const GENEL_SIRA = ['uygun', 'sinirda', 'varsayimla', 'dogrulanamadi', 'uygun-degil'];
   function adaySirala(list, k) {
-    const puan = x => [x.hesap && x.n === k ? 0 : 1, GENEL_SIRA.indexOf(x.genel) < 0 ? 9 : GENEL_SIRA.indexOf(x.genel), x.kWh ?? Infinity, x.Hmax ?? Infinity];
+    const puan = x => [x.hesap && x.n === k ? 0 : 1, GENEL_SIRA.indexOf(x.genel) < 0 ? 9 : GENEL_SIRA.indexOf(x.genel), x.sigar === false ? 1 : 0, x.tur ?? Infinity, x.kWh ?? Infinity, x.Hmax ?? Infinity];
     return list.slice().sort((p, q) => { const a = puan(p), b = puan(q); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
   }
 

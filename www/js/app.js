@@ -968,7 +968,8 @@
     smCiz();
     const gv = document.querySelector('#smPanel .sm-body'); if (gv) gv.scrollTop = 0;
   }
-  const smHidrolikAyni = () => (sm.taslak.Ns ?? null) === (sm.ilk.Ns ?? null) && JSON.stringify(sm.taslak.manual && sm.taslak.manual.assign) === JSON.stringify(sm.ilk.manual && sm.ilk.manual.assign);
+  const smHidrolikAyni = () => ((sm.taslak.Ns ?? null) === (sm.ilk.Ns ?? null) && JSON.stringify(sm.taslak.manual && sm.taslak.manual.assign) === JSON.stringify(sm.ilk.manual && sm.ilk.manual.assign))
+    || (!!sm.taslak.manual && !sm.ilk.manual && (sm.taslak.Ns ?? null) === (sm.ilk.Ns ?? null) && sm.taslak.manual.sig === sm.r0.layout.sig && JSON.stringify(sm.taslak.manual.assign) === JSON.stringify(SY.atamaOf(sm.r0)));
   function smOnizle() {
     const T = sm.taslak;
     if (smHidrolikAyni()) { sm.r1 = null; sm.o1 = null; }
@@ -1164,11 +1165,9 @@
           ${manuel ? `<div class="sm-mod-etiket"><span class="tag warn" id="smManuelEtiket">${t('Manuel tasarım')}</span>${otoDisi ? ` <span class="tag" id="smOtoDisi">${t('otomatik aralık dışı')}</span>` : ''}${altSinirAlti ? ` <span class="tag bad" id="smKaynakAlti">${t('kaynak debisi sınırının altında')}</span>` : ''}</div>` : ''}
           <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${(manuel ? mEksi : nsEksi) == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${(manuel ? mArti : nsArti) == null ? 'disabled' : ''}>+</button></div>
           ${istenenHata ? `<div class="note err small" id="smIstenenHata">${esc(istenenHata)}</div>` : ''}
-          ${manuel && sm.adaylar && sm.adaylar.k === n ? `<div class="sm-adaylar" id="smAdaylar"><small class="muted">${t('Başlangıç dağılımı')}:</small> ${sm.adaylar.list.map((a, i) => `<button type="button" class="btn sm${a.kod === sm.adaylar.secili ? ' primary' : ''}" data-smaday="${i}">${t(a.kod === 'basinc' ? 'Basınç gruplu' : 'Debi dengeli')} · <span class="sm-genel-cip sm-genel-${a.genel}">${t(SM_GENEL[a.genel] ? SM_GENEL[a.genel][0] : 'Hesaplanamadı')}</span>${a.kWh != null ? ` · ${fmt(a.kWh, 0)} kWh` : ''}</button>`).join(' ')}</div>` : ''}
           ${nsNeden.length ? `<ul class="sm-ns-neden small muted" id="smNsNeden">${[...new Set(nsNeden)].map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-          <label>${t('Shift sayısı')}<select id="smNs">${T.manual ? `<option value="elle" selected>${t('Elle')} (${n})</option>` : ''}${sm.r0.sectorAlts.filter(a => !a.manual).map(a => `<option value="${a.Ns}" ${nsSec === String(a.Ns) ? 'selected' : ''}>${a.Ns}${a.recommended ? ' · ' + t('Önerilen') : ''}${a.feasible ? '' : ' ✗'}</option>`).join('')}</select></label>
+          ${manuel ? '' : `<label>${t('Shift sayısı')}<select id="smNs">${T.manual ? `<option value="elle" selected>${t('Elle')} (${n})</option>` : ''}${sm.r0.sectorAlts.filter(a => !a.manual).map(a => `<option value="${a.Ns}" ${nsSec === String(a.Ns) ? 'selected' : ''}>${a.Ns}${a.recommended ? ' · ' + t('Önerilen') : ''}${a.feasible ? '' : ' ✗'}</option>`).join('')}</select></label>`}
           <label>${t('Hedef shift debisi')} <small>m³/h</small><input id="smHedef" inputmode="decimal" value="${T.hedef != null ? inVal(T.hedef) : ''}" placeholder="—"></label>
-          ${T.manual ? `<button type="button" class="btn sm" id="smOto">${t('Otomatik düzene dön')}</button>` : ''}
         </div>
         ${sm.kartaGit ? `<button type="button" class="btn sm" id="smKartaGit" style="margin:4px 0 8px">${t('Seçili shift kartına git')} (Shift ${sm.sec + 1}) ↓</button>` : ''}
         <p class="muted small">${t('Kaynak debisi')} ${fmt(Qs, 1)} m³/h · ${t('Toplam debi')} ${fmt(o.Qtoplam, 1)} m³/h · ${t('Bir tur süresi')} ${fmt(o.tur, 1)} h${o.feasible ? '' : ' ✗'}. ${t('Hedef debi yalnız bilgidir; hesabı değiştirmez.')}</p>
@@ -1178,6 +1177,7 @@
           ${uyg.map(x => `<div class="sm-uy sm-uy-${SM_DURUM[x.durum][0]}" data-k="${x.k}" data-durum="${x.durum}"><span class="sm-uy-i" aria-hidden="true">${SM_DURUM[x.durum][1]}</span><span><b>${t(x.ad)}</b>: ${fmt(x.deger, x.d)} ${esc(t(x.birim))} ${x.sinir != null ? `/ ${t('sınır')} ${fmt(x.sinir, x.d)} ${esc(t(x.birim))}` : `(${t('kaynak debisi girilmedi')})`} — <i>${t(SM_DURUM[x.durum][2])}</i><br><small>${t(x.not)}</small></span></div>`).join('')}
           ${o.kontroller && o.kontroller.length ? `<details class="sm-kontrol" id="smKontrol"><summary>${t('Bütün mühendislik kontrolleri')} (${o.kontroller.length}) — ${o.kontroller.filter(c => c.level === 'bad').length} ✗ · ${o.kontroller.filter(c => c.level === 'warn').length} !</summary><ul>${o.kontroller.map(c => `<li class="sm-uy-${c.level === 'bad' ? 'bad' : c.level === 'warn' ? 'warn' : 'ok'}" data-kod="${esc(c.kod || '')}"><span class="sm-uy-i">${c.level === 'bad' ? '✗' : c.level === 'warn' ? '!' : '✓'}</span> <code>${esc(c.kod || '')}</code> ${esc(t(c.title))} — ${esc(t(c.text, Object.fromEntries(Object.entries(c.params || {}).map(([k, v]) => [k, Array.isArray(v) ? fmt(v[0], v[1]) : v]))))}</li>`).join('')}</ul></details>` : ''}
           ${uyg.genel === 'uygun-degil' ? `<div class="note err small" id="smUygunDegil">${t('Bu düzen proje verisine göre uygun değil. Uygulamak mümkündür ama teknik uygunluk sonucu değişmez; Sonuç ekranında ve raporlarda uygunsuz olarak kalır.')}</div>` : ''}</section>
+          ${manuel && sm.adaylar && sm.adaylar.k === n ? `<div class="sm-adaylar" id="smAdaylar"><small class="muted">${t('Başlangıç dağılımı')}:</small> ${sm.adaylar.list.map((a, i) => `<button type="button" class="btn sm${a.kod === sm.adaylar.secili ? ' primary' : ''}" data-smaday="${i}">${t(a.kod === 'basinc' ? 'Basınç gruplu' : 'Debi dengeli')} · <span class="sm-genel-cip sm-genel-${a.genel}">${t(SM_GENEL[a.genel] ? SM_GENEL[a.genel][0] : 'Hesaplanamadı')}</span>${a.tur != null ? ` · ${t('tur')} ${fmt(a.tur, 1)} h${a.sigar === false ? ' ✗' : ''}` : ''}${a.kWh != null ? ` · ${fmt(a.kWh, 0)} kWh` : ''}</button>`).join(' ')}<details class="small muted"><summary>${t('Öneriler nasıl karşılaştırılır?')}</summary><p id="smAdayOlcut">${t('Karşılaştırma sırası: istenen shift sayısı hesaplandı mı → teknik uygunluk → tur süresi günlük çalışma süresine sığıyor mu → toplam tur süresi (shift sulama sürelerinin toplamı) → yıllık enerji (kWh) → en büyük pompa basıncı. Debi dengeli: en büyük shift debisini en aza indirir. Basınç gruplu: gerekli basıncı benzer alt üniteleri aynı shift’te toplar. İki öneri de gerçek alt ünite atamasıdır ve motorla hesaplanmıştır.')}</p></details></div>` : ''}
         <section class="sm-sec" id="smOnceSonra"><h3>${t('Önce / sonra')}</h3>${cmp}</section>
         ${bfHtml}
         <section class="sm-sec"><h3>${t('Shift’ler (çalışma sırasıyla)')}</h3><p class="muted small">${t('Çalışma sırası yalnız sulama programı ve rapor sırasıdır; hidrolik hesabı değiştirmez.')}</p>
@@ -1198,7 +1198,7 @@
     $('#smX').onclick = smIptal; $('#smIptal').onclick = smIptal; $('#smUygula').onclick = smUygula;
     const gb = $('#smGeri'); if (gb) gb.onclick = smGeriAl;
     function nsSecim(k) { const d = SY.nsDogrula(k, nsS); if (!d.ok) { toast(nsNedenMetni({ kod: d.kod, n: k, nU: nsS.nU, Qs: nsS.Qs, min: nsS.min, otoMin: nsS.otoMin, otoMax: nsS.otoMax }, true)); return; } T.Ns = !sm.ilk.manual && k === (sm.ilk.Ns ?? sm.n0) ? sm.ilk.Ns : k; T.manual = null; T.sira = null; if (k !== n) T.hedefler = null; else if (T.Ns === sm.ilk.Ns) T.hedefler = sm.ilk.hedefler ? Object.assign({}, sm.ilk.hedefler) : null; yeniden(); }
-    $('#smNs').onchange = e => { const v = e.target.value; if (v === 'elle') return; nsSecim(Number(v)); };
+    const nsl = $('#smNs'); if (nsl) nsl.onchange = e => { const v = e.target.value; if (v === 'elle') return; nsSecim(Number(v)); };
     $('#smHedef').onchange = e => { const x = SY.hedefOku(e.target.value); if (Number.isNaN(x)) { toast(t('Hedef debi pozitif bir sayı olmalı')); e.target.value = T.hedef != null ? inVal(T.hedef) : ''; return; } if (x === T.hedef) return; T.hedef = x; setTimeout(() => { if (sm) smCiz(); }, 0); };   // odak kaybında (yeniden çizim sırasında) iç içe çizim olmasın
     const kg = $('#smKartaGit'); if (kg) kg.onclick = () => { const c = document.querySelector(`#smPanel .sm-shift[data-j="${sm.sec}"]`); if (c) c.scrollIntoView({ block: 'start' }); };
     const ob = $('#smOto'); if (ob) ob.onclick = () => { T.manual = null; T.sira = null; yeniden(); };
@@ -1225,7 +1225,7 @@
       const list = c.adaylar.map(a => { const rr = E.design(inp, settings, Object.assign({}, designOpt(), { manual: { sig: sm.r0.layout.sig, assign: a.assign } }));
         if (!rr.ok) return Object.assign({}, a, { hesap: false, genel: 'dogrulanamadi' });
         const oo = smOzet(rr), uu = SY.uygunluk(oo, V0(cur.inp.Q), cur.inp);
-        return Object.assign({}, a, { hesap: true, n: rr.sel.groups.length, genel: uu.genel, kWh: rr.sel.kWh, Hmax: rr.sel.pump && rr.sel.pump.H != null ? rr.sel.pump.H : null }); });
+        return Object.assign({}, a, { hesap: true, n: rr.sel.groups.length, genel: uu.genel, kWh: rr.sel.kWh, tur: rr.sel.cycleHours, sigar: rr.sel.feasible, Qmax: rr.sel.Qmax, Hmax: rr.sel.pump && rr.sel.pump.H != null ? rr.sel.pump.H : null }); });
       const sira = SY.adaySirala(list, k);
       sm.adaylar = { k, list: sira, secili: sira[0].kod }; sm.istenen = k;
       T.manual = { sig: sm.r0.layout.sig, assign: sira[0].assign.slice() }; T.Ns = null; T.sira = null; T.hedefler = null;

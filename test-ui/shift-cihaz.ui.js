@@ -77,7 +77,7 @@ const sayi = s => parseFloat(String(s).replace(/\./g, '').replace(',', '.'));
 
   // ---------- H2 Uygunluk ----------
   check(await pg.getAttribute('#smUygunluk', 'data-genel') !== 'uygun', 'H2 günlük süre girilmemiş proje "uygun" gösterilmemeli');
-  await pg.selectOption('#smNs', { value: String(m0.n) }); await pg.waitForTimeout(300);
+  await pg.tap('#smMod [data-smmod=oto]'); await pg.waitForFunction(() => document.querySelector('#smPanel').getAttribute('aria-busy') !== 'true'); await pg.waitForTimeout(300);   // manuel moddan otomatik düzene dönüş (shift sayısı listesi yalnız otomatik modda)
   check(await pg.getAttribute('#smUygunluk [data-k=gunluk]', 'data-durum') === 'varsayim' && ['varsayimla', 'uygun-degil'].includes(await pg.getAttribute('#smUygunluk', 'data-genel')) && await pg.isVisible('#smGenel'), 'H2 varsayılan günlük süre: satır "varsayımla", genel sonuç uygun değil (bu projede W-PN-02 de var)');
   await pg.tap('#smIptal'); await pg.waitForTimeout(300);
   await ac('pb');
