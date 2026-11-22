@@ -66,20 +66,36 @@ const PROJ = [
 
   // ---------- Gerçek WebView'da manuel mod etkileşimi (dokunuşlar Playwright tap ile WebView'a gönderilir) ----------
   page.on('dialog', d => d.accept());
+  // Gerçek dokunuş: `adb input tap`. CSS pikseli → ekran pikseli; WebView ofseti bilinen bir noktaya dokunularak ölçülür.
+  const [EW, EH] = (await sh('wm size')).match(/(\d+)x(\d+)/).slice(1).map(Number);
+  let OX = 0, OY = 0, DPR = 1;
+  const kalibre = async () => {
+    DPR = await page.evaluate(() => devicePixelRatio);
+    await page.evaluate(() => { window.__kal = null; addEventListener('touchstart', e => { const t = e.touches[0]; window.__kal = { cx: t.clientX, cy: t.clientY }; }, { once: true, capture: true }); });
+    await sh(`input tap ${Math.round(EW / 2)} ${Math.round(EH * 0.5)}`); await page.waitForTimeout(800);
+    const k = await page.evaluate(() => window.__kal); if (k) { OX = EW / 2 / DPR - k.cx; OY = EH * 0.5 / DPR - k.cy; }
+    log('kalibrasyon', JSON.stringify({ k, OX, OY, DPR }));
+  };
+  const dokun = async sel => {
+    const b = await page.evaluate(s => { const e = document.querySelector(s); if (!e) return null; e.scrollIntoView({ block: 'nearest' }); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, sel);
+    if (!b) throw new Error('dokunulacak öğe yok: ' + sel);
+    await sh(`input tap ${Math.round((b.x + OX) * DPR)} ${Math.round((b.y + OY) * DPR)}`); await page.waitForTimeout(1200);
+  };
+  await kalibre();
   const bosta = () => page.waitForFunction(() => { const p = document.querySelector('#smPanel'); return p && p.getAttribute('aria-busy') !== 'true'; }, null, { timeout: 60000 }).then(() => page.waitForTimeout(400));
   const ekranda = sel => page.evaluate(s => { const e = document.querySelector(s); if (!e) return false; const b = e.getBoundingClientRect(); return b.width > 0 && b.top >= 0 && b.left >= 0 && b.bottom <= innerHeight && b.right <= innerWidth; }, sel);
   const N = async () => +(await page.textContent('#smNsN'));
   await page.evaluate(() => document.querySelector('[data-open="p3"]').click()); await page.waitForTimeout(800);
   await page.evaluate(() => window.IrriApp.show('hidrolik')); await page.waitForTimeout(2000);
-  await page.tap('#bShiftYon'); await page.waitForSelector('#smPanel'); await bosta();
+  await dokun('#bShiftYon'); await page.waitForSelector('#smPanel'); await bosta();
   SONUC('WebView: panel başlığı, mod seçici, − / + ve uygunluk kaydırmadan ekranda (otomatik)', (await Promise.all(['#smTitle', '#smMod [data-smmod=manuel]', '#smNsEksi', '#smNsArti', '#smUygunluk h3'].map(ekranda))).every(Boolean));
-  await page.tap('#smMod [data-smmod=manuel]'); await bosta();
+  await dokun('#smMod [data-smmod=manuel]'); await bosta();
   SONUC('WebView: Manuel moda geçildi', await page.isVisible('#smManuelEtiket'));
   SONUC('WebView: manuel modda başlık, − / + ve uygunluk kaydırmadan ekranda', (await Promise.all(['#smTitle', '#smNsEksi', '#smNsArti', '#smUygunluk h3'].map(ekranda))).every(Boolean));
-  const n0 = await N(); await page.tap('#smNsEksi'); await bosta(); const n1 = await N();
+  const n0 = await N(); await dokun('#smNsEksi'); await bosta(); const n1 = await N();
   const genel = await page.getAttribute('#smUygunluk', 'data-genel');
   SONUC(`WebView: manuel − dokunuşu ${n0} → ${n1}; kaynak sınırı altı "uygun değil"`, n1 === n0 - 1 && genel === 'uygun-degil' && await page.isVisible('#smKaynakAlti'), { genel });
-  await page.tap('#smUygula'); await page.waitForTimeout(2500);
+  await dokun('#smUygula'); await page.waitForTimeout(2500);
   const kayit = await page.evaluate(() => JSON.parse(localStorage.getItem('irrismart.projects.v1')).find(p => p.id === 'p3'));
   SONUC('WebView: uygunsuz manuel düzen onayla kaydedildi, kullanıcı kararı saklandı', kayit.shiftEdit && new Set(kayit.shiftEdit.assign).size === n1 && kayit.shiftKullaniciKarari && kayit.shiftKullaniciKarari.genel === 'uygun-degil');
   await baslat();
@@ -87,7 +103,7 @@ const PROJ = [
   SONUC('WebView: yeniden açılışta manuel düzen duruyor; raporda uygunsuz bulgu ve kullanıcı kararı notu', sonra.n === n1 && sonra.uygunsuz >= 1 && sonra.not, sonra);
   await page.evaluate(() => document.querySelector('[data-open="p3"]').click()); await page.waitForTimeout(800);
   await page.evaluate(() => window.IrriApp.show('hidrolik')); await page.waitForTimeout(2000);
-  if (await page.$('#bShiftGeri')) { await page.tap('#bShiftGeri'); await page.waitForTimeout(2000); }
+  if (await page.$('#bShiftGeri')) { await dokun('#bShiftGeri'); await page.waitForTimeout(2000); }
   const geri = await page.evaluate(() => JSON.parse(localStorage.getItem('irrismart.projects.v1')).find(x => x.id === 'p3'));
   SONUC('WebView: Geri Al manuel düzeni ve kararı geri aldı', !geri.shiftEdit && !geri.shiftKullaniciKarari);
   // Yeniden başlatma sonrası veri duruyor
