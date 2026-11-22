@@ -1158,10 +1158,9 @@
     const eskiGovde = el.querySelector('.sm-body'), kaydirma = eskiGovde ? eskiGovde.scrollTop : 0;
     el.removeAttribute('aria-busy');
     el.innerHTML = `<div class="sm-in">
-      <header class="sm-head"><h2 id="smTitle">${t('Shift Yönetimi')}</h2>${degisti ? `<span class="tag warn">${t('taslak')}</span>` : ''}${T.manual ? `<span class="tag warn">${t('elle düzenlendi')}</span>` : `<span class="tag">${t('otomatik')}</span>`}<span class="dt-gap"></span><button type="button" class="btn sm" id="smX" aria-label="${esc(t('Kapat'))}">✕</button></header>
+      <header class="sm-head"><h2 id="smTitle">${t('Shift Yönetimi')}</h2>${degisti ? `<span class="tag warn">${t('taslak')}</span>` : ''}<span class="seg sm-mod" id="smMod" role="group" aria-label="${esc(t('Shift modu'))}"><button type="button" data-smmod="oto" class="${manuel ? '' : 'on'}">${t('Otomatik')}</button><button type="button" data-smmod="manuel" class="${manuel ? 'on' : ''}">${t('Manuel')}</button></span><span class="dt-gap"></span><button type="button" class="btn sm" id="smX" aria-label="${esc(t('Kapat'))}">✕</button></header>
       <div class="sm-body">${ozetBar}
         <div class="sm-ctl">
-          <div class="seg sm-mod" id="smMod" role="group" aria-label="${esc(t('Shift modu'))}"><button type="button" data-smmod="oto" class="${manuel ? '' : 'on'}">${t('Otomatik')}</button><button type="button" data-smmod="manuel" class="${manuel ? 'on' : ''}">${t('Manuel')}</button></div>
           ${manuel ? `<div class="sm-mod-etiket"><span class="tag warn" id="smManuelEtiket">${t('Manuel tasarım')}</span>${otoDisi ? ` <span class="tag" id="smOtoDisi">${t('otomatik aralık dışı')}</span>` : ''}${altSinirAlti ? ` <span class="tag bad" id="smKaynakAlti">${t('kaynak debisi sınırının altında')}</span>` : ''}</div>` : ''}
           <div class="sm-ns"><button type="button" class="btn" id="smNsEksi" aria-label="${esc(t('Shift sayısını azalt'))}" ${(manuel ? mEksi : nsEksi) == null ? 'disabled' : ''}>−</button><span class="sm-ns-n" id="smNsN" aria-live="polite">${n}</span><button type="button" class="btn" id="smNsArti" aria-label="${esc(t('Shift sayısını artır'))}" ${(manuel ? mArti : nsArti) == null ? 'disabled' : ''}>+</button></div>
           ${istenenHata ? `<div class="note err small" id="smIstenenHata">${esc(istenenHata)}</div>` : ''}

@@ -161,7 +161,7 @@ const EKRAN = [
       check((B.find(b => b.k === hedef.k) || {}).s === 0, `${ad} D7 dokunulan alt ünite (M${hedef.k + 1}) taslakta Shift 1'e taşındı`);
       check(await tasarim('pb') === kayit, `${ad} D7 haritada düzenleme kaydı (tasarım verisi) değiştirmez`);
       await dokun(desk ? '#mPanel' : '#smChip'); await pg.waitForTimeout(600);
-      check(await pg.isVisible('#smPanel') && /elle/.test(await pg.textContent('#smPanel .sm-head')), `${ad} D7 panele dönüş, taslak elle`);
+      check(await pg.isVisible('#smPanel') && await pg.$eval('#smMod [data-smmod=manuel]', e => e.classList.contains('on')), `${ad} D7 panele dönüş, taslak elle`);
       await dokun('#smUygula'); await pg.waitForTimeout(1500);
       const pu = await P('pb');
       check(pu.shiftEdit && pu.shiftEdit.assign[hedef.k] === 0 && pu.shiftGeriAl, `${ad} D7 Uygula atamayı kaydeder`);
