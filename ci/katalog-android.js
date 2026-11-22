@@ -79,6 +79,15 @@ const BOYUTLAR = (process.env.KAT_BOYUT || '5,50,120,300').split(',').map(Number
   await baslat(); const temiz = await page.evaluate(() => window.IrriKatalogDepo.sahipsizTemizle());
   SONUC('yarım kalan yükleme: .part dosyası açılışta temizlenir, kayıt oluşmaz', !(await dosyalar()).some(f => /\.part$/.test(f.ad)) && (await listele()).kataloglar.length === kayitlar.length, { yarim: yarim.length, temizlenen: temiz });
 
+  // 5b) Kayıt tamamlanmadan kapanma: dosya yazıldı, katalog kaydı yapılmadan uygulama kapatıldı → açılışta kayıt yok, dosya temizlenir
+  const n0 = (await listele()).kataloglar.length, d5 = await yaz(5, 55);
+  if (d5.ok) { await sh(`am force-stop ${PKG}`); const ara = (await dosyalar()).some(f => f.ad === d5.d.anahtar + '.pdf');
+    await baslat(); await page.waitForTimeout(5000); await page.evaluate(() => window.IrriKatalogDepo.sahipsizTemizle());
+    const v = await listele();
+    SONUC('kayıt tamamlanmadan kapanma: yarım/hatalı kayıt yok, sahipsiz dosya temizlendi, eski kayıtlar sağlam', v.kataloglar.length === n0 && !v.kataloglar.some(k => k.dosya && k.dosya.anahtar === d5.d.anahtar) && !(await dosyalar()).some(f => f.ad === d5.d.anahtar + '.pdf'), { kapanistaDosyaVardi: ara });
+    let saglam = true; for (const k of v.kataloglar) saglam = saglam && (await page.evaluate(d => window.IrriKatalogDepo.dosyaDogrula(d), k.dosya)).ok; SONUC('kapanma sonrası mevcut kataloglar SHA-256 ile doğrulanır', saglam); }
+  else SONUC('kapanma testi için yazım', false, d5);
+
   // 6) Bilgi yedeği → kayıtları sil → geri yükle → aynı PDF ile eşleştir
   const kk = (await listele()).kataloglar.find(k => k.ad === `Test ${BOYUTLAR[1] || BOYUTLAR[0]} MB`);
   if (kk) {
@@ -107,7 +116,7 @@ const BOYUTLAR = (process.env.KAT_BOYUT || '5,50,120,300').split(',').map(Number
   await sh(`fallocate -l ${doldur}k /data/local/tmp/doldur.bin || dd if=/dev/zero of=/data/local/tmp/doldur.bin bs=1048576 count=${Math.floor(doldur / 1024)}`);
   log('doldurma sonrası boş alan (KB)', await bosAlanKB());
   const r4 = await yaz(120, 7);
-  SONUC('yetersiz alan: yazım reddedilir, anlaşılır hata', !r4.ok && /boş alan|space|ENOSPC/i.test(r4.hata || ''), r4.ok ? 'yazıldı!' : r4.hata);
+  SONUC('yetersiz alan: yazım reddedilir, anlaşılır Türkçe hata', !r4.ok && /boş alan|Dosya okunamadı/.test(r4.hata || '') && !/permission problems/.test(r4.hata || ''), r4.ok ? 'yazıldı!' : r4.hata);
   SONUC('yetersiz alan: yarım dosya kalmaz', !(await dosyalar()).length, await dosyalar());
   await sh('rm -f /data/local/tmp/doldur.bin');
   log('BİTTİ');
