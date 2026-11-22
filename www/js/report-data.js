@@ -101,7 +101,9 @@
     const bomHead = [T('Grup'), 'Kalem', 'Miktar', 'Birim', 'Birim fiyat (TL)', 'Tutar (TL)', 'Fiyat kaynağı'];
     const priced = r.bom.filter(b => b.fiyat != null), unpriced = r.bom.filter(b => b.fiyat == null);
     const bomP = [bomHead].concat(priced.map(b => [T(b.grup), b.kalem + (b.opsiyonel ? ' (' + T('opsiyonel') + ')' : ''), b.miktar, T(b.birim), b.fiyat, b.tutar, SRC()[b.kaynak] || '']));
-    const bomU = [[T('Grup'), T('Kalem'), T('Miktar'), T('Birim')]].concat(unpriced.map(b => [T(b.grup), b.kalem + (b.opsiyonel ? ' (' + T('opsiyonel') + ')' : ''), b.miktar, T(b.birim)]));
+    const bomU = [[T('Grup'), T('Kalem'), T('Miktar'), T('Birim')]].concat(unpriced.map(b => [T(b.grup), b.kalem + (b.opsiyonel ? ' (' + T('opsiyonel') + ')' : ''), b.miktar, T(b.birim)]))
+      // Katalog kalemleri (ekipman önerilerinden): üretici, model, kod ve kaynak katalog/sayfa; uygunluğu doğrulanmayan kalem açıkça belirtilir
+      .concat(((p && p.katalogKalemleri) || []).map(k => [T('Katalog kalemi'), `${k.uretici} ${k.model || ''}${k.urunKodu ? ' (' + k.urunKodu + ')' : ''} — ${T('kaynak')}: ${k.kaynak || '—'}${k.durum !== 'uygun' ? ' — ' + T('kullanıcı kararı: uygunluk doğrulanmadı') : ''}`, k.miktar, T(k.birim)]));
     const bomDec = [null, null, 0, null, 2, 0, null];
     const toplam = [
       [T('Fiyatlı kalemler ara toplamı (opsiyoneller hariç)'), r.cost.subtotal, 'TL', 0],
