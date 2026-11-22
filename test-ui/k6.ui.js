@@ -37,9 +37,9 @@ const check = (c, msg) => { if (c) passes++; else { fails++; console.log('✗ ' 
   check(Object.keys(eskiAyar).every(k => JSON.stringify(ayar[k]) === JSON.stringify(eskiAyar[k])), 'S-1 eski fiyat ayarları değişti');
   check((await pg.textContent('#projList')).includes(eski[0].name), 'S-1 eski proje listede yok');
   await pg.click(`[data-open="${eski[0].id}"]`); await pg.waitForTimeout(400); await go('sonuc');
-  check((await pg.$$('#akil .ak-card')).length > 0, 'S-1 eski proje 1.0.5’te hesaplanamadı');
+  check((await pg.$$('#akil .ak-card')).length > 0, 'S-1 eski proje 1.0.6’da hesaplanamadı');
   await pg.click('#btnSettings'); await pg.waitForTimeout(400);
-  check(/IrriGrow v1\.0\.5/.test(await pg.textContent('#settings')), 'S-1 Ayarlar’da sürüm 1.0.5 yazmıyor');
+  check(/IrriGrow v1\.0\.6/.test(await pg.textContent('#settings')), 'S-1 Ayarlar’da sürüm 1.0.6 yazmıyor');
 
   // S-2
   await go('projeler'); await pg.click('#btnNew'); await pg.waitForTimeout(900);   // ad penceresi varsayılanla onaylanır
