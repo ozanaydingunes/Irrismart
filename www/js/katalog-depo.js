@@ -10,7 +10,7 @@
 (function (g) {
   'use strict';
   const M = g.IrriKatalogModel;
-  const DB_AD = 'irrigrow-katalog', DB_SURUM = 1, PARCA = 1024 * 1024, KLASOR = 'kataloglar';
+  const DB_AD = 'irrigrow-katalog', DB_SURUM = 2, PARCA = 1024 * 1024, KLASOR = 'kataloglar';
   const yerel = () => !!(g.Capacitor && g.Capacitor.isNativePlatform && g.Capacitor.isNativePlatform() && FS());
   const FS = () => g.Capacitor && g.Capacitor.Plugins && g.Capacitor.Plugins.Filesystem;
 
@@ -21,7 +21,8 @@
     dbSoz = new Promise((ok, red) => {
       if (!g.indexedDB) return red(new Error('IndexedDB kullanılamıyor (gizli pencere veya tarayıcı kısıtı)'));
       const r = g.indexedDB.open(g.IRRI_KATALOG_DB || DB_AD, DB_SURUM);
-      r.onupgradeneeded = () => { const d = r.result; for (const s of ['firmalar', 'kataloglar']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); if (!d.objectStoreNames.contains('dosyalar')) d.createObjectStore('dosyalar'); };
+      // Sürüm 2 (teknik ürün veritabanı): yalnız eksik depolar eklenir; mevcut firma, katalog ve PDF kayıtlarına dokunulmaz
+      r.onupgradeneeded = () => { const d = r.result; for (const s of ['firmalar', 'kataloglar', 'urunler', 'degerler', 'egriler']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); if (!d.objectStoreNames.contains('dosyalar')) d.createObjectStore('dosyalar'); };
       r.onsuccess = () => ok(r.result);
       r.onerror = () => red(r.error || new Error('IndexedDB açılamadı'));
       r.onblocked = () => red(new Error('IndexedDB başka bir sekmede açık'));
@@ -155,5 +156,13 @@
   }
   async function kalicilikIste() { try { const s = g.navigator && g.navigator.storage; return s && s.persist ? await s.persist() : null; } catch (e) { return null; } }
 
-  g.IrriKatalogDepo = { yerel, db, listele, firmaKaydet, firmaSil, katalogKaydet, katalogSil, surumDosyasiSil, dosyaYaz, dosyaUrl, dosyaYerelUri, dosyaVarMi, dosyaDogrula, dosyaSil, sahipsizTemizle, alan, kalicilikIste, PARCA };
+  // ---------- Teknik ürün veritabanı (sürüm 2) ----------
+  async function urunListele() { const [urunler, degerler, egriler] = await Promise.all([hepsi('urunler'), hepsi('degerler'), hepsi('egriler')]); return { urunler, degerler, egriler }; }
+  async function urunKaydet(u) { const U = g.IrriKatalogUrun, h = U.urunDogrula(u); if (h.length) throw new Error(h.join('; ')); await koy('urunler', u); return u; }
+  async function degerKaydet(d) { if (!d || !d.urunId || !d.kaynak || !d.kaynak.katalogId || !(d.kaynak.sayfa >= 1)) throw new Error('teknik değerin kaynak katalog ve sayfa bilgisi zorunlu'); await koy('degerler', d); return d; }
+  async function egriKaydet(e) { if (!e || !e.urunId || !e.kaynak || !e.kaynak.katalogId || !(e.kaynak.sayfa >= 1) || !(e.noktalar && e.noktalar.length >= 4)) throw new Error('eğri kaynağı ve en az 4 nokta zorunlu'); await koy('egriler', e); return e; }
+  // Ürün silinince değerleri ve eğrileri de silinir (katalog PDF'ine dokunulmaz)
+  async function urunSil(id) { const { degerler, egriler } = await urunListele(); for (const d of degerler.filter(x => x.urunId === id)) await sil('degerler', d.id); for (const e of egriler.filter(x => x.urunId === id)) await sil('egriler', e.id); await sil('urunler', id); }
+  const degerSil = id => sil('degerler', id), egriSil = id => sil('egriler', id);
+  g.IrriKatalogDepo = { urunListele, urunKaydet, degerKaydet, egriKaydet, urunSil, degerSil, egriSil, yerel, db, listele, firmaKaydet, firmaSil, katalogKaydet, katalogSil, surumDosyasiSil, dosyaYaz, dosyaUrl, dosyaYerelUri, dosyaVarMi, dosyaDogrula, dosyaSil, sahipsizTemizle, alan, kalicilikIste, PARCA };
 })(typeof window !== 'undefined' ? window : globalThis);
