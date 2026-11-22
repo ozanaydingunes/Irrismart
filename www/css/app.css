@@ -605,3 +605,6 @@ header.top>.icon,header.top>button{flex:0 0 auto}
 header .ttl{min-width:0;overflow:hidden}
 html.desk #deskTools{flex:1 1 auto;overflow-x:auto;scrollbar-width:none}
 html.desk #deskTools::-webkit-scrollbar{display:none}
+.sm-head .sm-mod{display:inline-flex;margin:0;gap:4px;flex:0 0 auto}
+.sm-head .sm-mod button{padding:5px 9px;font-size:12.5px;min-height:32px}
+.sm-mod-etiket{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap}
