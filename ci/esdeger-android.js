@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // TEST (1.0.7 sürüm dalı): Android emülatöründe
-//  1) telefondaki kurulumu taklit eden eski APK (versionCode 20) kurulur; proje + katalog PDF kaydı oluşturulur,
-//  2) 1.0.7 APK (versionCode 21) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
+//  1) telefondaki kurulumu taklit eden eski APK (telefondaki 1.0.7, versionCode 22) kurulur; proje + katalog PDF kaydı oluşturulur,
+//  2) kararlı 1.0.7 APK (versionCode 23) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
 //  3) masaüstüyle aynı eşdeğerlik parmak izi (ci/parmak-izi.js) gerçek WebView'da hesaplanır ve masaüstü özetiyle karşılaştırılır.
 const { _android: android } = require('playwright');
 const { execSync } = require('child_process');
@@ -33,7 +33,7 @@ const SONUC = (ad, ok, ek) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad + (ek !=
   SONUC('1.0.7 APK eski kurulumun üzerine kuruldu (kaldırma yok)', /Success/.test(cikti), cikti.trim().split('\n').pop());
   if (!/Success/.test(cikti)) process.exit(1);
   await baslat();
-  SONUC('1.0.7 çalışıyor (versionCode 21)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 21, await page.evaluate(() => window.IRRI_SURUM));
+  SONUC('kararlı 1.0.7 çalışıyor (versionCode 23)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 23, await page.evaluate(() => window.IRRI_SURUM));
   SONUC('proje verisi bayt bayt korundu', await page.evaluate(() => localStorage.getItem('irrismart.projects.v1')) === eski.proje);
   const kat = await page.evaluate(async id => { const D = window.IrriKatalogDepo; const v = await D.listele(); const k = v.kataloglar.find(x => x.id === id); const db = await D.db(); return { var: !!k, sha: k && k.dosya.sha256, dogru: k ? (await D.dosyaDogrula(k.dosya)).ok : false, surum: db.version, depolar: [...db.objectStoreNames].sort() }; }, eski.katalogId);
   SONUC('katalog ve PDF korundu; ürün veritabanı geçişi (IndexedDB sürüm 2)', kat.var && kat.sha === eski.sha && kat.dogru && kat.surum === 2 && ['urunler', 'degerler', 'egriler'].every(x => kat.depolar.includes(x)), kat);
@@ -43,7 +43,15 @@ const SONUC = (ad, ok, ek) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad + (ek !=
   fs.writeFileSync(process.env.ESDEGER_OUT || 'esdeger-android.json', json);
   const masa = fs.existsSync('esdeger-masaustu.json') ? fs.readFileSync('esdeger-masaustu.json', 'utf8') : null, hm = masa ? crypto.createHash('sha256').update(masa).digest('hex') : null;
   log('android parmak izi', h, 'masaüstü', hm);
-  if (masa && masa !== json) { const a = JSON.parse(masa), b = iz; for (const k of Object.keys(a)) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) log('FARK', k, JSON.stringify(a[k]).slice(0, 200), '≠', JSON.stringify(b[k]).slice(0, 200)); }
+  if (masa && masa !== json) {
+    const a = JSON.parse(masa), b = iz;
+    for (const k of Object.keys(a)) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) {
+      if (k === 'excelSayfa' && Array.isArray(a[k]) && Array.isArray(b[k])) {
+        a[k].forEach(([ad, rows], i) => { const r2 = (b[k][i] || [])[1] || []; if (JSON.stringify(rows) === JSON.stringify(r2)) return;
+          for (let y = 0; y < Math.max(rows.length, r2.length); y++) { const x1 = JSON.stringify(rows[y]), x2 = JSON.stringify(r2[y]); if (x1 !== x2) { log('FARK Excel', ad, 'satır', y + 1, 'masaüstü:', String(x1).slice(0, 220), '| android:', String(x2).slice(0, 220)); break; } } });
+      } else log('FARK', k, JSON.stringify(a[k]).slice(0, 200), '≠', JSON.stringify(b[k]).slice(0, 200));
+    }
+  }
   SONUC('Android ve masaüstü aynı mühendislik sonuçları (hesap, otomatik/manuel shift, ürünler, öneriler, malzeme, rapor/Excel verisi)', !!masa && masa === json);
   log('BİTTİ'); await device.close();
 })().catch(e => { console.log('[ESD] BETİK HATASI', e && e.stack || e); process.exit(1); });

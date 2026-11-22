@@ -24,6 +24,17 @@ Malzeme → Ekipman önerileri ekranında her kategori (pompa, filtre, vana, bor
 ## Sonradan eklenen katalog ve ürünler
 Öneri motoru hiçbir üreticiye sabitlenmemiştir. Yeni firma/katalog eklenip ürünün teknik bilgileri girildiğinde ve ürün **mühendislik doğrulamasından geçtiğinde**, ürün kod değişikliği veya yeni sürüm gerekmeden önerilere otomatik dahil olur. Yalnız PDF'i yüklenmiş ya da yalnız kullanıcı incelemesinden geçmiş ürün "doğrulanmış" sayılmaz ve uygun listesine girmez.
 
+## Kullanım kılavuzu (kısa)
+1. **Proje** — Projeler → Yeni proje; Veriler sekmesinde ürün, alan, su kaynağı (kuyu / yüzey / şebeke), debi ve derinlik girilir; isteğe bağlı olarak Arazi sekmesinde parsel çizilir veya KML içe aktarılır.
+2. **Hesap** — Sonuç ve Hidrolik sekmeleri motorun hesabını gösterir (lateral, manifold, ana hat, pompa, enerji, uyarılar).
+3. **Shift düzeni** — Hidrolik → Shift Yönetimi: *Otomatik* modda motorun önerisi; *Manuel* modda shift sayısı, alt ünite taşıma veya harita fırçası → Önizle → Uygula / İptal / Geri Al. Debi, basınç, süre ve kaynak kapasitesi uygunluğu her shift için gösterilir; uygun olmayan düzen kaydedilirse "uygun değil" sonucu raporda kalır.
+4. **Firma katalogları ve ürünler** — üst çubuktaki katalog simgesi → Kataloglar: firma ve PDF katalog ekleme. Ürünler sekmesi: ürün, teknik değer ve eğri girişi (katalog sayfası zorunlu) → kullanıcı incelemesi → mühendislik doğrulaması. Yalnız doğrulanmış ürünler öneride "uygun" olabilir.
+5. **Ekipman önerisi** — Malzeme sekmesi → Ekipman önerileri: kategori seçin (Pompa, Filtre, Vana, Boru, Bağlantı elemanı).
+   - *A. Projem İçin Gereken Teknik Özellikler*: katalog gerekmeden hesaplanan şartname; "Teknik şartnameyi malzeme listesine ekle".
+   - *B. Uygun Üretici ve Modeller*: doğrulanmış ürünlerle eşleşme; "Malzeme listesine ekle" veya hidroliği etkileyen ürünlerde "Hesaba uygula" → önce/sonra → Uygula / İptal; "Hesaptan kaldır (Geri Al)".
+6. **Rapor** — Proje sekmesinden PDF ve Excel; malzeme listesi teknik şartname ve katalog kalemlerini içerir.
+7. **Yedek** — aşağıdaki "Yedekleme ve geri yükleme" bölümü.
+
 ## Veriler nerede saklanır
 | | Android | Masaüstü web |
 |---|---|---|
@@ -49,3 +60,17 @@ Uygulamayı kaldırmak / uygulama verilerini temizlemek (Android) veya tarayıc�
 - 300 MB PDF Android 11'de gerçek dosya seçicisiyle denenmedi (emülatörde bellekte üretilen test dosyası okunamadı; Android 14'te geçti).
 - Masaüstü testleri Chromium ile yapıldı; Firefox ve Safari bu ortamda test edilmedi.
 - Bulut eşitlemesi yoktur; taşıma JSON yedekleri ve PDF kopyalarıyla yapılır.
+
+## Test raporu (sürüm dalı claude/surum-1-0-7)
+**Android ↔ masaüstü eşdeğerliği** (çalışma 45037226757): aynı proje, aynı ürün veritabanı ve aynı manuel düzenle hesaplanan parmak izi — hidrolik sonuçlar, otomatik ve 5 shift'lik manuel düzen, ürün kayıtları, uygun / verisi eksik / uygun değil önerileri (pompa, filtre, vana, boru, bağlantı), pompanın hesaba uygulanmış hâli, malzeme listesi (katalog kalemi dahil), PDF rapor verisi ve Excel çalışma kitabının bütün sayfaları:
+- Masaüstü Chromium 1280 px = 390 px = Android 11 (WebView 83) = Android 14 (WebView 113): SHA-256 `d585676c…fb48`, **birebir aynı**.
+- İlk çalıştırmada (45036439765) Excel sayfa özetlerinde bir fark raporlandı; karşılaştırma sayfaların tam içeriğine genişletildiğinde fark çıkmadı. İlk farkın nedeni belirlenemedi.
+
+**Güncelleme (Android emülatörü, API 30 ve 34):** telefondaki 1.0.6-test.20 (versionCode 20) üzerine 1.0.7 (versionCode 21) kaldırmadan kuruldu; proje verisi bayt bayt korundu; katalog PDF'i ve SHA-256 korundu; ürün veritabanı geçişi (IndexedDB sürüm 2) yapıldı. İmza sertifikası SHA-256: `457741305275221a657c6594ff0e489316e2b1eef2c184bc4434c4e06bb20b2e`.
+
+**Otomatik testler:** birim 282/282; arayüz (Chromium, telefon 320/390 px, tablet, masaüstü 1280 px): Manuel Shift 160, Shift düzenleme 156, görünürlük 79, seçici 105, cihaz 26, temel Shift 76, katalog 147, ürün veritabanı geçişi 7, ürün ekranı 66, ekipman önerileri 28, panel 226, uçtan uca 36, JSON taşıma 17, masaüstü 132, web 118 — hepsi geçti.
+
+**Gerçek telefon:** 1.0.7 versionCode 21'de katalogsuz ekipman sekmeleri boş kalıyordu (düzeltildi). 1.0.7 versionCode 22 gerçek telefonda **6/6 geçti** — `docs/cihaz-kabul-1-0-7-vc22.md`. PR #40 (Manuel Shift) gerçek telefonda 8/8 geçmişti.
+
+## Kararlı sürüm (main, versionCode 23)
+versionCode 23, telefonda kabul edilen versionCode 22 ile aynı uygulama kodudur (www/ içinde yalnız sürüm numarası farklı); telefondaki 22'nin üzerine kaldırmadan kurulabilmesi için yükseltildi. Paket kimliği (`com.irrigrow.app.dev`) ve debug imzası değişmedi.
