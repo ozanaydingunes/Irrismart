@@ -136,12 +136,19 @@
         const od = v('dis_cap'), e = v('et_kalinligi'), mal = v('malzeme'), pn = v('pn');
         if (!(e > 0 && e < od / 2)) ekle('et-aralik', 'tutarlılık', 'kaldi', 'et kalınlığı dış çapın yarısından küçük ve pozitif olmalı');
         if (v('ic_cap') != null && Math.abs(v('ic_cap') - (od - 2 * e)) > 0.2) ekle('ic-cap', 'tutarlılık', 'kaldi', `iç çap ${v('ic_cap')} mm ≠ dış çap − 2 × et = ${(od - 2 * e).toFixed(1)} mm`);
-        if (v('sdr') != null && Math.abs(v('sdr') - od / e) > 0.6) ekle('sdr', 'tutarlılık', 'kaldi', `SDR ${v('sdr')} ≠ dış çap / et = ${(od / e).toFixed(1)}`);
+        if (v('sdr') != null && Math.abs(v('sdr') - od / e) > Math.max(0.6, 0.08 * v('sdr')))   // küçük çaplarda en az 2,0 mm et nedeniyle d/e, SDR'den sapabilir
+           ekle('sdr', 'tutarlılık', 'kaldi', `SDR ${v('sdr')} ≠ dış çap / et = ${(od / e).toFixed(1)}`);
         if (/^PE/.test(mal)) {
           if (!PE_DIS_CAP.includes(od)) ekle('std-cap', 'standart', 'kaldi', `${od} mm EN 12201-2 nominal dış çap serisinde yok`);
           const beklenenSdr = (SDR_PN[mal] || {})[pn];
           if (beklenenSdr == null) ekle('std-pn', 'standart', 'kaldi', `${mal} için PN ${pn} EN 12201-2 serisinde yok`);
-          else if (Math.abs(od / e - beklenenSdr) > 0.6) ekle('std-sdr-pn', 'standart', 'kaldi', `${mal} PN ${pn} için SDR ${beklenenSdr} beklenir; katalog ${(od / e).toFixed(1)}`);
+          else {
+            // EN 12201-2 güvenlik yönü: et kalınlığı en az max(2,0 mm, d / SDR) olmalı (daha ince et PN sınıfını karşılamaz);
+            // tablo değerleri yuvarlama nedeniyle biraz kalın olabilir (ör. Ø110 SDR17: 6,47 → 6,6 mm). Aşırı kalın et yanlış SDR/PN eşleşmesidir.
+            const eMin = Math.max(2.0, od / beklenenSdr);
+            if (e < eMin - 0.005) ekle('std-sdr-pn', 'standart', 'kaldi', `${mal} PN ${pn} (SDR ${beklenenSdr}) için Ø${od} et kalınlığı en az ${eMin.toFixed(2)} mm olmalı; katalog ${e} mm`);
+            else if (e > eMin + Math.max(0.2, 0.03 * eMin)) ekle('std-sdr-pn', 'standart', 'kaldi', `${mal} Ø${od} × ${e} mm, PN ${pn} (SDR ${beklenenSdr}) ile eşleşmiyor: et kalınlığı farklı bir SDR serisine ait`);
+          }
         } else if (mal === 'PVC-U' && !PVC_DIS_CAP.includes(od)) ekle('std-cap', 'standart', 'kaldi', `${od} mm EN ISO 1452-2 serisinde yok`);
         if (kosul && kosul.calismaBasinci != null && kosul.calismaBasinci > pn) ekle('isletme-pn', 'işletme', 'kaldi', `çalışma basıncı ${kosul.calismaBasinci} bar > PN ${pn}`);
         if (kosul && kosul.sicaklik != null && kosul.sicaklik > 20 && v('sicaklik_max') == null) ekle('isletme-sicaklik', 'işletme', 'eksik', '20 °C üzeri işletme için katalogda sıcaklık azaltma katsayısı yok');
