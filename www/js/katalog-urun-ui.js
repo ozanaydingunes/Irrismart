@@ -9,7 +9,7 @@
   const toast = m => { const e = g.document.querySelector('#toast'); if (!e) return; e.textContent = m; e.classList.add('on'); clearTimeout(e._h); e._h = setTimeout(() => e.classList.remove('on'), 3500); };
   const KAT = { boru: 'Boru', baglanti: 'Bağlantı elemanı', vana: 'Vana', filtre: 'Filtre', pompa: 'Pompa', damla: 'Damla sulama', diger: 'Diğer' };
   const DEG = { dis_cap: 'Dış çap', et_kalinligi: 'Et kalınlığı', ic_cap: 'İç çap', dn: 'Nominal çap (DN)', pn: 'Basınç sınıfı (PN)', basinc_min: 'En düşük çalışma basıncı', basinc_max: 'En yüksek çalışma basıncı', sdr: 'SDR',
-    malzeme: 'Malzeme', baglanti: 'Bağlantı türü', standart: 'Standart', sicaklik_max: 'Sıcaklık azaltma katsayısı', debi_max: 'En büyük debi', debi_min: 'En küçük debi', debi_nominal: 'Anma debisi', kv: 'Kv / Cv',
+    malzeme: 'Malzeme', baglanti: 'Bağlantı türü', pompa_tipi: 'Pompa tipi', filtre_tipi: 'Filtre tipi', standart: 'Standart', sicaklik_max: 'Sıcaklık azaltma katsayısı', debi_max: 'En büyük debi', debi_min: 'En küçük debi', debi_nominal: 'Anma debisi', kv: 'Kv / Cv',
     filtrasyon_mesh: 'Filtrasyon (mesh)', filtrasyon_mikron: 'Filtrasyon (µm)', kayip_temiz: 'Temiz filtre kaybı', kayip_kirli: 'Kirli filtre kaybı', geri_yikama_esigi: 'Geri yıkama eşiği', devir: 'Devir', cark_capi: 'Çark çapı', guc_motor: 'Motor gücü', verim_max: 'En yüksek verim' };
   const EGR = { QH: 'Q–H eğrisi', verim: 'Verim eğrisi', guc: 'Güç eğrisi', NPSHr: 'NPSHr eğrisi', kayip: 'Basınç kaybı eğrisi (temiz)' };
   const INC = { bekliyor: 'İnceleme bekliyor', 'kullanici-onayladi': 'Kullanıcı inceledi', reddedildi: 'Kullanıcı reddetti' };
@@ -104,6 +104,7 @@
         ${u.muhendislik !== 'dogrulanmadi' ? `<button type="button" class="btn sm" id="urDogrulamaKaldir">${t('Doğrulamayı kaldır')}</button>` : ''}</div>`;
   }
 
+  function degerGirdisi(ad) { const sec = U.METIN_SECENEK[ad], el = $('#dvDeger'); if (!el) return; const yeni = sec ? `<select id="dvDeger">${sec.map(x => `<option>${x}</option>`).join('')}</select>` : '<input id="dvDeger">'; if ((el.tagName === 'SELECT') !== !!sec) el.outerHTML = yeni; }
   function birimSecenek(sel, ad) { const tur = U.DEGER[ad], B = U.BIRIM[tur]; sel.innerHTML = B && B.donusum ? Object.keys(B.donusum).map(b => `<option>${esc(b)}</option>`).join('') : `<option value="">—</option>`; }
   function egriBirim() { const T = U.EGRI_TUR[$('#evTur').value]; $('#evBy').innerHTML = Object.keys(U.BIRIM[T[1]].donusum).map(b => `<option>${esc(b)}</option>`).join(''); }
   // Değer veya eğri değişince ürün doğrulaması geçersiz olur (değerler denetlenmeden önerilere girmesin)
@@ -136,9 +137,9 @@
     const u = V.urunler.find(x => x.id === S.urunId);
     on('#urDuzenle', 'onclick', () => { S.form = Object.assign({}, u); S.ekran = 'form'; ciz(); });
     on('#urSil', 'onclick', async () => { if (!g.confirm(t('“{a}” ürünü, teknik değerleri ve eğrileri silinsin mi? Katalog PDF’ine dokunulmaz.', { a: u.uretici + ' ' + (u.model || u.urunKodu) }))) return; await D.urunSil(u.id); S.ekran = 'liste'; toast(t('Ürün silindi')); await render(host, K); });
-    const dvAd = $('#dvAd'); if (dvAd) { birimSecenek($('#dvBirim'), dvAd.value); dvAd.onchange = () => birimSecenek($('#dvBirim'), dvAd.value); }
+    const dvAd = $('#dvAd'); if (dvAd) { birimSecenek($('#dvBirim'), dvAd.value); degerGirdisi(dvAd.value); dvAd.onchange = () => { birimSecenek($('#dvBirim'), dvAd.value); degerGirdisi(dvAd.value); }; }
     on('#dvKaydet', 'onclick', async () => {
-      const ad = $('#dvAd').value, metin = U.BIRIM[U.DEGER[ad]].donusum == null, ham = $('#dvDeger').value.trim();
+      const ad = $('#dvAd').value, metin = U.BIRIM[U.DEGER[ad]].donusum == null, ham = String($('#dvDeger').value).trim();
       const r = U.yeniDeger({ urunId: u.id, ad, deger: metin ? ham : sayiOku(ham), birim: $('#dvBirim').value, kaynak: { katalogId: u.katalogId, sayfa: parseInt($('#dvSayfa').value, 10), hamMetin: $('#dvHam').value, yontem: 'elle' } });
       if (r.hata) return toast(r.hata.join('; '));
       await D.degerKaydet(r.deger); await dogrulamaSifirla(u); toast(t('Değer kaydedildi; ürün yeniden doğrulanmalı')); await render(host, K);

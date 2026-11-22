@@ -1657,6 +1657,8 @@
 ["Kullanıcı reddetti", "Rejected by user", "Vom Benutzer abgelehnt", "Rechazado por el usuario", "Отклонено пользователем", "Rifiutato dall'utente", "נדחה על ידי המשתמש", "用户已拒绝"],
 ["Mühendislik doğrulaması yok", "No engineering verification", "Keine technische Verifizierung", "Sin verificación de ingeniería", "Нет инженерной верификации", "Nessuna verifica ingegneristica", "אין אימות הנדסי", "无工程验证"],
 ["Mühendislikte reddedildi", "Rejected in engineering", "Technisch abgelehnt", "Rechazado por ingeniería", "Отклонено при инженерной проверке", "Respinto dall'ingegneria", "נדחה הנדסית", "工程审核未通过"],
+["Pompa tipi", "Pump type", "Pumpentyp", "Tipo de bomba", "Тип насоса", "Tipo di pompa", "סוג משאבה", "水泵类型"],
+["Filtre tipi", "Filter type", "Filtertyp", "Tipo de filtro", "Тип фильтра", "Tipo di filtro", "סוג מסנן", "过滤器类型"],
   ];
   const D = {};
   for (const row of R) { const e = {}; L.forEach((l, i) => { if (row[i + 1]) e[l] = row[i + 1]; }); D[row[0]] = e; }

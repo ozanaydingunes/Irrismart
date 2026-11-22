@@ -31,12 +31,13 @@
   const DEGER = {
     dis_cap: 'uzunluk_mm', et_kalinligi: 'uzunluk_mm', ic_cap: 'uzunluk_mm', dn: 'uzunluk_mm',
     pn: 'basinc_bar', basinc_min: 'basinc_bar', basinc_max: 'basinc_bar', sdr: 'oran',
-    malzeme: 'metin', baglanti: 'metin', standart: 'metin', sicaklik_max: 'oran',
+    malzeme: 'metin', baglanti: 'metin', standart: 'metin', sicaklik_max: 'oran', pompa_tipi: 'metin', filtre_tipi: 'metin',
     debi_max: 'debi_m3h', debi_min: 'debi_m3h', debi_nominal: 'debi_m3h',
     kv: 'kv', filtrasyon_mesh: 'mesh', filtrasyon_mikron: 'mikron',
     kayip_temiz: 'basinc_bar', kayip_kirli: 'basinc_bar', geri_yikama_esigi: 'basinc_bar',
     devir: 'devir_rpm', cark_capi: 'uzunluk_mm', guc_motor: 'guc_kw', verim_max: 'yuzde',
   };
+  const METIN_SECENEK = { pompa_tipi: ['dalgic', 'santrifuj'], filtre_tipi: ['disk', 'elek', 'kum', 'hidrosiklon'], baglanti: ['elektrofuzyon', 'alin-kaynak', 'kompresyon', 'yapistirma', 'contali', 'flans', 'disli'] };
   const MALZEME = ['PE80', 'PE100', 'PE100-RC', 'PVC-U', 'PP', 'PP-R', 'LDPE', 'pirinç', 'dökme demir', 'paslanmaz', 'diger'];
 
   const kirp = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
@@ -83,6 +84,7 @@
       else if (!(o.birim in B.donusum)) h.push(`birim "${o.birim}" ${o.ad} için tanımlı değil`);
       else si = sayi * B.donusum[o.birim];
     } else if (B && !kirp(o.deger, 200)) h.push('değer boş');
+    else if (METIN_SECENEK[o.ad] && !METIN_SECENEK[o.ad].includes(o.deger)) h.push(`${o.ad} için geçerli değerler: ${METIN_SECENEK[o.ad].join(', ')}`);
     if (h.length) return { hata: h };
     return { deger: { id: o.id || yeniId('dgr'), urunId: o.urunId, ad: o.ad, deger: o.deger, birim: o.birim || '', siDeger: si, siBirim: B.si,
       kaynak: { katalogId: o.kaynak.katalogId, sayfa: o.kaynak.sayfa, hamMetin: kirp(o.kaynak.hamMetin, 500), yontem: o.kaynak.yontem || 'elle' },
@@ -161,6 +163,7 @@
       }
     } else if (u.kategori === 'filtre') {
       if (['debi_max', 'dn'].map(a => gerekli(a)).every(Boolean)) {
+        if (v('filtre_tipi') == null) ekle('eksik-filtre_tipi', 'tamlık', 'eksik', 'filtre tipi (disk / elek / kum / hidrosiklon) yok');
         if (v('filtrasyon_mesh') == null && v('filtrasyon_mikron') == null) ekle('eksik-filtrasyon', 'tamlık', 'eksik', 'filtrasyon derecesi (mesh / µm) yok');
         if (!(egriler || []).some(e => e.tur === 'kayip') && v('kayip_temiz') == null) ekle('eksik-kayip', 'tamlık', 'eksik', 'temiz filtre basınç kaybı (tablo/eğri) yok');
         if (v('kayip_temiz') != null && v('kayip_kirli') != null && !(v('kayip_temiz') < v('kayip_kirli'))) ekle('kayip-sira', 'tutarlılık', 'kaldi', 'temiz filtre kaybı kirli filtre kaybından küçük olmalı');
@@ -172,15 +175,16 @@
         if (!(e.kosul && (e.kosul.devir || e.kosul.carkCapi))) ekle('qh-kosul', 'tamlık', 'eksik', 'Q–H eğrisinin devir / çark çapı koşulu yok');
         if (e.si.some((p, i) => i && p[1] > e.si[i - 1][1] + 1e-9)) ekle('qh-azalan', 'tutarlılık', 'kaldi', 'Q–H eğrisi debi arttıkça azalmalı');
       }
-      if (!(egriler || []).some(e => e.tur === 'NPSHr')) ekle('eksik-npsh', 'tamlık', 'eksik', 'NPSHr eğrisi yok: emme koşulu denetlenemez');
-      if (!(egriler || []).some(e => e.tur === 'verim')) ekle('eksik-verim', 'tamlık', 'eksik', 'verim eğrisi yok: güç ve enerji hesaplanamaz');
+      if (!(egriler || []).some(e => e.tur === 'NPSHr')) ekle('eksik-npsh', 'tamlık', 'uyari', 'NPSHr eğrisi yok: emme koşulu denetlenemez (seçimde uyarı olarak gösterilir)');
+      if (!(egriler || []).some(e => e.tur === 'verim')) ekle('eksik-verim', 'tamlık', 'uyari', 'verim eğrisi yok: güç ve enerji hesaplanamaz (seçimde verisi eksik sayılır)');
+      if (v('pompa_tipi') == null) ekle('eksik-pompa_tipi', 'tamlık', 'eksik', 'pompa tipi (dalgıç / santrifüj) yok');
     }
-    const gecti = !K.some(k => k.durum !== 'gecti');
+    const gecti = !K.some(k => k.durum === 'kaldi' || k.durum === 'eksik');   // 'uyari' doğrulamayı engellemez
     return { gecti, kurallar: K };
   }
   // Mühendislik doğrulaması kaydı: denetim geçmeden "dogrulandi" yapılamaz; doğrulayan adı ve tarih saklanır
   function muhendislikOnayla(u, denetim, dogrulayan) {
-    if (!denetim || !denetim.gecti) throw new Error('mühendislik denetimi geçmedi: ' + (denetim ? denetim.kurallar.filter(k => k.durum !== 'gecti').map(k => k.mesaj).join('; ') : 'denetim yok'));
+    if (!denetim || !denetim.gecti) throw new Error('mühendislik denetimi geçmedi: ' + (denetim ? denetim.kurallar.filter(k => k.durum === 'kaldi' || k.durum === 'eksik').map(k => k.mesaj).join('; ') : 'denetim yok'));
     if (!kirp(dogrulayan, 120)) throw new Error('doğrulayan kişi gerekli');
     return Object.assign({}, u, { muhendislik: 'dogrulandi', dogrulama: { dogrulayan: kirp(dogrulayan, 120), tarih: new Date().toISOString(), kurallar: denetim.kurallar.map(k => k.kod) }, guncelleme: new Date().toISOString() });
   }
@@ -199,7 +203,7 @@
     return { urunler, degerler, egriler };
   }
 
-  const api = Object.freeze({ SURUM, KATEGORI, INCELEME, MUHENDISLIK, YONTEM, BIRIM, DEGER, MALZEME, EGRI_TUR, SDR_PN, PE_DIS_CAP, PVC_DIS_CAP,
+  const api = Object.freeze({ SURUM, METIN_SECENEK, KATEGORI, INCELEME, MUHENDISLIK, YONTEM, BIRIM, DEGER, MALZEME, EGRI_TUR, SDR_PN, PE_DIS_CAP, PVC_DIS_CAP,
     yeniUrun, urunDogrula, yeniDeger, yeniEgri, egriDeger, incele, muhendislikDenetle, muhendislikOnayla, secimdeKullanilabilir, ornekVeri });
   g.IrriKatalogUrun = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
