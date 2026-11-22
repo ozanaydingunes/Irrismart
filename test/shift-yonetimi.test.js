@@ -192,3 +192,75 @@ test('SY-12 Shift paneli gerçek alanı: alt ünite poligonlarından; toplam par
   }
   ok(n >= 15 && SY.geoAlan({ ok: false }, Gm) === null, 'senaryo ' + n);
 });
+
+// ---------- 1.0.3 PR-2: bulgu farkı, iki ayrı alan, seçili shift satırları ----------
+test('SY-13 Bulgu farkı: giderilen / yeni / devam eden yalnız hesap sonucundan; kullanıcı kararı bulguyu kaldırmaz', () => {
+  const Gm = require('./_lib').Gm;
+  const i0 = { crop: 'domates', area_da: 50, L: 400, W: 125, Q: 45, srcType: 'kuyu', depth: 40, region: 'akdeniz', slopeLong: 0, slopeShort: 0, hours: 20 };
+  const oz = (i, p) => { const r = E.design(i); return SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject(p || { inp: i }, r), Gm); };
+  const a = oz(i0), b = oz(Object.assign({}, i0, { Ns: 12 })), f = SY.bulguFarki(a, b);
+  const k = x => x.map(y => y.kod).sort().join();
+  ok(f.giderilen.some(x => x.kod === 'W-HIZ-01') && f.giderilen.some(x => x.kod === 'W-POM-01') && f.yeni.some(x => x.kod === 'W-KAP-01'), `12 shift: W-HIZ-01/W-POM-01 giderildi, W-KAP-01 yeni (${k(f.giderilen)} / ${k(f.yeni)})`);
+  ok(k(f.giderilen.concat(f.devam)) === k(a.bulguListe) && k(f.yeni.concat(f.devam)) === k(b.bulguListe), 'kümeler tam');
+  // "Bilinerek kabul" kararı bulguyu kaldırmaz
+  const i12 = Object.assign({}, i0, { Ns: 12 }), kabul = oz(i12, { inp: i12, akil: { onay: { 'W-KAP-01': 'kabul' } } });
+  ok(kabul.bulguListe.some(x => x.kod === 'W-KAP-01' && x.seviye === 'uygunsuz') && SY.bulguFarki(b, kabul).giderilen.length === 0, 'onay bulguyu kaldırmaz');
+  ok(SY.bulguFarki(a, null) === null, 'eksik özet');
+});
+
+test('SY-14 Alan: gerçek geometri ve hesap alan payı ayrı; seçili shift ve günlük su ihtiyacı satırları', () => {
+  const Gm = require('./_lib').Gm, SC = require('./golden/scenarios'), s18 = SC.find(x => x.id.startsWith('S18'));
+  const r = E.design(s18.inp, null, s18.opt), o = SY.ozet(r, HV.build(r, { inp: s18.inp, Qsource: s18.inp.Q }), AS.forProject({ inp: s18.inp }, r), Gm);
+  ok(o.alanGeo && o.alanGeo.length === o.Ns && o.alanPay.length === o.Ns, 'iki alan dizisi');
+  o.alanPay.forEach((x, j) => near(x, r.sel.Qj[j] / r.sectors.Qfield * r.field.da, 1e-9, 'alan payı = debi oranı'));
+  near(o.alanGeo.reduce((t, x) => t + x, 0), r.field.da, 0.01 * r.field.da, 'geometri toplamı');
+  near(o.gunlukSu, r.sectors.Qfield * r.schedule.t / r.schedule.interval, 1e-9, 'günlük su');
+  const i2 = Object.assign({}, s18.inp, { Ns: 7 }), r2 = E.design(i2, null, s18.opt), o2 = SY.ozet(r2, HV.build(r2, { inp: i2, Qsource: i2.Q }), AS.forProject({ inp: i2 }, r2), Gm);
+  const S = SY.secSatirlar(o, o2, 1);
+  ok(S.map(x => x.k).join() === 'secAlan,secQ,gunlukSu' && Math.abs(S[0].once - o.alanGeo[1]) < 1e-12 && Math.abs(S[0].sonra - o2.alanGeo[1]) < 1e-12 && Math.abs(S[1].sonra - r2.sel.Qj[1]) < 1e-12, 'seçili shift satırları motor ve geometriden');
+  ok(o.alanGeo.every(x => x > 0), 'alanlar pozitif');
+  // Hiçbir alan alanı motor girdisine dönüşmez: tasarım aynı
+  ok(JSON.stringify(E.design(s18.inp, null, s18.opt).sel.Qj) === JSON.stringify(r.sel.Qj), 'motor sonucu aynı');
+});
+
+test('SY-15 Shift başına hedef debi: yalnız aynı shift sayısında geçerli; raporda bilgi sütunu; hesaba girmez', () => {
+  ok(SY.hedefler(null, 3) === null && SY.hedefler({ Ns: 4, deger: { 0: 50 } }, 3) === null, 'geçersiz kayıt');
+  const h = SY.hedefler({ Ns: 3, deger: { 0: 50, 2: 60, 5: 70, 1: -3 } }, 3);
+  ok(JSON.stringify(h) === JSON.stringify({ 0: 50, 2: 60 }), 'geçerli anahtarlar: ' + JSON.stringify(h));
+  ok(SY.hedefOf(h, 40, 0) === 50 && SY.hedefOf(h, 40, 1) === 40 && SY.hedefOf(null, null, 1) === null, 'shift hedefi yoksa genel hedef');
+  ok(SY.esit({ hedefler: { 0: 50 } }, { hedefler: null }) === false && SY.esit({ hedefler: {} }, { hedefler: null }) === true, 'taslak karşılaştırması');
+  const r = E.design(inp), n = r.sel.groups.length;
+  const p = proj({ shiftHedefler: { Ns: n, deger: { 0: 33.5 } }, shiftHedef: 40 }), T0 = RD.build(proj(), r), T1 = RD.build(p, r);
+  ok(T0.sektor[0].length === 4 && T1.sektor[0].length === 5 && T1.sektor[1][4] === 33.5 && T1.sektor[2][4] === 40 && T1.sektorDec.length === 5 && T1.sektorPdf.w.length === 5, 'rapor sütunu (shift 1: 33,5; diğerleri genel 40)');
+  ok(JSON.stringify(T0.hidrolik) === JSON.stringify(T1.hidrolik) && JSON.stringify(E.design(p.inp).sel.Qj) === JSON.stringify(r.sel.Qj), 'hesap aynı');
+  // Revizyon taşır
+  const q = proj({ id: 'h', rev: 0, revs: [], shiftHedefler: { Ns: 3, deger: { 0: 10 } } }); St.snapshot(q, 'a'); const r1 = q.rev; q.shiftHedefler = { Ns: 3, deger: { 0: 20 } }; St.snapshot(q, 'b');
+  ok(St.restoreRev(q, r1) && q.shiftHedefler.deger[0] === 10, 'revizyon');
+});
+
+test('SY-16 Shift sayısı sınırları: alt sınır kaynak debisinden (motorla aynı kural), üst sınır alt ünite sayısından; otomatik aralık ayrı', () => {
+  const Ly = require(W('layout.js'));
+  for (const i of [inp, Object.assign({}, inp, { area_da: 20, L: 200, W: 100, Q: 40 }), Object.assign({}, inp, { area_da: 4, L: 80, W: 50, Q: 60 })]) {
+    const r = E.design(i); ok(r.ok, 'hesap');
+    const Qu = r.units.map(u => u.Q), s = SY.nsSinirlari(r, i.Q);
+    const g = (typeof window !== 'undefined' ? window : globalThis).IrriLayout || Ly;
+    ok(s.min === g.minSectors(Qu, i.Q) && SY.minShift(Qu, i.Q) === g.minSectors(Qu, i.Q), `alt sınır motorla aynı (${s.min})`);
+    ok(s.nU === r.units.length && s.otoMin === Math.min(...r.sectorAlts.filter(a => !a.manual).map(a => a.Ns)), 'üst sınır ve otomatik aralık');
+    ok(s.otoMin >= s.min && s.otoMax <= s.nU, 'otomatik aralık fiziksel aralığın içinde');
+  }
+});
+
+test('SY-17 Pasif − / + nedeni ve elle shift sayısı doğrulaması (motora gönderilmeden önce)', () => {
+  const s = { nU: 8, Qs: 40, min: 3, imkansiz: false, oto: [3, 4, 6], otoMin: 3, otoMax: 6 };
+  ok(SY.nsPasifNedeni(s, 3, -1).kod === 'kaynak', '− kaynak sınırında pasif');
+  ok(SY.nsPasifNedeni(s, 4, -1) === null && SY.nsPasifNedeni(s, 4, 1) === null, 'aralık içinde etkin');
+  ok(SY.nsPasifNedeni(s, 6, 1).kod === 'oto-aralik', '+ otomatik aralık sonunda (alt ünite sınırı değil)');
+  ok(SY.nsPasifNedeni(Object.assign({}, s, { oto: [3, 4, 5], otoMax: 5, nU: 5 }), 5, 1).kod === 'alt-unite', '+ alt ünite sınırında');
+  const tek = { nU: 1, Qs: 60, min: 1, imkansiz: false, oto: [1], otoMin: 1, otoMax: 1 };
+  ok(SY.nsPasifNedeni(tek, 1, -1).kod === 'en-az-bir' && SY.nsPasifNedeni(tek, 1, 1).kod === 'alt-unite', 'tek alt ünite: iki yön de nedenli');
+  ok(SY.nsDogrula(2, s).kod === 'kaynak' && SY.nsDogrula(9, s).kod === 'alt-unite' && SY.nsDogrula(0, s).kod === 'en-az-bir' && SY.nsDogrula(3.5, s).kod === 'tam-sayi' && SY.nsDogrula('4', s).kod === 'tam-sayi', 'geçersiz sayılar reddedilir');
+  ok(SY.nsDogrula(4, s).ok && SY.nsDogrula(4, s).otomatikAralikta && SY.nsDogrula(5, s).ok && !SY.nsDogrula(5, s).otomatikAralikta, 'fiziksel aralıktaki sayı geçerli; otomatik aralıkta olup olmadığı ayrı');
+  ok(SY.nsDogrula(5, Object.assign({}, s, { imkansiz: true, min: null })).kod === 'unite-kaynak', 'kaynağı aşan alt ünite');
+  ok(SY.nsDogrula(2, Object.assign({}, s, { oto: [2, 3, 4] })).ok, 'motorun hesapladığı aday (kayıtlı Ns) alt sınırın altında olsa da geçerli');
+  ok(SY.minShift([10, 10, 10], 20) === 2 && SY.minShift([30], 20) === Infinity && SY.minShift([], 20) === null, 'minShift');
+});

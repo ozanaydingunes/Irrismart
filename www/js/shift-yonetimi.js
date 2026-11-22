@@ -44,7 +44,7 @@
   }
 
   // Bir sonucun özeti (karşılaştırma ve panel için). vm = IrriHydroView.build(r, …), A = IrriAssess.forProject(…)
-  function ozet(r, vm, A) {
+  function ozet(r, vm, A, Gm) {
     if (!r || !r.ok || !vm || !vm.ok) return null;
     const sel = r.sel, ms = r.main.sel, p = r.pump;
     const D = vm.shift.details;
@@ -73,7 +73,39 @@
       kap01: !!(A && A.findings && A.findings.some(x => x.kod === 'W-KAP-01')),
       kap02: !!(A && A.findings && A.findings.some(x => x.kod === 'W-KAP-02')),
       kap03: !!(A && A.findings && A.findings.some(x => x.kod === 'W-KAP-03')),
+      // 1.0.3 PR-2: bütün bulgular (bilgi hariç) — giderilen / yeni / devam eden karşılaştırması için
+      bulguListe: A && A.findings ? A.findings.filter(x => x.seviye !== 'bilgi').map(x => ({ kod: x.kod, seviye: x.seviye, baslik: x.baslik })) : null,
+      kontroller: (vm.checks || []).map(c => ({ kod: c.kod, level: c.level, title: c.title, text: c.text, params: c.params })),
+      // Günlük su ihtiyacı (m³/gün) = toplam debi × shift süresi ÷ aralık (resmî kapasite denetimiyle aynı)
+      gunlukSu: r.sectors.Qfield * r.schedule.t / r.schedule.interval,
+      // Alan: gerçek geometri (alt ünite poligonları) ve hesapta kullanılan alan payı (debi oranı) ayrı tutulur
+      alanGeo: Gm ? (geoAlan(r, Gm) || { shift: null }).shift : null,
+      alanPay: shifts.map(x => x.A),
     };
+  }
+
+  // Bulgu farkı: önceki ve taslak düzenin resmî bulguları (bilgi hariç). Kullanıcı kararı (onay) bulguyu kaldırmaz:
+  // karşılaştırma yalnız hesap sonucuna bakar.
+  function bulguFarki(a, b) {
+    if (!a || !b || !a.bulguListe || !b.bulguListe) return null;
+    const A = new Map(a.bulguListe.map(x => [x.kod, x])), B = new Map(b.bulguListe.map(x => [x.kod, x]));
+    return {
+      giderilen: [...A.values()].filter(x => !B.has(x.kod)),
+      yeni: [...B.values()].filter(x => !A.has(x.kod)),
+      devam: [...B.values()].filter(x => A.has(x.kod)).map(x => Object.assign({}, x, { onceki: A.get(x.kod).seviye })),
+    };
+  }
+  // Seçili shift'e ait satırlar (aynı numaralı shift, önce ve sonra) + günlük su ihtiyacı
+  function secSatirlar(a, b, j) {
+    if (!a || !b) return [];
+    const sa = a.shifts[j], sb = b.shifts[j];
+    const row = (k, label, x, y, unit, d, iyi) => { const dl = fin(x) && fin(y) ? y - x : null, ayni = dl != null && Math.abs(dl) < Math.pow(10, -d) / 2;
+      return { k, label, unit, d, once: fin(x) ? x : null, sonra: fin(y) ? y : null, fark: dl, yon: dl == null ? (x === y ? 'ayni' : 'bilgi') : ayni || !iyi ? 'ayni' : (iyi === 'az') === (dl < 0) ? 'iyi' : 'kotu' }; };
+    return [
+      row('secAlan', 'Seçili shift alanı (geometri)', a.alanGeo ? a.alanGeo[j] : null, b.alanGeo ? b.alanGeo[j] : null, 'da', 2, null),
+      row('secQ', 'Seçili shift hesaplanan debisi', sa ? sa.Q : null, sb ? sb.Q : null, 'm³/h', 2, null),
+      row('gunlukSu', 'Günlük su ihtiyacı', a.gunlukSu, b.gunlukSu, 'm³/gün', 0, null),
+    ];
   }
 
   // Uygunluk sınırları (yalnız motor sonucundan ve proje verisinden; motorun kendi ölçütüyle aynı):
@@ -150,7 +182,7 @@
 
   // Taslak ile mevcut kayıt aynı mı (Uygula düğmesi için)
   function esit(a, b) {
-    const n = x => JSON.stringify({ Ns: x.Ns ?? null, manual: x.manual ? x.manual.assign : null, sira: x.sira || null, hedef: x.hedef ?? null });
+    const n = x => JSON.stringify({ Ns: x.Ns ?? null, manual: x.manual ? x.manual.assign : null, sira: x.sira || null, hedef: x.hedef ?? null, hedefler: x.hedefler && Object.keys(x.hedefler).length ? x.hedefler : null });
     return n(a) === n(b);
   }
 
@@ -173,7 +205,55 @@
     return { n: u.nLat, enUzun: L.length ? Math.max(...L.map(l => l.len)) : null };
   }
 
-  const api = Object.freeze({ geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // 1.0.4: shift başına hedef debi (yalnız bilgi). Kayıt { Ns, deger: { "0": 70, … } }; yalnız aynı shift sayısında geçerli.
+  function hedefler(kayit, n) {
+    if (!kayit || typeof kayit !== 'object' || kayit.Ns !== n || !kayit.deger || typeof kayit.deger !== 'object') return null;
+    const d = {}; for (const [k, v] of Object.entries(kayit.deger)) { const j = Number(k); if (Number.isInteger(j) && j >= 0 && j < n && fin(v) && v > 0) d[j] = v; }
+    return Object.keys(d).length ? d : null;
+  }
+  const hedefOf = (hs, genel, j) => hs && fin(hs[j]) ? hs[j] : fin(genel) && genel > 0 ? genel : null;
+
+  // ---------- Shift sayısı sınırları (1.0.5 cihaz testi: pasif − / + düğmelerinin nedeni) ----------
+  // Fiziksel sınırlar motorla aynı kuraldan türetilir (motor değişmez):
+  //  alt: kaynak debisi — daha az shift'te en az bir shift'in debisi kaynak debisini aşar (IrriLayout.minSectors)
+  //  üst: alt ünite sayısı — her shift en az bir alt ünite içerir
+  // Otomatik arama aralığı (motorun hesapladığı adaylar) bu fiziksel aralığın bir alt kümesidir; ayrı raporlanır.
+  function minShift(Qu, Qs) {
+    if (!(Qs > 0) || !Qu.length) return null;
+    let n = 0, t = 0; for (const q of Qu) { if (q > Qs + 1e-9) return Infinity; if (t + q > Qs + 1e-9) { n++; t = 0; } t += q; }
+    return n + (t > 0 ? 1 : 0);
+  }
+  function nsSinirlari(r, Qs) {
+    const Qu = (r && r.units || []).map(u => u.Q), nU = Qu.length, m = minShift(Qu, Qs);
+    const oto = (r && r.sectorAlts || []).filter(a => !a.manual).map(a => a.Ns).sort((a, b) => a - b);
+    return { nU, Qs: Qs > 0 ? Qs : null, min: Number.isFinite(m) ? m : null, imkansiz: m === Infinity, oto, otoMin: oto.length ? oto[0] : null, otoMax: oto.length ? oto[oto.length - 1] : null };
+  }
+  // Pasif − / + nedeni: { kod, n, nU, Qs, min, otoMin, otoMax } (metin çevirisi arayüzde yapılır). null: düğme etkin.
+  function nsPasifNedeni(s, n, yon) {
+    const o = { n, nU: s.nU, Qs: s.Qs, min: s.min, otoMin: s.otoMin, otoMax: s.otoMax };
+    if (yon < 0) {
+      if (s.oto.some(k => k < n)) return null;
+      if (n <= 1) return Object.assign(o, { kod: 'en-az-bir' });
+      if (s.min != null && n <= s.min) return Object.assign(o, { kod: 'kaynak' });
+      return Object.assign(o, { kod: 'oto-aralik' });
+    }
+    if (s.oto.some(k => k > n)) return null;
+    if (n >= s.nU) return Object.assign(o, { kod: 'alt-unite' });
+    return Object.assign(o, { kod: 'oto-aralik' });
+  }
+  // Elle istenen shift sayısı motora gönderilmeden önce doğrulanır: tam sayı, fiziksel aralıkta.
+  function nsDogrula(k, s) {
+    if (typeof k !== 'number' || !Number.isInteger(k)) return { ok: false, kod: 'tam-sayi' };
+    if (k < 1) return { ok: false, kod: 'en-az-bir' };
+    // Motorun hesapladığı aday her zaman geçerlidir (kayıtlı sayı aday listesine motor tarafından eklenir)
+    if (s.oto.includes(k)) return { ok: true, otomatikAralikta: true };
+    if (s.imkansiz) return { ok: false, kod: 'unite-kaynak' };
+    if (k > s.nU) return { ok: false, kod: 'alt-unite' };
+    if (s.min != null && k < s.min) return { ok: false, kod: 'kaynak' };
+    return { ok: true, otomatikAralikta: s.oto.includes(k) };
+  }
+
+  const api = Object.freeze({ minShift, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
