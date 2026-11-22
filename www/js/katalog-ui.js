@@ -15,7 +15,7 @@
   const KAYNAK = { 'resmi-site': 'Resmî site', bayi: 'Bayi', 'firma-temsilcisi': 'Firma temsilcisi', diger: 'Diğer' };
   const toast = m => { const e = $('#toast'); if (!e) return; e.textContent = m; e.classList.add('on'); clearTimeout(e._h); e._h = setTimeout(() => e.classList.remove('on'), 3500); };
 
-  let S = { ekran: 'liste', firmaId: null, metin: '', grup: null, form: null, veri: { firmalar: [], kataloglar: [] }, hata: null, mesgul: null };
+  let S = { sekme: 'katalog', ekran: 'liste', firmaId: null, metin: '', grup: null, form: null, veri: { firmalar: [], kataloglar: [] }, hata: null, mesgul: null };
 
   async function yukle() { try { S.veri = await D.listele(); S.hata = null; } catch (e) { S.hata = String(e.message || e); } }
   async function render() { await yukle(); ciz(); }
@@ -25,7 +25,10 @@
   function ciz() {
     const k = kok(); if (!k) return;
     if (S.hata) { k.innerHTML = seg() + `<div class="note err">${t('Katalog deposu açılamadı:')} ${esc(S.hata)}</div>`; bagla(); return; }
-    k.innerHTML = seg() + (S.ekran === 'form' ? formHtml() : S.ekran === 'firma' ? firmaHtml() : listeHtml());
+    // Kataloglar | Ürünler (teknik ürün veritabanı) sekmesi
+    const sekme = `<div class="seg kat-sekme" id="katSekme"><button type="button" data-ksekme="katalog" class="${S.sekme === 'katalog' ? 'on' : ''}">${t('Kataloglar')}</button><button type="button" data-ksekme="urun" class="${S.sekme === 'urun' ? 'on' : ''}">${t('Ürünler')}</button></div>`;
+    if (S.sekme === 'urun' && g.IrriKatalogUrunUI) { k.innerHTML = seg() + sekme + '<div id="katUrun"></div>'; bagla(); g.IrriKatalogUrunUI.render(k.querySelector('#katUrun'), S.veri); return; }
+    k.innerHTML = seg() + sekme + (S.ekran === 'form' ? formHtml() : S.ekran === 'firma' ? firmaHtml() : listeHtml());
     bagla();
   }
 
@@ -159,17 +162,21 @@
     catch (e) { if (yd) { try { await D.dosyaSil(yd); } catch (e2) { /* */ } } toast(t('Kaydedilemedi: {m}', { m: String(e.message || e) })); }
   }
 
-  function yedekIndir() {
-    const y = M.yedekOlustur(S.veri.firmalar, S.veri.kataloglar), metin = JSON.stringify(y, null, 1), ad = `IrriGrow_katalog_bilgileri_${new Date().toISOString().slice(0, 10)}.json`;
+  async function yedekIndir() {
+    const y = M.yedekOlustur(S.veri.firmalar, S.veri.kataloglar, D.urunListele ? await D.urunListele() : null), metin = JSON.stringify(y, null, 1), ad = `IrriGrow_katalog_bilgileri_${new Date().toISOString().slice(0, 10)}.json`;
     if (D.yerel() && g.IrriReport && g.IrriReport.saveFile) { g.IrriReport.saveFile('IrriGrow_katalog_bilgileri', 'json', g.btoa(unescape(encodeURIComponent(metin))), 'application/json'); return; }
     const a = g.document.createElement('a'); a.href = g.URL.createObjectURL(new Blob([metin], { type: 'application/json' })); a.download = ad; g.document.body.appendChild(a); a.click(); setTimeout(() => { g.URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     toast(t('Bilgi yedeği indirildi ({n} katalog; PDF dosyaları dahil değil)', { n: y.kataloglar.length }));
   }
   async function yedekYukle(dosya) {
-    const r = M.yedekOku(await dosya.text(), S.veri.firmalar, S.veri.kataloglar);
+    const mevcutU = D.urunListele ? (await D.urunListele()).urunler : [];
+    const r = M.yedekOku(await dosya.text(), S.veri.firmalar, S.veri.kataloglar, mevcutU);
     if (r.hata) return toast(t(r.hata));
     for (const f of r.firmalar) await D.firmaKaydet(f);
     for (const k of r.kataloglar) await D.katalogKaydet(k);
+    for (const u of r.urunler || []) await D.urunKaydet(u);
+    for (const d of r.degerler || []) await D.degerKaydet(d);
+    for (const e of r.egriler || []) await D.egriKaydet(e);
     toast(t('{n} katalog bilgisi geri yüklendi; PDF dosyalarını yeniden seçin. Atlanan: {m}', { n: r.kataloglar.length, m: r.atlanan.length })); render();
   }
 
@@ -182,6 +189,7 @@
 
   function bagla() {
     const k = kok(); if (!k) return;
+    k.querySelectorAll('[data-ksekme]').forEach(b => b.onclick = () => { if (S.mesgul) return; S.sekme = b.dataset.ksekme; ciz(); });
     k.querySelectorAll('[data-malz]').forEach(b => b.onclick = () => { if (b.dataset.malz === 'proje' && g.IrriApp && g.IrriApp.show) g.IrriApp.show('malzeme'); });
     const ara = $('#katAra'); if (ara) ara.oninput = () => { S.metin = ara.value; const pos = ara.selectionStart; ciz(); const a2 = $('#katAra'); if (a2) { a2.focus(); try { a2.setSelectionRange(pos, pos); } catch (e) { /* */ } } };
     k.querySelectorAll('[data-grup]').forEach(b => b.onclick = () => { S.grup = b.dataset.grup || null; ciz(); });
