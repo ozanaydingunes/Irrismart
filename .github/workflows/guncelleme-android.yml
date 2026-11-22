@@ -29,7 +29,7 @@ jobs:
       - name: Paket, sürüm ve imza karşılaştırması
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          for a in eski yeni; do echo "[GUN] $a: $("$BT/aapt" dump badging $a.apk | head -1)"; echo "[GUN] $a imza SHA-256: $("$BT/apksigner" verify --print-certs $a.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"; done
+          for a in eski yeni; do echo "[GUN] $a: $("$BT/aapt" dump badging $a.apk | head -1)"; echo "[GUN] $a imza: $("$BT/apksigner" verify --print-certs $a.apk 2>&1 | grep -i "SHA-256 digest" | head -1)"; done
           echo "[GUN] yeni APK SHA-256 dosya özeti: $(sha256sum yeni.apk | cut -c1-64)"
       - name: KVM
         run: |

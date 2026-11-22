@@ -26,9 +26,14 @@ const PROJ = [
   execSync('adb install eski.apk', { stdio: 'inherit' });
   log('eski kurulum', await surum());
   await baslat();
+  // Projeler uygulamanın kendi kaydetme yoluyla yazılır; WebView DOMStorage'ı diske yazsın diye beklenir (zorla kapatma öncesi)
   await page.evaluate(ps => { localStorage.setItem('irrismart.projects.v1', JSON.stringify(ps)); }, PROJ);
+  await page.reload(); await page.waitForTimeout(3000);
+  SONUC('eski sürümde test projeleri kayıtlı (yeniden yüklemede okunuyor)', await page.evaluate(() => (JSON.parse(localStorage.getItem('irrismart.projects.v1') || '[]')).length) === PROJ.length);
+  await page.waitForTimeout(10000);
   await baslat();
   const eskiVeri = await page.evaluate(() => localStorage.getItem('irrismart.projects.v1')), eskiIz = await parmakIzi(), eskiYedek = await page.evaluate(() => JSON.stringify(window.IrriStore.backupPayload(JSON.parse(localStorage.getItem('irrismart.projects.v1')), {}, null, new Date(0))));
+  if (!eskiVeri) { SONUC('eski sürümde veri zorla kapatma sonrası okunabiliyor', false); process.exit(1); }
   log('eski sürüm', await page.evaluate(() => window.IRRI_SURUM + ' / ' + window.IRRI_SURUM_KODU), 'hesap', JSON.stringify(eskiIz.map(x => x.id + ':' + x.Ns)));
 
   // Yeni APK eskinin ÜZERİNE (kaldırmadan)
@@ -43,10 +48,10 @@ const PROJ = [
   const yeniVeri = await page.evaluate(() => localStorage.getItem('irrismart.projects.v1'));
   SONUC('proje verisi bayt bayt korundu', yeniVeri === eskiVeri, { uzunluk: [eskiVeri && eskiVeri.length, yeniVeri && yeniVeri.length] });
   const yeniIz = await parmakIzi();
-  SONUC('eski projelerin hidrolik sonuçları değişmedi (aynı girdi → aynı sonuç)', JSON.stringify(yeniIz) === JSON.stringify(eskiIz), yeniIz.map(x => x.id + ':' + x.Ns));
+  SONUC('eski projelerin hidrolik sonuçları değişmedi (aynı girdi → aynı sonuç)', eskiIz.length === PROJ.length && eskiIz.every(x => x.ok) && JSON.stringify(yeniIz) === JSON.stringify(eskiIz), yeniIz.map(x => x.id + ':' + x.Ns));
   // JSON yedeği: eski sürümün dışa aktarımı yeni sürümde aynı projeleri verir
   // JSON yedeği: eski sürümde (17) alınan yedek yeni sürümde (18) okunur; projeler ve hesap sonuçları aynı
-  const yedekUyum = await page.evaluate(y => { const r = window.IrriStore.readBackup(y); const ps = r.projects || r; return { n: ps.length, ayni: JSON.stringify(ps.map(p => [p.id, p.inp])) === JSON.stringify(JSON.parse(y).projects.map(p => [p.id, p.inp])) }; }, eskiYedek).catch(e => ({ hata: e.message }));
+  const yedekUyum = await page.evaluate(y => { const r = window.IrriStore.readBackup(y); const ps = r.valid; return { n: ps.length, ayni: JSON.stringify(ps.map(p => [p.id, p.inp])) === JSON.stringify(JSON.parse(y).projects.map(p => [p.id, p.inp])) }; }, eskiYedek).catch(e => ({ hata: e.message }));
   SONUC('eski sürüm JSON yedeği yeni sürümde okunur, proje girdileri aynı', yedekUyum.n === PROJ.length && yedekUyum.ayni, yedekUyum);
   // Katalog depolaması yeni sürümde çalışıyor
   const kat = await page.evaluate(async () => { const D = window.IrriKatalogDepo; if (!D) return { yok: true }; const b = new Blob([new TextEncoder().encode('%PDF-1.4\n% guncelleme testi\n'), new Uint8Array(5 * 1024 * 1024).fill(3), new TextEncoder().encode('\n%%EOF\n')]); const d = await D.dosyaYaz(new File([b], 't.pdf')); const v = await D.dosyaDogrula(d); await D.dosyaSil(d); return { yerel: D.yerel(), depo: d.depo, ok: v.ok }; });
