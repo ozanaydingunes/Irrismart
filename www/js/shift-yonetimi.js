@@ -253,7 +253,50 @@
     return { ok: true, otomatikAralikta: s.oto.includes(k) };
   }
 
-  const api = Object.freeze({ minShift, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // ---------- Manuel mod: istenen shift sayısına gerçek alt ünite ataması ----------
+  // Motorun bölmesi (Ly.partition) her k için tam k grup üretmeyebilir; manuel modda sayı motora açık atama olarak gider.
+  // Bitişiklik korunur (alt üniteler sıralı); grup sayısı k'dan azsa en büyük debili grup (≥ 2 üniteli) debi ortasından ikiye bölünür.
+  // Dönüş: { assign } (alt ünite → shift numarası) veya { neden } — sonuç uydurulmaz.
+  function bolumle(Qu, k, partition) {
+    const n = Qu.length;
+    if (!Number.isInteger(k) || k < 1) return { neden: 'en-az-bir' };
+    if (k > n) return { neden: 'alt-unite' };
+    let gr = partition(Qu, k).filter(g => g.length).map(g => g.slice());
+    while (gr.length < k) {
+      let i = -1, enb = -1;
+      gr.forEach((g, j) => { const q = g.reduce((a, x) => a + Qu[x], 0); if (g.length >= 2 && q > enb) { enb = q; i = j; } });
+      if (i < 0) return { neden: 'bolunemez' };
+      const g = gr[i]; let t = 0, kes = 1;
+      for (let m = 0; m < g.length - 1; m++) { t += Qu[g[m]]; kes = m + 1; if (t >= enb / 2) break; }
+      gr.splice(i, 1, g.slice(0, kes), g.slice(kes));
+    }
+    if (gr.length > k) return { neden: 'bolunemez' };
+    const assign = new Array(n); gr.forEach((g, j) => g.forEach(x => { assign[x] = j; }));
+    return { assign };
+  }
+
+  // Manuel mod başlangıç dağılımı adayları (hepsi gerçek atama; motor her birini ayrıca hesaplar):
+  //  'debi'   — debi dengeli bitişik bölme (en büyük shift debisini en aza indirir)
+  //  'basinc' — gerekli basıncı (yükselti + giriş basıncı) benzer alt üniteler aynı shift'te: pompanın küçük
+  //             shift'lerde fazla basınç üretmesini azaltır; sıra içinde yine debi dengeli bölünür
+  function manuelAdaylar(units, k, partition) {
+    const Qu = units.map(u => u.Q), a = bolumle(Qu, k, partition);
+    if (a.neden) return { neden: a.neden };
+    const out = [{ kod: 'debi', assign: a.assign }];
+    const sira = units.map((u, i) => i).sort((x, y) => ((units[y].rise || 0) + (units[y].hIn || 0)) - ((units[x].rise || 0) + (units[x].hIn || 0)) || x - y);
+    const b = bolumle(sira.map(i => Qu[i]), k, partition);
+    if (b.assign) { const as = new Array(Qu.length); sira.forEach((i, x) => { as[i] = b.assign[x]; }); if (as.join() !== a.assign.join()) out.push({ kod: 'basinc', assign: as }); }
+    return { adaylar: out };
+  }
+  // Aday sıralaması (ekranda da açıklanır): istenen sayıda hesaplanan > daha iyi teknik uygunluk > tur süresi günlük çalışma
+  // süresine sığan > daha kısa toplam tur (tüm shift'lerin sulama süreleri toplamı) > daha az enerji > daha düşük en büyük basınç
+  const GENEL_SIRA = ['uygun', 'sinirda', 'varsayimla', 'dogrulanamadi', 'uygun-degil'];
+  function adaySirala(list, k) {
+    const puan = x => [x.hesap && x.n === k ? 0 : 1, GENEL_SIRA.indexOf(x.genel) < 0 ? 9 : GENEL_SIRA.indexOf(x.genel), x.sigar === false ? 1 : 0, x.tur ?? Infinity, x.kWh ?? Infinity, x.Hmax ?? Infinity];
+    return list.slice().sort((p, q) => { const a = puan(p), b = puan(q); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; });
+  }
+
+  const api = Object.freeze({ minShift, bolumle, manuelAdaylar, adaySirala, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -7,7 +7,7 @@
     "cap:sync": "cap sync android",
     "apk": "cd android && ./gradlew assembleDebug",
     "test": "node test/run.js",
-    "test:ui": "node test-ui/panel.ui.js && node test-ui/uyari.ui.js && node test-ui/boru.ui.js && node test-ui/kml.ui.js && node test-ui/e2e.ui.js && node test-ui/k5.ui.js && node test-ui/k6.ui.js && node test-ui/masaustu.ui.js && node test-ui/tasima.ui.js && node test-ui/shift.ui.js && node test-ui/shift-cihaz.ui.js && node test-ui/shift-secici.ui.js && node test-ui/shift-duzen.ui.js && node test-ui/shift-gorunur.ui.js && node test-ui/katalog.ui.js && node test-ui/katalog-urun.ui.js",
+    "test:ui": "node test-ui/panel.ui.js && node test-ui/uyari.ui.js && node test-ui/boru.ui.js && node test-ui/kml.ui.js && node test-ui/e2e.ui.js && node test-ui/k5.ui.js && node test-ui/k6.ui.js && node test-ui/masaustu.ui.js && node test-ui/tasima.ui.js && node test-ui/shift.ui.js && node test-ui/shift-cihaz.ui.js && node test-ui/shift-secici.ui.js && node test-ui/shift-duzen.ui.js && node test-ui/shift-gorunur.ui.js && node test-ui/shift-manuel.ui.js && node test-ui/katalog.ui.js && node test-ui/katalog-urun.ui.js",
     "test:web": "node test-ui/web.ui.js",
     "test:desk": "node test-ui/desk.ui.js",
     "onizleme": "node tools/onizleme.js"

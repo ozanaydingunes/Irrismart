@@ -140,7 +140,7 @@ const PROJ = { id: 'sy1', name: 'Shift yönetimi testi', created: 1, updated: 2,
     await s0.selectOption({ value: ops[ops.length - 1] }); await pg.waitForTimeout(600);
     const beklenen = motor.g0 > 1 ? motor.n + 1 : motor.n;   // tek üniteli shift boşalırsa numara sıkıştırılır
     const nk = (await pg.$$('#smPanel .sm-shift')).length, bas = await pg.textContent('#smPanel .sm-head');
-    check(nk === beklenen && /elle/.test(bas), `${ad} SH-7 elle taşıma önizlenmedi (${nk} kart, beklenen ${beklenen}, ${bas})`);
+    check(nk === beklenen && /Manuel/.test(bas) && await pg.$eval('#smMod [data-smmod=manuel]', e => e.classList.contains('on')), `${ad} SH-7 elle taşıma önizlenmedi (${nk} kart, beklenen ${beklenen}, ${bas})`);
     await pg.click('#smIptal'); await pg.waitForTimeout(300);
     p = await P();
     check(!(await pg.isVisible('#smPanel')) && !p.shiftEdit, `${ad} SH-7 İptal projeyi değiştirmemeli`);

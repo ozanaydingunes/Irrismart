@@ -24,7 +24,10 @@
     const rr = AS().reportRows(A, T, nfmt);
     const sheet = [head].concat(rr.map(x => x.cells), A.other.map(w => ['', T('Diğer hesap notu'), '', null, null, '', '', '', w, '']));
     const decs = [null].concat(rr.map(x => x.dec ?? null), A.other.map(() => null));
-    return { A, findings, other: A.other, count: A.count, sheet, decs };
+    // Manuel Shift: uygun olmayan düzen bilerek kaydedildiyse not düşülür; bulgular (findings) hesap sonucundan gelir, kararla değişmez
+    const kk = p && p.shiftKullaniciKarari, karar = kk ? [T('Shift düzeni: kullanıcı, teknik olarak uygun olmayan düzeni bilerek kaydetti ({d}). Teknik uygunluk değerlendirmesi değişmedi.', { d: new Date(kk.t).toLocaleDateString('tr-TR') })] : [];
+    const other = karar.concat(A.other);
+    return { A, findings, other, count: A.count, sheet: karar.length ? sheet.concat(karar.map(w => ['', T('Kullanıcı kararı'), '', null, null, '', '', '', w, ''])) : sheet, decs: karar.length ? decs.concat(karar.map(() => null)) : decs };
   }
   const T = (x, p) => g.IrriI18n ? g.IrriI18n.t(x, p) : (p ? x.replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined ? p[k] : m)) : x);
   const SRC = () => ({ kullanici: T('Kullanıcı'), katalog: T('Katalog'), ornek: T('Örnek fiyat') });
