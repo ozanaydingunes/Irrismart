@@ -89,3 +89,11 @@ test('KU-08 Hesap motoru ve altın kayıtlar etkilenmez; ürün modülü motor /
   const inp = { crop: 'domates', area_da: 50, L: 400, W: 125, Q: 45, srcType: 'kuyu', depth: 40, region: 'akdeniz' };
   const once = JSON.stringify(E.design(inp)); require(W('katalog-urun.js')); ok(JSON.stringify(E.design(inp)) === once, 'aynı sonuç');
 });
+
+test('KU-09 EN 12201 et kalınlığı: en az max(2,0 mm, d/SDR); tablo yuvarlaması kabul, ince et ve yanlış SDR reddedilir', () => {
+  const u = U.yeniUrun({ uretici: 'F', model: 'PE100 32 PN10', katalogId: 'k', kategori: 'boru' });
+  const set = (od, e, pn, sdr) => [dg('dis_cap', od, 'mm'), dg('et_kalinligi', e, 'mm'), dg('pn', pn, 'bar'), dg('malzeme', 'PE100', '')].concat(sdr ? [dg('sdr', sdr, '')] : []);
+  ok(U.muhendislikDenetle(u, set(32, 2.0, 10, 17), []).gecti, 'Ø32 SDR17 PN10 → 2,0 mm (en az et) geçer');
+  ok(U.muhendislikDenetle(u, set(110, 6.6, 10), []).gecti && U.muhendislikDenetle(u, set(90, 4.3, 8), []).gecti && U.muhendislikDenetle(u, set(110, 4.3, 6), []).gecti, '110 PN10 6,6 / 90 PN8 4,3 / 110 PN6 4,3 geçer');
+  ok(U.muhendislikDenetle(u, set(110, 4.2, 6), []).kurallar.some(k => k.kod === 'std-sdr-pn'), '110 PN6 için 4,2 mm d/SDR = 4,23 mm altında: reddedilir');
+});
