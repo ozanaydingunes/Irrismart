@@ -264,3 +264,22 @@ test('SY-17 Pasif − / + nedeni ve elle shift sayısı doğrulaması (motora g�
   ok(SY.nsDogrula(2, Object.assign({}, s, { oto: [2, 3, 4] })).ok, 'motorun hesapladığı aday (kayıtlı Ns) alt sınırın altında olsa da geçerli');
   ok(SY.minShift([10, 10, 10], 20) === 2 && SY.minShift([30], 20) === Infinity && SY.minShift([], 20) === null, 'minShift');
 });
+
+test('SY-18 Manuel mod: istenen her shift sayısı (1 … alt ünite sayısı) gerçek atamayla tam o sayıda shift olarak hesaplanır; kaynak aşımı uygun gösterilmez', () => {
+  const Ly = require(W('layout.js')), g = (typeof window !== 'undefined' ? window : globalThis).IrriLayout || Ly;
+  for (const i of [inp, Object.assign({}, inp, { area_da: 20, L: 200, W: 100, Q: 40 })]) {
+    const r0 = E.design(i), Qu = r0.units.map(u => u.Q), s = SY.nsSinirlari(r0, i.Q);
+    for (let k = 1; k <= Qu.length; k++) {
+      const b = SY.bolumle(Qu, k, g.partition);
+      ok(b.assign && b.assign.length === Qu.length && new Set(b.assign).size === k, `k=${k} tam ${k} grup`);
+      ok(b.assign.every((v, x) => x === 0 || v === b.assign[x - 1] || v === b.assign[x - 1] + 1), `k=${k} bitişik`);
+      const r = E.design(i, null, { manual: { sig: r0.layout.sig, assign: b.assign } });
+      ok(r.ok && r.sel.manual && r.sel.groups.length === k, `k=${k} motor tam ${k} shift hesapladı (${r.ok && r.sel.groups.length})`);
+      const top = r.sel.Qj.reduce((a, q) => a + q, 0); ok(Math.abs(top - Qu.reduce((a, q) => a + q, 0)) < 1e-6, `k=${k} toplam debi korunur`);
+      const o = SY.ozet(r, HV.build(r, { inp: i, Qsource: i.Q }), AS.forProject({ inp: i }, r)), u = SY.uygunluk(o, i.Q, i);
+      if (r.sel.Qmax > i.Q + 1e-9) ok(u.genel === 'uygun-degil' && !SY.uygunMu(u.genel), `k=${k} kaynak debisi aşılıyor → uygun değil (${u.genel})`);
+    }
+    ok(SY.bolumle(Qu, Qu.length + 1, g.partition).neden === 'alt-unite' && SY.bolumle(Qu, 0, g.partition).neden === 'en-az-bir', 'fiziksel olarak oluşturulamayan sayı');
+    ok(JSON.stringify(E.design(i)) === JSON.stringify(r0), 'otomatik hesap değişmedi');
+  }
+});

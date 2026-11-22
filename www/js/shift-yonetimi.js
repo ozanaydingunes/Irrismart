@@ -253,7 +253,29 @@
     return { ok: true, otomatikAralikta: s.oto.includes(k) };
   }
 
-  const api = Object.freeze({ minShift, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
+  // ---------- Manuel mod: istenen shift sayısına gerçek alt ünite ataması ----------
+  // Motorun bölmesi (Ly.partition) her k için tam k grup üretmeyebilir; manuel modda sayı motora açık atama olarak gider.
+  // Bitişiklik korunur (alt üniteler sıralı); grup sayısı k'dan azsa en büyük debili grup (≥ 2 üniteli) debi ortasından ikiye bölünür.
+  // Dönüş: { assign } (alt ünite → shift numarası) veya { neden } — sonuç uydurulmaz.
+  function bolumle(Qu, k, partition) {
+    const n = Qu.length;
+    if (!Number.isInteger(k) || k < 1) return { neden: 'en-az-bir' };
+    if (k > n) return { neden: 'alt-unite' };
+    let gr = partition(Qu, k).filter(g => g.length).map(g => g.slice());
+    while (gr.length < k) {
+      let i = -1, enb = -1;
+      gr.forEach((g, j) => { const q = g.reduce((a, x) => a + Qu[x], 0); if (g.length >= 2 && q > enb) { enb = q; i = j; } });
+      if (i < 0) return { neden: 'bolunemez' };
+      const g = gr[i]; let t = 0, kes = 1;
+      for (let m = 0; m < g.length - 1; m++) { t += Qu[g[m]]; kes = m + 1; if (t >= enb / 2) break; }
+      gr.splice(i, 1, g.slice(0, kes), g.slice(kes));
+    }
+    if (gr.length > k) return { neden: 'bolunemez' };
+    const assign = new Array(n); gr.forEach((g, j) => g.forEach(x => { assign[x] = j; }));
+    return { assign };
+  }
+
+  const api = Object.freeze({ minShift, bolumle, nsSinirlari, nsPasifNedeni, nsDogrula, hedefler, hedefOf, bulguFarki, secSatirlar, geoAlan, birimLateral, uygunluk, uygunMu, siraGecerli, siraVarsayilan, siraOf, siraTasi, siraUyar, siraVarsayilanMi, ataTasi, atamaOf, hedefSapma, hedefOku, ozet, karsilastir, degisti, esit, raporSirasi, SATIR });
   g.IrriShiftYonetimi = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
