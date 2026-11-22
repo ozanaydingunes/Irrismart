@@ -21,7 +21,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: npm }
       - name: Eski APK (telefondaki 1.0.5 tanılama, versionCode 17)
-        run: cd eski && APK_OUT=$GITHUB_WORKSPACE/eski.apk bash ci/build-apk.sh
+        run: |
+          cd eski && APK_OUT=$GITHUB_WORKSPACE/eski.apk bash ci/build-apk.sh
+          cd .. && rm -rf eski   # ikinci kaynak kopyası (ve anahtar dosyası) çalışma alanında kalmasın
       - name: Yeni birleşik test APK (versionCode 18)
         run: APK_OUT=$GITHUB_WORKSPACE/yeni.apk bash ci/build-apk.sh
       - name: Paket, sürüm ve imza karşılaştırması
