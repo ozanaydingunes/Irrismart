@@ -93,18 +93,21 @@
   }
 
   // ---------- Toplu dışa aktarma / geri yükleme (yalnız bilgi kaydı; PDF dosyalarını İÇERMEZ) ----------
-  const YEDEK_TUR = 'irrigrow-katalog-bilgileri';
-  function yedekOlustur(firmalar, kataloglar) {
-    return { tur: YEDEK_TUR, surum: SURUM, olusturma: new Date().toISOString(), pdfIcerir: false,
-      aciklama: 'Bu dosya yalnız katalog bilgilerini (ad, firma, tarih, ürün grubu, kaynak, SHA-256) içerir. PDF dosyalarını İÇERMEZ. Geri yüklemede PDF dosyalarını yeniden seçmeniz gerekir; dosyalar SHA-256 ile eşleştirilir.',
-      firmalar: firmalar.filter(f => !f.ornek), kataloglar: kataloglar.filter(k => !k.ornek).map(k => Object.assign({}, k, { dosya: dosyaOzet(k.dosya), oncekiSurumler: (k.oncekiSurumler || []).map(s => Object.assign({}, s, { dosya: dosyaOzet(s.dosya) })) })) };
+  const YEDEK_TUR = 'irrigrow-katalog-bilgileri', YEDEK_SURUM = 2;   // 2: teknik ürün veritabanı (ürün, değer, eğri) eklendi; 1 okunmaya devam eder
+  function yedekOlustur(firmalar, kataloglar, urunVeri) {
+    const kIds = new Set(kataloglar.filter(k => !k.ornek).map(k => k.id)), U = urunVeri || {};
+    const urunler = (U.urunler || []).filter(u => !u.ornek && kIds.has(u.katalogId)), uIds = new Set(urunler.map(u => u.id));
+    return { tur: YEDEK_TUR, surum: YEDEK_SURUM, olusturma: new Date().toISOString(), pdfIcerir: false,
+      aciklama: 'Bu dosya katalog bilgilerini (ad, firma, tarih, ürün grubu, kaynak, SHA-256) ve teknik ürün veritabanını (ürünler, teknik değerler, eğriler, inceleme ve mühendislik doğrulama durumu) içerir. PDF dosyalarını İÇERMEZ. Geri yüklemede PDF dosyalarını yeniden seçmeniz gerekir; dosyalar SHA-256 ile eşleştirilir.',
+      firmalar: firmalar.filter(f => !f.ornek), kataloglar: kataloglar.filter(k => !k.ornek).map(k => Object.assign({}, k, { dosya: dosyaOzet(k.dosya), oncekiSurumler: (k.oncekiSurumler || []).map(s => Object.assign({}, s, { dosya: dosyaOzet(s.dosya) })) })),
+      urunler, degerler: (U.degerler || []).filter(d => uIds.has(d.urunId)), egriler: (U.egriler || []).filter(e => uIds.has(e.urunId)) };
   }
   const dosyaOzet = d => d ? { ad: d.ad, boyut: d.boyut, sha256: d.sha256, sayfa: d.sayfa || null } : null;
   // Geri yükleme: yedek doğrulanır; mevcut kayıtlar silinmez (aynı id → atlanır). Dosyası olmayan kayıtlar "PDF bekleniyor" durumunda gelir.
-  function yedekOku(metin, mevcutFirmalar, mevcutKataloglar) {
+  function yedekOku(metin, mevcutFirmalar, mevcutKataloglar, mevcutUrunler) {
     let y; try { y = typeof metin === 'string' ? JSON.parse(metin) : metin; } catch (e) { return { hata: 'Dosya okunamadı (geçerli JSON değil)' }; }
     if (!y || y.tur !== YEDEK_TUR) return { hata: 'Bu dosya bir IrriGrow katalog bilgileri yedeği değil' };
-    if (!(y.surum >= 1 && y.surum <= SURUM)) return { hata: 'Yedek sürümü desteklenmiyor' };
+    if (!(y.surum >= 1 && y.surum <= YEDEK_SURUM)) return { hata: 'Yedek sürümü desteklenmiyor' };
     const fIds = new Set(mevcutFirmalar.map(f => f.id)), kIds = new Set(mevcutKataloglar.map(k => k.id));
     const firmalar = (y.firmalar || []).filter(f => f && f.id && kirp(f.ad, 120) && !fIds.has(f.id)).map(f => ({ surum: SURUM, id: f.id, ad: kirp(f.ad, 120), olusturma: f.olusturma || new Date().toISOString(), ornek: false }));
     const tumFirma = new Set([...fIds, ...firmalar.map(f => f.id)]);
@@ -115,7 +118,13 @@
       kataloglar.push(Object.assign(yeniKatalog(Object.assign({}, k, { kaynak: k.kaynak, ornek: false })), { id: k.id, yuklenme: k.yuklenme, guncelleme: k.guncelleme, belgeTarihi: tarihGecerli(k.belgeTarihi) ? k.belgeTarihi : null,
         dosya: Object.assign(dosyaOzet(k.dosya), { anahtar: null, bekliyor: true }), oncekiSurumler: [] }));
     }
-    return { firmalar, kataloglar, atlanan };
+    // Teknik ürün veritabanı (yedek sürüm 2): kataloğu mevcut veya geri yüklenen ürünler; aynı kimlik üzerine yazılmaz; örnek veri alınmaz
+    const tumKatalog = new Set([...kIds, ...kataloglar.map(k => k.id)]), uMev = new Set((mevcutUrunler || []).map(u => u.id));
+    const urunler = (y.urunler || []).filter(u => u && u.id && !u.ornek && tumKatalog.has(u.katalogId) && !uMev.has(u.id));
+    const uIds = new Set(urunler.map(u => u.id));
+    const degerler = (y.degerler || []).filter(d => d && uIds.has(d.urunId) && d.kaynak && d.kaynak.katalogId && d.kaynak.sayfa >= 1);
+    const egriler = (y.egriler || []).filter(e => e && uIds.has(e.urunId) && e.kaynak && e.kaynak.sayfa >= 1 && Array.isArray(e.noktalar) && e.noktalar.length >= 4);
+    return { firmalar, kataloglar, atlanan, urunler, degerler, egriler };
   }
 
   // ---------- Akışlı SHA-256 (büyük dosya belleğe bütün olarak alınmadan; parça parça) ----------
@@ -152,7 +161,7 @@
     };
   }
 
-  const api = Object.freeze({ SURUM, URUN_GRUPLARI, BELGE_TURLERI, KAYNAK_TURLERI, PARA, ENCOK_BAYT, YEDEK_TUR, anahtar, yeniId, tarihOku, tarihGecerli, yasGun, pdfImzasi,
+  const api = Object.freeze({ SURUM, URUN_GRUPLARI, BELGE_TURLERI, KAYNAK_TURLERI, PARA, ENCOK_BAYT, YEDEK_TUR, YEDEK_SURUM, anahtar, yeniId, tarihOku, tarihGecerli, yasGun, pdfImzasi,
     katalogDogrula, yeniKatalog, yeniFirma, firmaBul, surumEkle, surumSil, dosyaAnahtarlari, ayniDosya, filtrele, yedekOlustur, yedekOku, sha256Akis });
   g.IrriKatalogModel = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
