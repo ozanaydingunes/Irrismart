@@ -11,12 +11,13 @@
 // Bu sürümde OLMAYAN işlevler (sağ tık menüsü, koordinatla nokta ekleme, geri al/yinele geçmişi, klavye
 // kısayolları, lateral/manifold düzenleme) gösterilmez; WEB-3 kapsamındadır.
 (function (g) {
+  const MAP_MIN = 320;   // 1.0.7 düzeltme: Arazi'de haritanın en küçük yüksekliği (px); alt panel bunun altına indiremez
   const MIN_W = 1200, KEY = 'irrigrow.desk', BKEY = 'irrigrow.lastBackup';
   let api = null, on = false, built = false;
-  const st = { left: true, right: true, drawer: false, tab: 'shift', drawerH: 260, sel: null };
+  const st = { left: true, right: true, drawer: false, tab: 'shift', drawerH: 260, sel: null, rightBos: false };
   const doc = () => g.document;
   const $ = s => doc().querySelector(s);
-  const load = () => { try { Object.assign(st, JSON.parse(g.localStorage.getItem(KEY) || '{}'), { sel: null }); } catch (e) { /* varsayılanlar */ } };
+  const load = () => { try { Object.assign(st, JSON.parse(g.localStorage.getItem(KEY) || '{}'), { sel: null, rightBos: false }); } catch (e) { /* varsayılanlar */ } };
   const save = () => { try { const { left, right, drawer, tab, drawerH } = st; g.localStorage.setItem(KEY, JSON.stringify({ left, right, drawer, tab, drawerH })); } catch (e) { /* depolama yok */ } };
   const eligible = () => !!api && !api.isNative() && g.innerWidth >= MIN_W;
 
@@ -28,14 +29,32 @@
   function update() {
     const e = eligible();
     if (e && !built) build();
-    if (e !== on) { on = e; doc().documentElement.classList.toggle('desk', on); applyVars(); if (on) refresh(); api.mapResize(); }
+    if (e !== on) { on = e; doc().documentElement.classList.toggle('desk', on); kmlYeri(); applyVars(); if (on) refresh(); api.mapResize(); }
+    else if (on && applyVars()) api.mapResize();
+  }
+  // KML/KMZ içe aktarma paneli: masaüstünde haritanın üzerinde yüzen kart (harita küçülmez); telefonda alt çubukta (değişmedi)
+  function kmlYeri() {
+    const P = $('#kmlPanel'), ar = $('#v-arazi'), mb = $('#v-arazi .mapbar'); if (!P || !ar || !mb) return;
+    if (on && P.parentNode !== ar) ar.appendChild(P);
+    else if (!on && P.parentNode !== mb) mb.insertBefore(P, $('#mShiftBar'));
+  }
+  // Hesap sonucu yokken boş mühendislik paneli haritadan yer almaz (ince şerit); kullanıcı açarsa açık kalır
+  const bosPanel = () => { if (!api || !api.cur()) return true; const r = api.result(); return !r || !r.ok; };
+  const sagAcik = () => st.right && (st.rightBos || !bosPanel());
+  // Arazi ekranında alt panel, haritayı MAP_MIN'in altına indirecek kadar yükselemez (küçük dizüstü ekranları)
+  function cekmeceH() {
+    if (!st.drawer) return 40;
+    const ar = doc().querySelector('#v-arazi.on'); if (!ar) return st.drawerH;
+    const mb = ar.querySelector('.mapbar'), mbH = mb ? mb.offsetHeight : 150, top = 56;
+    return Math.round(Math.max(120, Math.min(st.drawerH, g.innerHeight - top - mbH - MAP_MIN)));
   }
   function applyVars() {
-    const r = doc().documentElement.style;
+    const r = doc().documentElement.style, once = [r.getPropertyValue('--right'), r.getPropertyValue('--drawer')].join();
     r.setProperty('--rail', on ? (st.left ? '216px' : '64px') : '0px');
-    r.setProperty('--right', on && st.right ? '380px' : (on ? '28px' : '0px'));
-    r.setProperty('--drawer', on ? (st.drawer ? st.drawerH + 'px' : '40px') : '0px');
+    r.setProperty('--right', on && sagAcik() ? '380px' : (on ? '28px' : '0px'));
+    r.setProperty('--drawer', on ? cekmeceH() + 'px' : '0px');
     doc().documentElement.classList.toggle('desk-rail-min', on && !st.left);
+    return once !== [r.getPropertyValue('--right'), r.getPropertyValue('--drawer')].join();
   }
 
   // ---------- DOM (bir kez) ----------
@@ -110,7 +129,7 @@
   function renderRight() {
     const el = $('#deskRight'); if (!el) return;
     const t = api.t, esc = api.esc;
-    if (!st.right) { el.innerHTML = `<button type="button" class="dk-reopen" data-dk="open" aria-label="${esc(t('Mühendislik panelini aç'))}">‹</button>`; el.querySelector('[data-dk=open]').onclick = () => { st.right = true; save(); applyVars(); renderRight(); api.mapResize(); }; return; }
+    if (!sagAcik()) { el.innerHTML = `<button type="button" class="dk-reopen" data-dk="open" aria-label="${esc(t('Mühendislik panelini aç'))}" title="${esc(t('Mühendislik panelini aç'))}">‹</button>`; el.querySelector('[data-dk=open]').onclick = () => { st.right = true; if (bosPanel()) st.rightBos = true; save(); applyVars(); renderRight(); api.mapResize(); }; return; }
     const c = ctx();
     const head = (kind, title) => `<div class="dk-head"><div><span class="dk-kind">${esc(t(kind))}</span><strong>${title}</strong></div><button type="button" class="dk-x" data-dk="close" aria-label="${esc(t('Mühendislik panelini kapat'))}">✕</button></div>`;
     let body = '';
@@ -170,7 +189,7 @@
   }
   const shiftOf = (r, k) => r.sel.groups.findIndex(gr => gr.includes(k));
   function bindPanel(el) {
-    const x = el.querySelector('[data-dk=close]'); if (x) x.onclick = () => { st.right = false; save(); applyVars(); renderRight(); api.mapResize(); };
+    const x = el.querySelector('[data-dk=close]'); if (x) x.onclick = () => { st.right = false; st.rightBos = false; save(); applyVars(); renderRight(); api.mapResize(); };
     el.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const [v, j] = b.dataset.go.split(':'); if (v === 'sonuc') api.show('sonuc'); else api.openHydro(v, j != null ? +j : null); });
     el.querySelectorAll('[data-sel]').forEach(b => b.onclick = () => { const [type, j] = b.dataset.sel.split(':'); select(type === 'shift' ? { type, j: +j } : { type }); });
     el.querySelectorAll('[data-kod]').forEach(b => b.onclick = () => api.focusFinding(b.dataset.kod));
@@ -215,7 +234,7 @@
   }
 
   // Uygulama ekran değiştirdiğinde, hesap yenilendiğinde ve proje açıldığında çağrılır
-  function refresh() { if (!on) return; renderTools(); renderRail(); renderRight(); renderBottom(); }
+  function refresh() { if (!on) return; if (applyVars()) api.mapResize(); renderTools(); renderRail(); renderRight(); renderBottom(); }
   function projectChanged() { st.sel = null; refresh(); }
 
   g.IrriDesk = { init, refresh, select, projectChanged, noteBackup, get active() { return on; }, MIN_W, state: st };

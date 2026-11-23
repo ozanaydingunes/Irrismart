@@ -41,7 +41,7 @@
   function safely(fn, where) { try { return fn(); } catch (e) { console.error(e); toast(`${where}: ${t('beklenmeyen hata')} (${e.message})`); } }
 
   // ---------- Gezinme ----------
-  let kmlSonuc = null, kmlKatman = null, kmlGecici = null, kmlYeni = false;   // MH-KML durumu (show() kullandığı için burada)
+  let kmlSonuc = null, kmlKatman = null, kmlGecici = null, kmlYeni = false, kmlDar = false;   // MH-KML durumu (show() kullandığı için burada)
   function show(v) {
     if (v !== 'arazi') kmlGeciciSil();
     if (v !== 'arazi' && vurgu && vurgu.kaynak === 'ss') ssVurguBitir();
@@ -113,6 +113,8 @@
   function openMap() {
     if (!map) {
       map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([38.5, 33.5], 6);
+      // Harita kabı boyut değiştirdiğinde (pencere, paneller, alt çubuk, tam ekran) Leaflet yeniden ölçülür
+      if (window.ResizeObserver) { let rz = 0; new ResizeObserver(() => { clearTimeout(rz); rz = setTimeout(() => { if (map) map.invalidateSize(); tutamakYeri(); }, 40); }).observe($('#map')); }
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: window.IrriKaynak ? IrriKaynak.haritaAtif(t) : 'Esri, Vantor, Earthstar Geographics' }).addTo(map);   // K-5: uydu ve kot atfı
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, opacity: .8 }).addTo(map);
       map.on('click', e => {
@@ -403,6 +405,7 @@
     if (mapMode === 'anahat') { if (confirm(t('Ana hat güzergâhı silinsin mi?'))) { cur.route = []; invalidateDesign(); persist(); drawPoly(); } return; }
     if (confirm(t('Sınır ve kaynak noktası silinsin mi?') + (cur.shiftEdit ? ' ' + t('Elle yapılan shift ataması da kaldırılacak.') : '') + ' ' + t('Önceki hâl revizyon olarak saklanır.'))) { St.snapshot(cur, 'temizleme öncesi'); cur.poly = []; cur.src = null; cur.station = null; cur.route = []; delete cur.shiftEdit; delete cur.inp.grad; invalidateDesign(); persist(); drawPoly(); }
   };
+  $('#mFull').title = t('Tam ekran harita'); $('#mFull').setAttribute('aria-label', t('Tam ekran harita'));
   $('#mFull').onclick = () => { document.body.classList.toggle('mapfull'); setTimeout(() => map && map.invalidateSize(), 60); };
   $('#mPlan').onclick = () => { showPlan = !showPlan; if (showPlan) { const r = overlayRes || compute(); if (!r.ok) toast(t('Plan çizilemedi: ') + r.err[0]); else if (r.layout.mode !== 'parsel') toast(t('Harita planı için önce “Uygula” deyin (gerçek parsel modu)')); } $('#mPlan').classList.toggle('primary', showPlan && !!overlayRes); drawPoly(); };
   $('#mGps').onclick = async () => {
@@ -466,11 +469,19 @@
     const hep = [];
     kmlSonuc.parseller.filter(p => p.halka && p.halka.length >= 3).forEach(p => {
       const on = sec && p.id === sec.id;
-      L.polygon(p.halka, { color: on ? '#ff6f00' : '#9e9e9e', weight: on ? 3 : 1.5, dashArray: on ? null : '6 4', fillOpacity: on ? 0.15 : 0.04, interactive: false }).addTo(kmlKatman);
+      const pg = L.polygon(p.halka, { color: on ? '#ff6f00' : '#9e9e9e', weight: on ? 4 : 1.5, dashArray: on ? null : '6 4', fillColor: on ? '#ff6f00' : '#9e9e9e', fillOpacity: on ? 0.25 : 0.04, interactive: false }).addTo(kmlKatman);
+      if (on) { pg.bringToFront(); pg.bindTooltip(String(p.ad || ''), { permanent: true, direction: 'center', className: 'kml-etiket' }); }
       hep.push(...p.halka);
     });
     const b = sec && sec.halka ? sec.halka : hep;
-    if (b.length) map.fitBounds(L.latLngBounds(b), { padding: [24, 24] });
+    if (b.length) map.fitBounds(L.latLngBounds(b), kmlSigdir());
+  }
+  // Masaüstünde KML kartı haritanın sol üstünde durur: seçilen parsel kartın altında kalmasın diye sol kenar payı kart kadar
+  function kmlSigdir() {
+    const P = $('#kmlPanel'), M = $('#map');
+    if (!P || !M || P.style.display === 'none' || P.parentNode !== $('#v-arazi')) return { padding: [24, 24] };
+    const pr = P.getBoundingClientRect(), mr = M.getBoundingClientRect(), sag = Math.max(24, Math.round(pr.right - mr.left + 16));
+    return sag < mr.width * 0.6 ? { paddingTopLeft: [sag, 24], paddingBottomRight: [24, 24] } : { padding: [24, 24] };
   }
   function kmlPanel() {
     const P = $('#kmlPanel'); if (!P) return;
@@ -484,19 +495,27 @@
       if (p.yukseklikler) not.push(esc(t('yükseklik değerleri saklanacak; hidrolik kot verisi sayılmaz')));
       return `<label class="kml-row" style="display:block;padding:4px 0;${p.hesaplanabilir ? '' : 'opacity:.7'}"><input type="radio" name="kmlP" value="${esc(p.id)}" ${p.hesaplanabilir ? '' : 'disabled'}> <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da · ${t('çevre')} ${fmt(p.cevre_m, 0)} m · ${p.halka.length} ${t('köşe')}` : ''}${not.length ? `<br><span class="small">${not.join(' · ')}</span>` : ''}</label>`;
     };
-    P.innerHTML = `<b>${t('KML/KMZ içe aktarma')}</b> <span class="small muted">${esc(s.kaynak.dosya)}</span>
+    P.innerHTML = `<div class="kml-bas"><div class="kml-baslik"><b>${t('KML/KMZ içe aktarma')}</b> <span class="small muted">${esc(s.kaynak.dosya)}</span></div>
+        <button type="button" class="btn sm kml-dar" id="kmlDar" aria-expanded="${!kmlDar}" title="${esc(kmlDar ? t('Paneli genişlet') : t('Paneli daralt'))}">${kmlDar ? '▸' : '▾'}</button></div>
+      <p class="small kml-secili" id="kmlSecili"></p>
+      <div class="kml-govde" ${kmlDar ? 'hidden' : ''}>
       <p class="small muted" style="margin:4px 0">${t('Önizleme — proje henüz değişmedi. Parseli seçip “Projeye uygula” deyin.')}</p>
       <div id="kmlListe">${s.parseller.map(satir).join('')}</div>
-      ${s.notlar.map(n => `<p class="small muted" style="margin:2px 0">${esc(kmlMetin(n.mesaj, n.p))}</p>`).join('')}
-      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" id="kmlIptal">${t('İptal')}</button><button class="btn sm primary" id="kmlUygula" disabled>${t('Projeye uygula')}</button></div>`;
-    P.style.display = 'block';
+      ${s.notlar.map(n => `<p class="small muted" style="margin:2px 0">${esc(kmlMetin(n.mesaj, n.p))}</p>`).join('')}</div>
+      <div class="row kml-alt" style="gap:6px;margin-top:6px"><button class="btn sm" id="kmlIptal">${t('İptal')}</button><button class="btn sm primary" id="kmlUygula" disabled>${t('Projeye uygula')}</button></div>`;
+    P.style.display = P.parentNode === $('#v-arazi') ? 'flex' : 'block';
+    P.classList.toggle('dar', kmlDar);
+    const seciliYaz = () => { const p = secilen(), e = $('#kmlSecili'); if (e) e.innerHTML = p ? `${t('Seçili parsel')}: <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da` : ''}` : `<span class="muted">${t('Parsel seçilmedi')}</span>`; };
+    // Daralt / genişlet: liste gizlenir, seçim ve önizleme korunur; harita yeni boyuta göre yeniden çizilir
+    $('#kmlDar').onclick = () => { kmlDar = !kmlDar; const d = $('#kmlDar'); P.querySelector('.kml-govde').hidden = kmlDar; P.classList.toggle('dar', kmlDar); d.textContent = kmlDar ? '▸' : '▾'; d.setAttribute('aria-expanded', String(!kmlDar)); d.title = kmlDar ? t('Paneli genişlet') : t('Paneli daralt'); if (map) setTimeout(() => map.invalidateSize(), 30); };
     const secilen = () => { const r = P.querySelector('input[name=kmlP]:checked'); return r ? s.parseller.find(x => x.id === r.value) : null; };
-    P.querySelectorAll('input[name=kmlP]').forEach(r => r.onchange = () => { $('#kmlUygula').disabled = !secilen(); kmlOnizle(secilen()); });
+    P.querySelectorAll('input[name=kmlP]').forEach(r => r.onchange = () => { $('#kmlUygula').disabled = !secilen(); seciliYaz(); kmlOnizle(secilen()); });
     const uygunlar = s.parseller.filter(p => p.hesaplanabilir);
     if (uygunlar.length === 1) { const r = P.querySelector(`input[name=kmlP][value="${uygunlar[0].id}"]`); r.checked = true; $('#kmlUygula').disabled = false; kmlOnizle(uygunlar[0]); }
     else kmlOnizle(null);
+    seciliYaz();
     if (!uygunlar.length) P.insertAdjacentHTML('beforeend', `<p class="warn small">${t('Dosyada hesaplanabilir parsel yok.')}</p>`);
-    $('#kmlIptal').onclick = () => { const gec = !!kmlGecici; kmlSonuc = null; kmlPanel(); if (gec) { kmlGeciciSil(); show('projeler'); } toast(t('İçe aktarma iptal edildi; hiçbir şey değişmedi')); };
+    $('#kmlIptal').onclick = () => { const gec = !!kmlGecici; kmlSonuc = null; kmlPanel(); if (map && cur && cur.poly && cur.poly.length >= 3) map.fitBounds(L.latLngBounds(cur.poly), { padding: [24, 24] }); if (gec) { kmlGeciciSil(); show('projeler'); } toast(t('İçe aktarma iptal edildi; hiçbir şey değişmedi')); };
     $('#kmlUygula').onclick = () => { const p = secilen(); if (p && p.hesaplanabilir) kmlUygula(p); };
   }
   function kmlUygula(p) {
@@ -1274,6 +1293,11 @@
     const mb = arazi ? $('#v-arazi .mapbar') : null;
     b.style.bottom = mb ? Math.round(innerHeight - mb.getBoundingClientRect().top + 10) + 'px' : '';
     document.body.classList.add('ss-var');
+  }
+  // Arazi'de Shiftler tutamağı alt çubuğun hemen üstünde kalır (alt panel / pencere boyutu değişince yeniden konumlanır)
+  function tutamakYeri() {
+    const b = $('#ssTut'), mb = $('#v-arazi .mapbar');
+    if (b && mb && $('#v-arazi').classList.contains('on')) b.style.bottom = Math.round(innerHeight - mb.getBoundingClientRect().top + 10) + 'px';
   }
   function ssAc(j) {
     const r = ssSonuc(); if (!r) return toast(t('Shift Yönetimi için önce hesabın tamamlanması gerekir.'));
