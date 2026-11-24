@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // TEST (1.0.7 sürüm dalı): Android emülatöründe
-//  1) telefondaki kurulumu taklit eden eski APK (çoklu parsel testi, versionCode 24) kurulur; proje + katalog PDF kaydı oluşturulur,
-//  2) son kontrol test APK'sı (versionCode 25) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
+//  1) telefondaki kurulumu taklit eden eski APK (telefonda kabul edilen, versionCode 25) kurulur; proje + katalog PDF kaydı oluşturulur,
+//  2) kararlı APK (versionCode 26) kaldırmadan üzerine kurulur; proje ve katalog korunumu, ürün veritabanı geçişi (IndexedDB 2) denetlenir,
 //  3) masaüstüyle aynı eşdeğerlik parmak izi (ci/parmak-izi.js) gerçek WebView'da hesaplanır ve masaüstü özetiyle karşılaştırılır.
 const { _android: android } = require('playwright');
 const { execSync } = require('child_process');
@@ -33,7 +33,7 @@ const SONUC = (ad, ok, ek) => log((ok ? 'GEÇTİ' : 'KALDI') + ' ' + ad + (ek !=
   SONUC('1.0.7 APK eski kurulumun üzerine kuruldu (kaldırma yok)', /Success/.test(cikti), cikti.trim().split('\n').pop());
   if (!/Success/.test(cikti)) process.exit(1);
   await baslat();
-  SONUC('test APK çalışıyor (versionCode 25)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 25, await page.evaluate(() => window.IRRI_SURUM));
+  SONUC('kararlı APK çalışıyor (versionCode 26)', await page.evaluate(() => window.IRRI_SURUM_KODU) === 26, await page.evaluate(() => window.IRRI_SURUM));
   SONUC('proje verisi bayt bayt korundu', await page.evaluate(() => localStorage.getItem('irrismart.projects.v1')) === eski.proje);
   const kat = await page.evaluate(async id => { const D = window.IrriKatalogDepo; const v = await D.listele(); const k = v.kataloglar.find(x => x.id === id); const db = await D.db(); return { var: !!k, sha: k && k.dosya.sha256, dogru: k ? (await D.dosyaDogrula(k.dosya)).ok : false, surum: db.version, depolar: [...db.objectStoreNames].sort() }; }, eski.katalogId);
   SONUC('katalog ve PDF korundu; ürün veritabanı geçişi (IndexedDB sürüm 2)', kat.var && kat.sha === eski.sha && kat.dogru && kat.surum === 2 && ['urunler', 'degerler', 'egriler'].every(x => kat.depolar.includes(x)), kat);

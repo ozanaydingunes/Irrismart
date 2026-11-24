@@ -35,6 +35,45 @@ Malzeme → Ekipman önerileri ekranında her kategori (pompa, filtre, vana, bor
 6. **Rapor** — Proje sekmesinden PDF ve Excel; malzeme listesi teknik şartname ve katalog kalemlerini içerir.
 7. **Yedek** — aşağıdaki "Yedekleme ve geri yükleme" bölümü.
 
+## Çoklu parsel yönetimi (1.0.7 düzeltmesi)
+Bir proje birden çok **bağımsız** parsel içerebilir (ör. FIELD1 ve field2 tire). Ayrıntılı teknik açıklama: `docs/coklu-parsel.md`.
+
+**Parsel eklemek**
+- **KML/KMZ'den:** Arazi → KML/KMZ.
+  - Listede onay kutularıyla parselleri seçin (*Tümünü seç / Seçimi temizle*). Seçilenler haritada adlarıyla önizlenir.
+  - *N parseli ekle*: seçilenler ayrı parseller olarak eklenir; parseller birleştirilmez.
+  - *Aktif parseli değiştir*: yalnız tek seçimde, aktif parselin sınırını değiştirir.
+  - Nokta (kuyu) nesneleri parsel sayılmaz.
+  - KML yükseklikleri saklanır ama doğrulanmış hidrolik kot olarak kullanılmaz.
+- **Elle:** Arazi → parsel şeridinde *＋ Parsel* → ad verin → haritada köşelere dokunarak çizin.
+
+**Parsel seçmek ve düzenlemek**
+- Parsel şeridindeki çipe ya da haritada başka bir parsele dokunun (onaylı).
+- Düzenleme (Sınır, Kaynak, İstasyon, Ana hat, Shift), Veriler, Hidrolik, Malzeme ve ekipman her zaman **aktif parsel** içindir; diğer parseller etkilenmez.
+- Parsel şeridindeki düğmeler: ✎ yeniden adlandır, 🗑 sil (önceki hâl revizyon olarak saklanır), ⛶ bütün parselleri göster.
+
+**Her parselin kaynağı**
+- O parsel aktifken *Kaynak* modunda kuyusunu işaretleyin.
+- Veriler ekranında o parselin kaynak debisini ve derinliğini girin.
+- Her parselde *Uygula* ile alan ve eğim ölçülür.
+
+**Sonuç ve rapor**
+- Sonuç ekranındaki **Proje parselleri** kartı her parselin alanını, kaynak debisini, shift sayısını ve durumunu (Hesaplandı / Yaklaşık / Eksik veri / Hesaplanamadı) gösterir; proje toplamı ayrıca verilir.
+- "Toplamlar nasıl hesaplandı?" bölümü toplamların yöntemini açıklar.
+- PDF'te "Parseller ve proje toplamı", Excel'de "Parseller" sayfası vardır. Ayrıntılı hidrolik bölümler aktif parsel içindir.
+
+**Ortak şebeke sınırlamaları (bu sürümde hesaplanmaz)**
+- Her parsel kendi kaynağı, ana hattı ve shift düzeniyle **ayrı** hesaplanır; parseller hidrolik olarak birbirine bağlı sayılmaz.
+- Ortak kuyu, ortak pompa ve parseller arası ana hat tanımlanamaz ve hesaplanmaz.
+  - İki parselin kuyusu aynı yerdeyse parseller "Ortak kaynak: doğrulanmadı" olarak işaretlenir ve proje durumu "eksik" olur.
+  - Ayrı sonuçlar, ortak sistem tasarımı yerine kullanılamaz.
+- Parsel kaynak debileri **toplanmaz** ve ortak pompa debisi olarak sunulmaz.
+- Proje durumunda "hesaplandı", her parselin ayrı ayrı hesaplandığı anlamına gelir; ortak sistemin uygun olduğu anlamına gelmez.
+- Toplam alan, parsel sınırlarının toplamıdır; parseller arasındaki boşluk dahil değildir.
+  Sınırlar çakışıyorsa toplam alan **yaklaşıktır** ("≈"); sınırlar düzeltilmeden kesin alan olarak kullanılmamalıdır.
+- Haritada yalnız aktif parselin sulama planı çizilir; diğer parseller sınır, ad ve kaynakla gösterilir.
+- Uygulamada KML/KMZ dışa aktarma yoktur; bütün parseller JSON proje yedeğinde saklanır.
+
 ## Veriler nerede saklanır
 | | Android | Masaüstü web |
 |---|---|---|
@@ -71,6 +110,11 @@ Uygulamayı kaldırmak / uygulama verilerini temizlemek (Android) veya tarayıc�
 **Otomatik testler:** birim 282/282; arayüz (Chromium, telefon 320/390 px, tablet, masaüstü 1280 px): Manuel Shift 160, Shift düzenleme 156, görünürlük 79, seçici 105, cihaz 26, temel Shift 76, katalog 147, ürün veritabanı geçişi 7, ürün ekranı 66, ekipman önerileri 28, panel 226, uçtan uca 36, JSON taşıma 17, masaüstü 132, web 118 — hepsi geçti.
 
 **Gerçek telefon:** 1.0.7 versionCode 21'de katalogsuz ekipman sekmeleri boş kalıyordu (düzeltildi). 1.0.7 versionCode 22 gerçek telefonda **6/6 geçti** — `docs/cihaz-kabul-1-0-7-vc22.md`. PR #40 (Manuel Shift) gerçek telefonda 8/8 geçmişti.
+
+## Çoklu parsel düzeltmesi (main, versionCode 26)
+- PR #43: çoklu parsel; masaüstü Arazi harita yerleşimi (KML paneli haritayı küçültmez, harita en az 320 px); Firma Katalogları ikonu (belge + damla).
+- Gerçek telefon kabulü versionCode 25 ile **6/6 geçti** — `docs/cihaz-kabul-1-0-7-vc25.md`.
+- versionCode 26, kabul edilen 25 ile aynı uygulama kodudur; yalnız sürüm numarası farklıdır.
 
 ## Kararlı sürüm (main, versionCode 23)
 versionCode 23, telefonda kabul edilen versionCode 22 ile aynı uygulama kodudur (www/ içinde yalnız sürüm numarası farklı); telefondaki 22'nin üzerine kaldırmadan kurulabilmesi için yükseltildi. Paket kimliği (`com.irrigrow.app.dev`) ve debug imzası değişmedi.

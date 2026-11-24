@@ -1,4 +1,4 @@
-name: IrriGrow 1.0.7 — Android/masaüstü eşdeğerlik ve 24 → 25 güncelleme testi
+name: IrriGrow 1.0.7 — Android/masaüstü eşdeğerlik ve 25 → 26 güncelleme testi
 # Düzeltme dalında ve elle (main dahil) çalışır. Masaüstü parmak izi (Chromium) ile Android emülatöründeki gerçek WebView parmak izi karşılaştırılır.
 on:
   push:
@@ -15,16 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
-        with: { ref: 82bae23c82f69e57a2f90eed9aac891d3d3d57ca, path: eski }   # çoklu parsel test APK'sı (versionCode 24)
+        with: { ref: b2f0f3e3407046d6b46e394ce770aa41c396ef84, path: eski }   # telefonda kabul edilen test APK'sı (versionCode 25)
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21', cache: gradle }
       - uses: actions/setup-node@v4
         with: { node-version: '22', cache: npm }
-      - name: Eski APK (çoklu parsel testi, versionCode 24)
+      - name: Eski APK (telefonda kabul edilen, versionCode 25)
         run: |
           cd eski && APK_OUT=$GITHUB_WORKSPACE/eski.apk bash ci/build-apk.sh
           cd .. && rm -rf eski   # ikinci kaynak kopyası (ve anahtar dosyası) çalışma alanında kalmasın
-      - name: 1.0.7 son kontrol test APK'sı (versionCode 25)
+      - name: 1.0.7 çoklu parsel kararlı APK (versionCode 26)
         run: APK_OUT=$GITHUB_WORKSPACE/yeni.apk bash ci/build-apk.sh
       - name: Paket, sürüm ve imza
         run: |
