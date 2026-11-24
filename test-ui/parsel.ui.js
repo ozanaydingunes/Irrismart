@@ -159,6 +159,22 @@ const PROJ = [
     const pdfYol = await dl.path(), pdf = fs.readFileSync(pdfYol);
     check(pdf.length > 20000 && pdf.slice(0, 5).toString() === '%PDF-', 'PDF raporu üretildi (' + pdf.length + ' bayt)');
 
+    // 7b) Yöntem: toplamlar nasıl hesaplandı (debi toplanmaz, ortak pompa yok)
+    const yontem = await pg.textContent('#parselYontem').catch(() => '');
+    check(/düzlem alanlarının toplamıdır/.test(yontem) && /toplanmaz ve ortak pompa debisi değildir/.test(yontem) && /ortak sistem uygunluğu anlamına gelmez/.test(yontem) && /toplanmaz/.test(await pg.textContent('#parselOzet')), 'Sonuç: toplamların yöntemi açık; debiler toplanmıyor');
+    // 7c) Katalog ekipmanı / malzeme kalemleri parsele aittir ve parsel değiştirmede korunur; sayfa yeniden yüklenince her şey yerinde
+    await pg.evaluate(() => window.IrriApp.ekipmanBaglam().kaydet(null, c => { c.katalogKalemleri = [{ tur: 'sartname', kategori: 'pompa', uretici: '', model: '', kaynak: 'IrriGrow proje hesabı', durum: 'sartname', miktar: 1, birim: 'adet' }]; c.ekipmanSecimi = { secim: {}, katalog: {}, ad: { pompa: 'Test' } }; }));
+    const aktifAd = (await kayit(pg, 'bos')).parselAd, durum0 = await kayit(pg, 'bos');
+    await pg.click('[data-v=arazi]'); await pg.waitForTimeout(300);
+    for (const ad of ['Parsel 1', 'Tire 2', aktifAd]) { const bt = await pg.$(`#parselBar [data-parsel]:has-text("${ad}")`); if (bt) { await bt.click(); await pg.waitForTimeout(350); } }
+    const durum1 = await kayit(pg, 'bos'), hepsi = p => JSON.stringify([p.parselAd, p.poly, p.src, p.inp.Q, p.katalogKalemleri, p.ekipmanSecimi].concat(p.parseller.map(x => [x.ad, x.poly, x.src, x.inp.Q, x.katalogKalemleri || null, x.ekipmanSecimi || null]).sort()));
+    check(hepsi(durum0) === hepsi(durum1) && durum1.katalogKalemleri && durum1.katalogKalemleri.length === 1 && durum1.parseller.every(x => !x.katalogKalemleri), 'katalog kalemi ve ekipman seçimi yalnız kendi parselinde; parsel geçişlerinde korundu');
+    await pg.reload(); await pg.waitForTimeout(900);
+    const durum2 = await kayit(pg, 'bos');
+    check(hepsi(durum2) === hepsi(durum1) && parselSay(durum2) === 3, 'sayfa yeniden yüklenince bütün parseller ve kayıtları korundu');
+    await pg.evaluate(() => L.Map.addInitHook(function () { window.__map = this; }));
+    await projeAc(pg, 'bos');
+    check((await pg.$$('#parselBar [data-parsel]')).length === 3 && (await pg.textContent('#projName')).includes(durum2.parselAd), 'yeniden açılışta parsel şeridi ve aktif parsel doğru');
     // 8) JSON yedek / geri yükleme: bütün parseller korunur
     const yd = await pg.evaluate(() => { const S = window.IrriStore, ps = JSON.parse(localStorage.getItem('irrismart.projects.v1')), y = JSON.stringify(S.backupPayload(ps, {}, null)), g = S.readBackup(y).valid, liste = []; S.mergeBackup(liste, g); const b = liste.find(p => p.id === 'bos'); return { n: 1 + (b.parseller || []).length, ad: [b.parselAd].concat(b.parseller.map(x => x.ad)).sort(), poly: b.parseller.every(x => x.poly.length >= 3) }; });
     check(yd.n === 3 && yd.poly && yd.ad.join('|') === 'Elle çizilen|Parsel 1|Tire 2', 'JSON yedekte bütün parseller: ' + JSON.stringify(yd));

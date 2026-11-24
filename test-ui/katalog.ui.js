@@ -35,6 +35,9 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
 
     // 1) Proje açmadan üst çubuktan kataloglar
     check(await ekranda('#btnKatalog'), `${ad} üst çubukta katalog düğmesi ekranda`);
+    // Firma katalogları ikonu: çizgili belge + su damlası (SVG 24×24), Ayarlar simgesiyle aynı renk; eski kitap emojisi yok
+    const ikon = await pg.evaluate(() => { const b = document.querySelector('#btnKatalog'), sv = b.querySelector('svg.ico-kat'), s = document.querySelector('#btnSettings'); if (!sv) return null; const r = sv.getBoundingClientRect(), rb = b.getBoundingClientRect(), rs = s.getBoundingClientRect(); return { w: r.width, h: r.height, metin: b.textContent.trim(), renk: getComputedStyle(sv).color === getComputedStyle(s).color, stroke: sv.getAttribute('stroke'), yol: sv.querySelectorAll('path').length, aria: b.getAttribute('aria-label'), boy: Math.abs(rb.height - rs.height) < 1 && Math.abs(rb.top - rs.top) < 1 }; });
+    check(ikon && ikon.w === 24 && ikon.h === 24 && ikon.metin === '' && ikon.renk && ikon.stroke === 'currentColor' && ikon.yol >= 4 && ikon.aria === 'Firma katalogları' && ikon.boy, `${ad} katalog ikonu belge + damla, 24×24, Ayarlar ile aynı renk ve hiza ${JSON.stringify(ikon)}`);
     await pg.click('#btnKatalog'); await pg.waitForTimeout(500);
     check(await pg.isVisible('#v-katalog') && !(await pg.isVisible('#v-projeler')), `${ad} proje açmadan katalog ekranı açılır`);
     check(/Henüz katalog yüklenmedi/.test(await pg.textContent('#katalog')), `${ad} boş durum metni`);
@@ -127,9 +130,9 @@ const PROJ = [{ id: 'pb', name: 'Test 8 shift', created: 1, updated: 2, schema: 
     check(await pg.isVisible('[data-pdfeksik]') && await pg.isDisabled('[data-ac]'), `${ad} PDF'i eksik kayıt uyarıyla gösterilir, “Aç” pasif`);
     await pg.setInputFiles('[data-guncelle]', { name: 'yeni.pdf', mimeType: 'application/pdf', buffer: P1 }); await pg.waitForTimeout(1500);
     check(!(await pg.$('[data-pdfeksik]')) && (await pg.evaluate(async () => { const { kataloglar } = await window.IrriKatalogDepo.listele(); return window.IrriKatalogDepo.dosyaVarMi(kataloglar[0].dosya); })), `${ad} güncelleme ile PDF yeniden eklenir`);
-    // 9c) Masaüstü üst çubuğu taşmaz: araç çubuğu çok genişlese de ⚙ ve 📚 ekranda kalır (CI'da uzun dillerde ⚙ ekran dışına çıkıyordu)
+    // 9c) Masaüstü üst çubuğu taşmaz: araç çubuğu çok genişlese de Ayarlar ve Firma katalogları ikonları ekranda kalır (CI'da uzun dillerde ⚙ ekran dışına çıkıyordu)
     if (ad === 'masaüstü') { await pg.evaluate(() => { const t = document.querySelector('#deskTools'); if (t) { const x = document.createElement('span'); x.id = 'genisTest'; x.style.cssText = 'display:inline-block;width:2000px;flex:none'; t.appendChild(x); } });
-      check(await ekranda('#btnSettings') && await ekranda('#btnKatalog'), `${ad} geniş araç çubuğunda ⚙ ve 📚 ekranda`); await pg.evaluate(() => { const x = document.querySelector('#genisTest'); if (x) x.remove(); }); }
+      check(await ekranda('#btnSettings') && await ekranda('#btnKatalog'), `${ad} geniş araç çubuğunda Ayarlar ve Firma katalogları ikonları ekranda`); await pg.evaluate(() => { const x = document.querySelector('#genisTest'); if (x) x.remove(); }); }
     // 10) Örnek veriler gerçek kataloglardan ayrı
     await pg.evaluate(async () => { const M = window.IrriKatalogModel, D = window.IrriKatalogDepo; const f = M.yeniFirma('Örnek Firma', true); await D.firmaKaydet(f); await D.katalogKaydet(Object.assign(M.yeniKatalog({ ad: 'Örnek katalog', firmaId: f.id, dosya: { ad: 'o.pdf', boyut: 1, sha256: 'b'.repeat(64), anahtar: 'yok' }, ornek: true }))); });
     await pg.click('#btnKatalog'); await pg.waitForTimeout(400);

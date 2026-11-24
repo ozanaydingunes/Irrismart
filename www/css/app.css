@@ -10,6 +10,8 @@ header.top{position:fixed;top:0;left:0;right:0;height:calc(var(--top) + env(safe
 header .ttl{flex:1;display:flex;flex-direction:column;line-height:1.15}
 header .ttl span{font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon{background:none;border:0;color:inherit;font-size:22px;width:44px;height:44px;border-radius:10px}
+/* Firma katalogları: çizgili belge + su damlası (24×24, Ayarlar simgesiyle aynı renk ve çizgi) */
+.icon .ico-kat{display:block;margin:auto;width:24px;height:24px}
 main{position:fixed;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--tab) + env(safe-area-inset-bottom));left:0;right:0;overflow:hidden}
 .view{position:absolute;top:0;right:0;bottom:0;left:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
 .view.on{display:block}

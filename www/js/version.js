@@ -2,6 +2,6 @@
 // Bu bir sürüm adayıdır; gerçek cihaz testleri bitmeden yayın durumu verilmez (docs/k6-cihaz-test-listesi.md).
 (function (g) {
   g.IRRI_SURUM = '1.0.7';
-  g.IRRI_SURUM_KODU = 24;
+  g.IRRI_SURUM_KODU = 25;
   if (typeof module !== 'undefined' && module.exports) module.exports = { surum: g.IRRI_SURUM, kod: g.IRRI_SURUM_KODU };
 })(typeof window !== 'undefined' ? window : globalThis);

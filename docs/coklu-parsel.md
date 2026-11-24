@@ -69,3 +69,26 @@ yanlış hidrolik (birbirine bağlı sayılan uzak parseller, ortak ana hat) ür
   hesaplanır; eğim, parsel seçilip *Uygula* denene kadar girilmemiş sayılır.
 - Uygulamada KML/KMZ dışa aktarma yoktur. Bütün parseller JSON proje yedeğinde saklanır.
 - Çakışma alanı düzenli örneklemeyle yaklaşık hesaplanır (uyarı amaçlı).
+
+## 5. Toplam değerlerin yöntemi (ekranda "Toplamlar nasıl hesaplandı?" ve raporda aynı metin)
+- **Toplam alan:** parsel sınırlarının düzlem alanlarının toplamı; parseller arasındaki boşluk dahil değildir.
+  - Sınırlar çakışıyorsa çakışan alan düzenli örneklemeyle tahmin edilip bir kez sayılır.
+  - Bu durumda toplam alan ekranda "≈ … (yaklaşık)", raporda "Proje toplamı (alan yaklaşık)" olarak yazılır.
+  - Sınırlar düzeltilmeden kesin alan olarak kullanılmamalıdır.
+- **Debi:** parsel kaynak debileri **toplanmaz**; toplam satırında debi yoktur ve ortak pompa debisi olarak sunulmaz.
+  Ortak pompa / kaynak / ana hat uygunluğu hesaplanmaz.
+- **Proje durumu:** yalnız parsellerin ayrı hesaplarını özetler.
+  - Hepsi ayrı ayrı hesaplandıysa "hesaplandı" yazılır; bu, ortak sistemin uygun olduğu anlamına gelmez.
+  - Ortak kuyu algılanırsa ilgili parseller "Ortak kaynak: doğrulanmadı" olarak işaretlenir ve proje durumu "eksik" olur.
+- **Kot:** KML yükseklikleri parsel kaydında `kotDogrulanmis: false` ile saklanır. Hidrolik kot, eğim veya yükseklik girdisi olarak kullanılmaz (PA-11 testi).
+
+## 6. Veri kaybına karşı regresyon testleri
+- **Birim testleri:**
+  - PA-09: 40 parsel geçişi + kaydet/yükle sonrası bütün parsel alanları birebir aynı.
+  - PA-10: aktif parselde değişiklik veya silme diğer parselleri etkilemez.
+  - PA-11: KML'de her poligon ayrı parsel (çok parçalı yerleşim dahil); birleştirme yok; nokta parsel değil.
+  - PA-12: yöntem notları, yaklaşık alan, ortak kaynak.
+  - PA-13: yedekte aynı kimlikli proje üzerine yazılmaz; başka parselin revizyonu geri yüklenmez.
+- **Arayüz testleri:**
+  - katalog kalemi ve ekipman seçimi parsel geçişlerinde ve sayfa yeniden yüklenince korunur;
+  - JSON yedek, PDF ve Excel bütün parselleri içerir.

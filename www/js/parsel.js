@@ -146,24 +146,34 @@
     // Ortak kaynak: farklı parsellerin kaynakları aynı noktada (≤ 15 m) — ortak kaynak/pompa hesabı yapılmaz
     const kaynakli = L.filter(x => Array.isArray(x.veri.src) && x.veri.src.length === 2);
     for (let i = 0; i < kaynakli.length; i++) for (let j = i + 1; j < kaynakli.length; j++) {
-      if (mesafe(kaynakli[i].veri.src, kaynakli[j].veri.src) <= 15) uyarilar.push({ kod: 'ortak-kaynak', mesaj: '“{a}” ve “{b}” aynı kaynağı kullanıyor görünüyor: ortak kaynak / pompa hesabı yapılmadı. Parseller ayrı hesaplandı; aynı anda sulanırlarsa toplam debi kaynak kapasitesini aşabilir.', p: { a: kaynakli[i].ad, b: kaynakli[j].ad } });
+      if (mesafe(kaynakli[i].veri.src, kaynakli[j].veri.src) <= 15) [kaynakli[i].id, kaynakli[j].id].forEach(id => { const x = satir.find(y => y.id === id); if (x) x.ortakKaynak = true; }), uyarilar.push({ kod: 'ortak-kaynak', mesaj: '“{a}” ve “{b}” aynı kaynağı kullanıyor görünüyor: ortak kaynak / pompa hesabı yapılmadı. Parseller ayrı hesaplandı; aynı anda sulanırlarsa toplam debi kaynak kapasitesini aşabilir.', p: { a: kaynakli[i].ad, b: kaynakli[j].ad } });
     }
     const brut = satir.reduce((s, x) => s + (x.alan_m2 || 0), 0);
     const tamam = satir.filter(x => x.durum === 'hesaplandi').length;
     return {
       parseller: satir, uyarilar,
-      toplam: { parsel: satir.length, alan_m2: brut - cakisma, brut_m2: brut, cakisma_m2: cakisma, shift: satir.reduce((s, x) => s + (x.shift || 0), 0), hesaplanan: tamam,
+      // Yöntem: alan = parsel sınırlarının düzlem alanları toplamı (boşluk dahil değil); çakışma varsa düzenli örneklemeyle düşülür → yaklaşık.
+      // Parsel kaynak debileri TOPLANMAZ ve ortak pompa debisi olarak sunulmaz; durum yalnız parsellerin ayrı hesaplarının durumudur.
+      toplam: { parsel: satir.length, alan_m2: brut - cakisma, brut_m2: brut, cakisma_m2: cakisma, alanYaklasik: cakisma > 1, shift: satir.reduce((s, x) => s + (x.shift || 0), 0), hesaplanan: tamam,
         durum: tamam === satir.length && !uyarilar.some(u => u.kod === 'ortak-kaynak') ? 'hesaplandi' : 'eksik' },
     };
   }
 
+  // Toplam değerlerin üretim yöntemi (ekran ve rapor aynı metin)
+  function yontemNotlari(oz, T) {
+    return [T('Toplam alan: parsel sınırlarının düzlem alanlarının toplamıdır; parseller arasındaki boşluk dahil değildir.'),
+      oz.toplam.alanYaklasik ? T('Parsel sınırları çakıştığı için toplam alan YAKLAŞIKTIR: çakışan alan düzenli örneklemeyle tahmin edilip bir kez sayıldı; sınırlar düzeltilmeden kesin alan olarak kullanmayın.') : null,
+      T('Parsel kaynak debileri toplanmaz ve ortak pompa debisi değildir; ortak pompa / kaynak / ana hat uygunluğu hesaplanmadı.'),
+      T('Proje durumu yalnız parsellerin ayrı hesaplarını özetler: hepsi ayrı ayrı hesaplandıysa “hesaplandı” yazılır; ortak sistem uygunluğu anlamına gelmez.'),
+      oz.parseller.some(x => x.ortakKaynak) ? T('Ortak kaynak kullanan parseller için ortak sistem doğrulanmadı; ayrı sonuçlar ortak sistem tasarımı yerine kullanılamaz.') : null].filter(Boolean);
+  }
   // Rapor tablosu (PDF/Excel ortak): başlık + parsel satırları + toplam
   function raporTablosu(oz, T) {
     const D = { hesaplandi: 'Hesaplandı', yaklasik: 'Yaklaşık (parsel planı yok)', hesaplanamadi: 'Hesaplanamadı', eksik: 'Eksik veri' };
     const rows = [[T('Parsel'), T('Alan (da)'), T('Çevre (m)'), T('Kaynak debisi (m³/h)'), T('Shift sayısı'), T('En büyük shift debisi (m³/h)'), T('Pompa basma yük. (m)'), T('Durum')]];
-    for (const s of oz.parseller) rows.push([s.ad + (s.aktif ? ' *' : ''), s.alan_m2 != null ? s.alan_m2 / 1000 : '—', s.cevre_m != null ? s.cevre_m : '—', s.Q != null ? s.Q : '—', s.shift != null ? s.shift : '—', s.Qsys != null ? s.Qsys : '—', s.H != null ? s.H : '—', T(D[s.durum]) + (s.neden ? ' — ' + T(s.neden) : '')]);
-    rows.push([T('Proje toplamı'), oz.toplam.alan_m2 / 1000, '', '', oz.toplam.shift, '', '', oz.toplam.durum === 'hesaplandi' ? T('Bütün parseller hesaplandı') : T('Bazı parseller hesaplanmadı — toplam eksik')]);
-    const notlar = [T('Her parsel kendi kaynağı, ana hattı ve shift düzeniyle ayrı hesaplanır; parseller hidrolik olarak birbirine bağlı sayılmaz. Ortak kaynak, pompa veya ana hat hesaplanmaz.'), T('* Ayrıntılı hidrolik bölümler aktif parsele aittir.')]
+    for (const s of oz.parseller) rows.push([s.ad + (s.aktif ? ' *' : ''), s.alan_m2 != null ? s.alan_m2 / 1000 : '—', s.cevre_m != null ? s.cevre_m : '—', s.Q != null ? s.Q : '—', s.shift != null ? s.shift : '—', s.Qsys != null ? s.Qsys : '—', s.H != null ? s.H : '—', T(D[s.durum]) + (s.ortakKaynak ? ' — ' + T('Ortak kaynak: doğrulanmadı') : '') + (s.neden ? ' — ' + T(s.neden) : '')]);
+    rows.push([oz.toplam.alanYaklasik ? T('Proje toplamı (alan yaklaşık)') : T('Proje toplamı'), oz.toplam.alan_m2 / 1000, '', '', oz.toplam.shift, '', '', oz.toplam.durum === 'hesaplandi' ? T('Bütün parseller hesaplandı') : T('Bazı parseller hesaplanmadı — toplam eksik')]);
+    const notlar = [T('Her parsel kendi kaynağı, ana hattı ve shift düzeniyle ayrı hesaplanır; parseller hidrolik olarak birbirine bağlı sayılmaz. Ortak kaynak, pompa veya ana hat hesaplanmaz.'), T('* Ayrıntılı hidrolik bölümler aktif parsele aittir.')].concat(yontemNotlari(oz, T))
       .concat(oz.toplam.cakisma_m2 > 1 ? [T('Çakışan alan ({d} da) toplamda bir kez sayıldı.', { d: (oz.toplam.cakisma_m2 / 1000).toFixed(2).replace('.', ',') })] : [])
       .concat(oz.uyarilar.map(u => T(u.mesaj, u.p)));
     return { rows, dec: [null, 2, 0, 2, 0, 2, 1, null], notlar };
@@ -174,7 +184,7 @@
   const ozetBelle = (p, oz) => { if (bellek && p) bellek.set(p, oz); };
   const ozetAl = p => (bellek && p ? bellek.get(p) : null) || null;
 
-  const api = { KEYS, RENK, coklu, aktifId, aktifAd, liste, sec, ekle, sil, adlandir, alanCevre, cakismaAlani, ozet, raporTablosu, ozetBelle, ozetAl };
+  const api = { yontemNotlari, KEYS, RENK, coklu, aktifId, aktifAd, liste, sec, ekle, sil, adlandir, alanCevre, cakismaAlani, ozet, raporTablosu, ozetBelle, ozetAl };
   g.IrriParsel = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
