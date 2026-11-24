@@ -70,7 +70,9 @@
     const p = { id: Date.now().toString(36), name: name.slice(0, 80), created: Date.now(), updated: Date.now(), poly: [], src: null, inp: { crop: 'domates', srcType: 'kuyu', region: 'akdeniz', soil: 'tinli', rowDir: 'uzun', emitter: 'normal', geom: 'dikdortgen' } };
     projects.unshift(p); persist(); openProject(p.id); show('arazi');
   }
-  function openProject(id) { if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; } mapMode = null; cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); }
+  function openProject(id) { if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; } mapMode = null; cur = projects.find(p => p.id === id) || null; lastRes = null; overlayRes = null; if (window.IrriDesk) window.IrriDesk.projectChanged(); baslikYaz(); }
+  // Başlık: proje adı; çok parselli projede aktif parselin adı da yazılır
+  function baslikYaz() { const P = window.IrriParsel; $('#projName').textContent = cur ? cur.name + (P && P.coklu(cur) ? ' · ' + P.aktifAd(cur) : '') : t('Proje seçilmedi'); }
   function renderProjects() {
     const el = $('#projList');
     if (!projects.length) { el.innerHTML = `<div class="card center muted">${t('Henüz proje yok.')}<br>${t('“Yeni proje” ile başlayın.')}</div>`; return; }
@@ -82,7 +84,7 @@
     el.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { openProject(b.dataset.open); show(cur.inp.Q ? 'sonuc' : 'arazi'); });
     el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { const p = projects.find(x => x.id === b.dataset.del); if (confirm(t('“{n}” silinsin mi?', { n: p.name }))) { projects = projects.filter(x => x !== p); if (cur === p) { cur = null; $('#projName').textContent = t('Proje seçilmedi'); } persist(); renderProjects(); } });
     el.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => { const p = projects.find(x => x.id === b.dataset.copy); const c = St.duplicate(p, t('kopya')); projects.unshift(c); persist(); renderProjects(); });
-    el.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const p = projects.find(x => x.id === b.dataset.ren); const nm = (prompt(t('Yeni ad:'), p.name) || '').trim(); if (nm) { p.name = nm.slice(0, 80); persist(); if (cur === p) $('#projName').textContent = p.name; renderProjects(); } });
+    el.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const p = projects.find(x => x.id === b.dataset.ren); const nm = (prompt(t('Yeni ad:'), p.name) || '').trim(); if (nm) { p.name = nm.slice(0, 80); persist(); if (cur === p) baslikYaz(); renderProjects(); } });
   }
   $('#btnNew').onclick = newProject;
   // Yedekleme: tüm projeler + ayarlar + kullanıcı kataloğu tek JSON dosyasında
@@ -181,7 +183,7 @@
       const au = $('#mAuto'); if (au) au.onclick = () => { if (!otomatigeDon()) return; compute(); setMode('shift'); drawPoly(); toast(t('Otomatik shift’lere dönüldü')); };
       const gg = $('#mGeri'); if (gg) gg.onclick = () => { elleAtamayiGeriGetir(); compute(); setMode('shift'); drawPoly(); };
     } else bar.style.display = 'none';
-    document.documentElement.style.setProperty('--mapbar', (m === 'shift' ? 196 : 150) + 'px');
+    document.documentElement.style.setProperty('--mapbar', (m === 'shift' ? 196 : 150) + PARSEL_SERIT + 'px');
     if (map) setTimeout(() => map.invalidateSize(), 30);
     drawInfo();
   }
@@ -221,6 +223,7 @@
     const pts = cur.poly;
     if (pts.length) {
       poly = (pts.length >= 3 ? L.polygon(pts, { color: COL.edge, weight: 2, fillOpacity: .08, interactive: false }) : L.polyline(pts, { color: COL.edge, weight: 2, interactive: false })).addTo(map);
+      if (pts.length >= 3 && window.IrriParsel && window.IrriParsel.coklu(cur)) poly.bindTooltip(esc(window.IrriParsel.aktifAd(cur)) + ' · ' + t('aktif'), { permanent: true, direction: 'top', className: 'parsel-etiket aktif' });
       if (mapMode === 'sinir' && !vurgu) pts.forEach((p, i) => markers.push(vtx(p, 'vtx', q => { cur.poly[i] = q; })));
       // 1.0.3 düzeltmesi: shift vurgusu varken harita parsele değil seçili shift'e sığdırılır (aksi hâlde Arazi'nin
       // gecikmeli parsel sığdırması vurguyu ve dokunma konumlarını kaydırıyordu)
@@ -232,9 +235,67 @@
     if (mapMode === 'anahat') (cur.route || []).forEach((p, i) => vtx(p, 'rtv', q => { cur.route[i] = q; }, '', 14));
     if (cur.src) vtx(cur.src, 'srcm', q => { cur.src = q; }, 'K', 22).bindTooltip(t('Su kaynağı'));
     if (cur.station) vtx(cur.station, 'stam', q => { cur.station = q; }, 'P+F', 30).bindTooltip(t('Pompa ve filtre istasyonu'));
+    digerParseller();
+    parselSeridi();
     drawPlan();
     drawInfo();
     ssTutamak();
+  }
+  // ---------- Çoklu parsel (IrriParsel): aktif parsel düzenlenir, diğerleri haritada gösterilir ----------
+  const PARSEL_SERIT = 40;   // Arazi alt çubuğundaki parsel şeridinin yüksekliği (px)
+  let digerKatman = null;
+  function digerParseller() {
+    const P = window.IrriParsel; if (digerKatman) { map.removeLayer(digerKatman); digerKatman = null; }
+    if (!P || !P.coklu(cur)) return;
+    digerKatman = L.layerGroup().addTo(map);
+    P.liste(cur).filter(x => !x.aktif).forEach(x => {
+      const v = x.veri, ac = P.alanCevre(v.poly);
+      if ((v.poly || []).length >= 3) {
+        const pg = L.polygon(v.poly, { color: x.renk, weight: 2, dashArray: '6 4', fillColor: x.renk, fillOpacity: .12 }).addTo(digerKatman);
+        pg.bindTooltip(`${esc(x.ad)}${ac ? ' · ' + fmt(ac.alan_m2 / 1000, 2) + ' da' : ''}`, { permanent: true, direction: 'center', className: 'parsel-etiket' });
+        // Başka parsele dokunmak sınıra köşe eklemez; o parsele geçmeyi önerir
+        pg.on('click', e => { L.DomEvent.stopPropagation(e); if (confirm(t('“{a}” parseline geçilsin mi? Düzenleme ve hesap o parsel için yapılır.', { a: x.ad }))) parselGec(x.id); });
+      }
+      if (v.src) L.circleMarker(v.src, { radius: 7, color: '#fff', weight: 2, fillColor: x.renk, fillOpacity: 1, interactive: false }).bindTooltip(t('Su kaynağı') + ' — ' + x.ad).addTo(digerKatman);
+    });
+  }
+  function parselSeridi() {
+    const el = $('#parselBar'), P = window.IrriParsel; if (!el || !P || !cur) return;
+    const L0 = P.liste(cur), cok = L0.length > 1;
+    el.innerHTML = `<div class="parsel-cipler" role="tablist" aria-label="${esc(t('Parseller'))}">${L0.map(x => { const ac = P.alanCevre(x.veri.poly); return `<button type="button" class="chip ${x.aktif ? 'on' : ''}" role="tab" aria-selected="${x.aktif}" data-parsel="${esc(x.id)}"><span class="dot" style="background:${x.renk}"></span>${esc(x.ad)}${ac ? ` <span class="muted">${fmt(ac.alan_m2 / 1000, 1)} da</span>` : ''}</button>`; }).join('')}</div>
+      <button type="button" class="btn sm" id="pYeni" title="${esc(t('Yeni parsel ekle'))}">＋ ${t('Parsel')}</button>
+      ${cok ? `<button type="button" class="btn sm" id="pAd" title="${esc(t('Parseli yeniden adlandır'))}" aria-label="${esc(t('Parseli yeniden adlandır'))}">✎</button><button type="button" class="btn sm" id="pSil" title="${esc(t('Parseli sil'))}" aria-label="${esc(t('Parseli sil'))}">🗑</button><button type="button" class="btn sm" id="pHepsi" title="${esc(t('Bütün parselleri göster'))}" aria-label="${esc(t('Bütün parselleri göster'))}">⛶</button>` : ''}`;
+    el.querySelectorAll('[data-parsel]').forEach(b => b.onclick = () => { if (b.dataset.parsel !== P.aktifId(cur)) parselGec(b.dataset.parsel); });
+    $('#pYeni').onclick = () => parselEkle();
+    const pa = $('#pAd'); if (pa) pa.onclick = () => { const ad = (prompt(t('Parselin yeni adı:'), P.aktifAd(cur)) || '').trim(); if (ad) { P.adlandir(cur, P.aktifId(cur), ad); persist(); baslikYaz(); drawPoly(); } };
+    const ps = $('#pSil'); if (ps) ps.onclick = () => {
+      if (!confirm(t('“{a}” parseli ve bu parsele ait kaynak, hat, shift ve ekipman bilgileri silinsin mi? Önceki hâl revizyon olarak saklanır.', { a: P.aktifAd(cur) }))) return;
+      parselIslem(() => { St.snapshot(cur, 'parsel silme öncesi'); P.sil(cur, P.aktifId(cur)); }, t('Parsel silindi'));
+    };
+    const ph = $('#pHepsi'); if (ph) ph.onclick = () => parselleriGoster();
+  }
+  function parselleriGoster() {
+    const P = window.IrriParsel, pts = P.liste(cur).flatMap(x => x.veri.poly || []);
+    if (pts.length >= 2) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30], maxZoom: 18 });
+  }
+  // Parsel işlemi: açık shift taslağı / panel kapanır, hesap önbelleği silinir, harita aktif parsele göre yeniden çizilir
+  function parselIslem(fn, mesaj) {
+    const devam = () => {
+      if (sm || vurgu) smKapat(); if (ss) { ssKapat(); ss = null; }
+      fn(); invalidateDesign(); persist(); mapMode = null; baslikYaz();
+      if (window.IrriDesk) window.IrriDesk.projectChanged();
+      setMode(varsayilanMod()); drawPoly(true); if (mesaj) toast(mesaj);
+    };
+    if (sm) return taslakKarar(devam);
+    devam();
+  }
+  function parselGec(id) { const P = window.IrriParsel; parselIslem(() => P.sec(cur, id), t('Aktif parsel: {a}', { a: P.liste(cur).find(x => x.id === id).ad })); }
+  function parselEkle() {
+    const P = window.IrriParsel;
+    if (!(cur.poly && cur.poly.length >= 3)) return toast(t('Önce bu parselin sınırını tamamlayın (en az 3 köşe).'));
+    const ad = (prompt(t('Yeni parselin adı:'), t('Parsel {n}', { n: P.liste(cur).length + 1 })) || '').trim(); if (!ad) return;
+    parselIslem(() => { St.snapshot(cur, 'parsel ekleme öncesi'); P.ekle(cur, ad); }, t('Yeni parsel: sınırı haritada köşelere dokunarak çizin; kaynağı Kaynak modunda işaretleyin.'));
+    setMode('sinir');
   }
   function drawInfo() {
     const pts = cur ? cur.poly : [], el = $('#mapInfo'); if (!el || !cur) return;
@@ -461,19 +522,20 @@
       show('arazi'); setTimeout(kmlPanel, 50);
     } catch (e) { kmlSonuc = null; kmlPanel(); kmlGeciciSil(); alert(t('KML/KMZ açılamadı: ') + (e.kod ? kmlMetin(e.message, e.p) : e.message)); }
   }
-  function kmlOnizle(sec) {
+  // Önizleme: seçilen parseller turuncu ve adlı, seçilmeyenler gri kesik çizgi; harita seçilenlere (yoksa hepsine) sığdırılır
+  function kmlOnizle(secilenler) {
     if (!map) return;
     if (kmlKatman) { map.removeLayer(kmlKatman); kmlKatman = null; }
     if (!kmlSonuc) return;
     kmlKatman = L.layerGroup().addTo(map);
-    const hep = [];
+    const ids = new Set((secilenler || []).map(p => p.id)), hep = [], sec = [];
     kmlSonuc.parseller.filter(p => p.halka && p.halka.length >= 3).forEach(p => {
-      const on = sec && p.id === sec.id;
+      const on = ids.has(p.id);
       const pg = L.polygon(p.halka, { color: on ? '#ff6f00' : '#9e9e9e', weight: on ? 4 : 1.5, dashArray: on ? null : '6 4', fillColor: on ? '#ff6f00' : '#9e9e9e', fillOpacity: on ? 0.25 : 0.04, interactive: false }).addTo(kmlKatman);
-      if (on) { pg.bringToFront(); pg.bindTooltip(String(p.ad || ''), { permanent: true, direction: 'center', className: 'kml-etiket' }); }
+      if (on) { pg.bringToFront(); pg.bindTooltip(String(p.ad || ''), { permanent: true, direction: 'center', className: 'kml-etiket' }); sec.push(...p.halka); }
       hep.push(...p.halka);
     });
-    const b = sec && sec.halka ? sec.halka : hep;
+    const b = sec.length ? sec : hep;
     if (b.length) map.fitBounds(L.latLngBounds(b), kmlSigdir());
   }
   // Masaüstünde KML kartı haritanın sol üstünde durur: seçilen parsel kartın altında kalmasın diye sol kenar payı kart kadar
@@ -483,45 +545,87 @@
     const pr = P.getBoundingClientRect(), mr = M.getBoundingClientRect(), sag = Math.max(24, Math.round(pr.right - mr.left + 16));
     return sag < mr.width * 0.6 ? { paddingTopLeft: [sag, 24], paddingBottomRight: [24, 24] } : { padding: [24, 24] };
   }
+  // Çoklu seçim: kmlSecim (parsel kimlikleri). "Parsel olarak ekle" seçilenlerin hepsini ayrı parsel olarak projeye ekler;
+  // "Mevcut parseli değiştir" yalnız tek seçimde, aktif parselin sınırını değiştirir (önceki davranış).
+  let kmlSecim = new Set();
   function kmlPanel() {
     const P = $('#kmlPanel'); if (!P) return;
     const s = kmlSonuc;
-    if (!s) { P.style.display = 'none'; P.innerHTML = ''; kmlOnizle(null); return; }
+    if (!s) { P.style.display = 'none'; P.innerHTML = ''; kmlSecim = new Set(); kmlOnizle(null); return; }
+    const uygunlar = s.parseller.filter(p => p.hesaplanabilir);
+    kmlSecim = new Set([...kmlSecim].filter(id => uygunlar.some(p => p.id === id)));
+    if (!kmlSecim.size && uygunlar.length === 1) kmlSecim.add(uygunlar[0].id);
     const satir = p => {
       const not = [];
       if (p.hata) not.push(`<span class="warn">${esc(kmlMetin(p.hata, p.hataP))}</span>`);
       if ((p.uyarilar || []).includes('kapanmamis')) not.push(esc(t('kapanmamış sınır kapatıldı')));
       if ((p.uyarilar || []).includes('yinelenen')) not.push(esc(t('yinelenen köşeler temizlendi')));
       if (p.yukseklikler) not.push(esc(t('yükseklik değerleri saklanacak; hidrolik kot verisi sayılmaz')));
-      return `<label class="kml-row" style="display:block;padding:4px 0;${p.hesaplanabilir ? '' : 'opacity:.7'}"><input type="radio" name="kmlP" value="${esc(p.id)}" ${p.hesaplanabilir ? '' : 'disabled'}> <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da · ${t('çevre')} ${fmt(p.cevre_m, 0)} m · ${p.halka.length} ${t('köşe')}` : ''}${not.length ? `<br><span class="small">${not.join(' · ')}</span>` : ''}</label>`;
+      return `<label class="kml-row" style="display:block;padding:4px 0;${p.hesaplanabilir ? '' : 'opacity:.7'}"><input type="checkbox" name="kmlP" value="${esc(p.id)}" ${kmlSecim.has(p.id) ? 'checked' : ''} ${p.hesaplanabilir ? '' : 'disabled'}> <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da · ${t('çevre')} ${fmt(p.cevre_m, 0)} m · ${p.halka.length} ${t('köşe')}` : ''}${not.length ? `<br><span class="small">${not.join(' · ')}</span>` : ''}</label>`;
     };
+    const mevcut = !!(cur && cur.poly && cur.poly.length >= 3);
     P.innerHTML = `<div class="kml-bas"><div class="kml-baslik"><b>${t('KML/KMZ içe aktarma')}</b> <span class="small muted">${esc(s.kaynak.dosya)}</span></div>
         <button type="button" class="btn sm kml-dar" id="kmlDar" aria-expanded="${!kmlDar}" title="${esc(kmlDar ? t('Paneli genişlet') : t('Paneli daralt'))}">${kmlDar ? '▸' : '▾'}</button></div>
       <p class="small kml-secili" id="kmlSecili"></p>
       <div class="kml-govde" ${kmlDar ? 'hidden' : ''}>
-      <p class="small muted" style="margin:4px 0">${t('Önizleme — proje henüz değişmedi. Parseli seçip “Projeye uygula” deyin.')}</p>
+      <p class="small muted" style="margin:4px 0">${t('Önizleme — proje henüz değişmedi. Parselleri seçip ekleyin; birden çok parsel seçilebilir.')}</p>
+      ${uygunlar.length > 1 ? `<div class="row kml-tum" style="gap:6px;margin:2px 0 4px"><button type="button" class="btn sm" id="kmlTum">${t('Tümünü seç')}</button><button type="button" class="btn sm" id="kmlHic">${t('Seçimi temizle')}</button></div>` : ''}
       <div id="kmlListe">${s.parseller.map(satir).join('')}</div>
       ${s.notlar.map(n => `<p class="small muted" style="margin:2px 0">${esc(kmlMetin(n.mesaj, n.p))}</p>`).join('')}</div>
-      <div class="row kml-alt" style="gap:6px;margin-top:6px"><button class="btn sm" id="kmlIptal">${t('İptal')}</button><button class="btn sm primary" id="kmlUygula" disabled>${t('Projeye uygula')}</button></div>`;
+      <div class="row wrap kml-alt" style="gap:6px;margin-top:6px"><button class="btn sm" id="kmlIptal">${t('İptal')}</button>
+        <button class="btn sm primary" id="${mevcut ? 'kmlEkle' : 'kmlUygula'}" disabled>${t(mevcut ? 'Yeni parsel olarak ekle' : 'Projeye aktar')}</button>
+        ${mevcut ? `<button class="btn sm" id="kmlUygula" disabled title="${esc(t('Yalnız tek parsel seçiliyken: aktif parselin sınırını seçilen parselle değiştirir'))}">${t('Aktif parseli değiştir')}</button>` : ''}</div>`;
     P.style.display = P.parentNode === $('#v-arazi') ? 'flex' : 'block';
     P.classList.toggle('dar', kmlDar);
-    const seciliYaz = () => { const p = secilen(), e = $('#kmlSecili'); if (e) e.innerHTML = p ? `${t('Seçili parsel')}: <b>${esc(p.ad)}</b>${p.alan_m2 != null ? ` — ${fmt(p.alan_m2 / 1000, 2)} da` : ''}` : `<span class="muted">${t('Parsel seçilmedi')}</span>`; };
+    const secilenler = () => s.parseller.filter(p => kmlSecim.has(p.id));
+    const guncelle = () => {
+      const L0 = secilenler(), e = $('#kmlSecili');
+      if (e) e.innerHTML = L0.length ? `${t('Seçili')}: <b>${L0.length} ${t('parsel')}</b> — ${L0.map(p => esc(p.ad)).join(', ')} · ${fmt(L0.reduce((a, p) => a + p.alan_m2, 0) / 1000, 2)} da` : `<span class="muted">${t('Parsel seçilmedi')}</span>`;
+      const ana = $(mevcut ? '#kmlEkle' : '#kmlUygula');
+      ana.disabled = !L0.length;
+      ana.textContent = L0.length > 1 ? t('{n} parseli ekle', { n: L0.length }) : t(mevcut ? 'Yeni parsel olarak ekle' : 'Projeye aktar');
+      if (mevcut) $('#kmlUygula').disabled = L0.length !== 1;
+      kmlOnizle(L0);
+    };
+    P.querySelectorAll('input[name=kmlP]').forEach(r => r.onchange = () => { if (r.checked) kmlSecim.add(r.value); else kmlSecim.delete(r.value); guncelle(); });
+    const tum = $('#kmlTum'); if (tum) tum.onclick = () => { uygunlar.forEach(p => kmlSecim.add(p.id)); P.querySelectorAll('input[name=kmlP]:not([disabled])').forEach(r => { r.checked = true; }); guncelle(); };
+    const hic = $('#kmlHic'); if (hic) hic.onclick = () => { kmlSecim.clear(); P.querySelectorAll('input[name=kmlP]').forEach(r => { r.checked = false; }); guncelle(); };
+    guncelle();
+    if (!uygunlar.length) P.insertAdjacentHTML('beforeend', `<p class="warn small">${t('Dosyada hesaplanabilir parsel yok.')}</p>`);
     // Daralt / genişlet: liste gizlenir, seçim ve önizleme korunur; harita yeni boyuta göre yeniden çizilir
     $('#kmlDar').onclick = () => { kmlDar = !kmlDar; const d = $('#kmlDar'); P.querySelector('.kml-govde').hidden = kmlDar; P.classList.toggle('dar', kmlDar); d.textContent = kmlDar ? '▸' : '▾'; d.setAttribute('aria-expanded', String(!kmlDar)); d.title = kmlDar ? t('Paneli genişlet') : t('Paneli daralt'); if (map) setTimeout(() => map.invalidateSize(), 30); };
-    const secilen = () => { const r = P.querySelector('input[name=kmlP]:checked'); return r ? s.parseller.find(x => x.id === r.value) : null; };
-    P.querySelectorAll('input[name=kmlP]').forEach(r => r.onchange = () => { $('#kmlUygula').disabled = !secilen(); seciliYaz(); kmlOnizle(secilen()); });
-    const uygunlar = s.parseller.filter(p => p.hesaplanabilir);
-    if (uygunlar.length === 1) { const r = P.querySelector(`input[name=kmlP][value="${uygunlar[0].id}"]`); r.checked = true; $('#kmlUygula').disabled = false; kmlOnizle(uygunlar[0]); }
-    else kmlOnizle(null);
-    seciliYaz();
-    if (!uygunlar.length) P.insertAdjacentHTML('beforeend', `<p class="warn small">${t('Dosyada hesaplanabilir parsel yok.')}</p>`);
     $('#kmlIptal').onclick = () => { const gec = !!kmlGecici; kmlSonuc = null; kmlPanel(); if (map && cur && cur.poly && cur.poly.length >= 3) map.fitBounds(L.latLngBounds(cur.poly), { padding: [24, 24] }); if (gec) { kmlGeciciSil(); show('projeler'); } toast(t('İçe aktarma iptal edildi; hiçbir şey değişmedi')); };
-    $('#kmlUygula').onclick = () => { const p = secilen(); if (p && p.hesaplanabilir) kmlUygula(p); };
+    if (mevcut) { $('#kmlEkle').onclick = () => { const L0 = secilenler(); if (L0.length) kmlEkle(L0); }; $('#kmlUygula').onclick = () => { const L0 = secilenler(); if (L0.length === 1 && L0[0].hesaplanabilir) kmlUygula(L0[0]); }; }
+    else $('#kmlUygula').onclick = () => { const L0 = secilenler(); if (L0.length) kmlEkle(L0); };
+  }
+  // Parsel girdileri sınırdan (alan, boyutlar); eğim "Uygula" ile o parsel aktifken ölçülür
+  function parselGirdisi(inp, pts) { const f = Gm.fieldFromPolygon(pts); Object.assign(inp, { area_da: +(f.A / 1000).toFixed(2), L: +f.L.toFixed(1), W: +f.W.toFixed(1), geom: 'parsel' }); delete inp.grad; }
+  // Seçilen KML parselleri projeye AYRI parseller olarak eklenir (birleştirilmez). Aktif parsel boşsa ilki ona yerleşir.
+  function kmlEkle(secilenler) {
+    const P = window.IrriParsel; if (!cur || !secilenler.length) return;
+    if (secilenler.length === 1 && !(cur.poly && cur.poly.length >= 3)) return kmlUygula(secilenler[0]);   // tek parsel, boş proje: önceki akış (geri alma dahil)
+    St.snapshot(cur, 'KML/KMZ parsel ekleme öncesi');
+    const halka = p => p.halka.map(x => [x[0], x[1]]), bos = !(cur.poly && cur.poly.length >= 3);
+    if (kmlGecici === cur.id) { kmlGecici = null; if (secilenler.length === 1 && secilenler[0].ad) cur.name = String(secilenler[0].ad).slice(0, 80); }
+    let ilk = 0;
+    if (bos) {
+      const p = secilenler[0];
+      cur.poly = halka(p); cur.geoKaynak = window.IrriKml.geoKaynak(kmlSonuc, p); delete cur.elev; parselGirdisi(cur.inp, cur.poly);
+      if (secilenler.length > 1 || P.coklu(cur)) { cur.parselAd = String(p.ad || 'Parsel 1').slice(0, 80); if (!cur.parselId) cur.parselId = 'p1'; }
+      ilk = 1;
+    }
+    const geri = P.aktifId(cur);
+    for (const p of secilenler.slice(ilk)) { P.ekle(cur, String(p.ad || '').slice(0, 80) || null, { poly: halka(p), geoKaynak: window.IrriKml.geoKaynak(kmlSonuc, p) }); parselGirdisi(cur.inp, cur.poly); }
+    if (P.coklu(cur)) P.sec(cur, geri);
+    invalidateDesign(); persist(); const n = secilenler.length;
+    kmlSonuc = null; kmlPanel(); baslikYaz(); if (window.IrriDesk) window.IrriDesk.projectChanged();
+    mapMode = null; setMode(varsayilanMod()); drawPoly(); parselleriGoster();
+    toast(n > 1 ? t('{n} parsel projeye ayrı parseller olarak eklendi. Her parseli seçip kaynağını işaretleyin ve Uygula deyin.', { n }) : t('Parsel içe aktarıldı: {a} ({b} da)', { a: secilenler[0].ad, b: fmt(secilenler[0].alan_m2 / 1000, 2) }));
   }
   function kmlUygula(p) {
     if (!cur) return;
     if (cur.poly && cur.poly.length >= 3 && !confirm(t('Bu projede çizilmiş bir parsel var. KML/KMZ parseli ile değiştirilsin mi? Önceki parsel revizyon olarak saklanır ve “İçe aktarmayı geri al” ile geri getirilebilir.'))) return;
-    if (kmlGecici === cur.id) { kmlGecici = null; if (p.ad) { cur.name = String(p.ad).slice(0, 80); $('#projName').textContent = cur.name; } }
+    if (kmlGecici === cur.id) { kmlGecici = null; if (p.ad) { cur.name = String(p.ad).slice(0, 80); baslikYaz(); } }
     St.snapshot(cur, 'KML/KMZ öncesi');
     const geri = { rev: cur.rev, geoKaynak: cur.geoKaynak || null, elev: cur.elev || null, t: Date.now() };
     cur.poly = p.halka.map(x => [x[0], x[1]]);
@@ -543,7 +647,7 @@
   $('#mKmlGeri').onclick = () => {
     const g0 = cur && cur.kmlGeriAl; if (!g0) return;
     if (!confirm(t('KML/KMZ içe aktarması geri alınsın mı? Proje içe aktarmadan önceki hâline döner.'))) return;
-    St.restoreRev(cur, g0.rev);
+    if (!St.restoreRev(cur, g0.rev)) { toast(t('Bu geri alma başka bir parsele ait; önce o parseli seçin.')); return; }
     if (g0.geoKaynak) cur.geoKaynak = g0.geoKaynak; else delete cur.geoKaynak;
     if (g0.elev) cur.elev = g0.elev; else delete cur.elev;
     delete cur.kmlGeriAl; invalidateDesign(); persist(); drawPoly(true); toast(t('İçe aktarma geri alındı'));
@@ -720,15 +824,34 @@
     el.querySelectorAll('tr[data-alt]').forEach(x => x.onclick = () => { const v = altCache.list[+x.dataset.alt]; const keep = altCache; cur.inp.rowDir = v.rowDir; cur.inp.latD = v.latD; delete cur.inp.Ns; delete cur.inp.mainOd; if (cur.shiftEdit) { cur.shiftEditEski = Object.assign({}, cur.shiftEdit, { t: Date.now() }); delete cur.shiftEdit; } invalidateDesign(); altCache = keep; persist(); renderResult(); toast(t('Yerleşim uygulandı')); });
   }
 
+  // Çoklu parsel özeti: aktif parsel güncel hesapla, diğerleri kendi kayıtlı verileriyle motorda AYRI hesaplanır (salt okunur)
+  function parselOzetiHazirla() {
+    const P = window.IrriParsel; if (!P || !cur || !P.coklu(cur)) return null;
+    const oz = P.ozet(cur, (v, aktif) => aktif ? compute() : E.design(v.inp, settings, { manual: v.shiftEdit || v.shiftEditEski || null, poly: v.poly, src: v.src, station: v.station, route: v.route,
+      catalog: v.ekipmanSecimi && v.ekipmanSecimi.katalog && window.IrriEsles ? window.IrriEsles.katalogBirlestir(catalog, v.ekipmanSecimi.katalog) : catalog }));
+    P.ozetBelle(cur, oz); return oz;
+  }
+  function parselKarti() {
+    const oz = parselOzetiHazirla(); if (!oz) return '';
+    const D2 = { hesaplandi: ['ok', 'Hesaplandı'], yaklasik: ['warn', 'Yaklaşık'], hesaplanamadi: ['bad', 'Hesaplanamadı'], eksik: ['warn', 'Eksik veri'] };
+    return `<div class="card" id="parselOzet"><h3>${t('Proje parselleri')} (${oz.parseller.length})</h3>
+      <p class="small muted">${t('Her parsel kendi kaynağı, ana hattı ve shift düzeniyle ayrı hesaplanır; parseller hidrolik olarak birbirine bağlı sayılmaz. Bu ekrandaki ayrıntılı sonuçlar aktif parsel içindir: {a}.', { a: esc(window.IrriParsel.aktifAd(cur)) })}</p>
+      <div class="scroll"><table class="small"><tr><th>${t('Parsel')}</th><th>${t('Alan')}</th><th>${t('Kaynak debisi')}</th><th>Shift</th><th>${t('Durum')}</th></tr>
+      ${oz.parseller.map(x => `<tr${x.aktif ? ' class="on"' : ''}><td><span class="dot" style="background:${x.renk}"></span> ${x.aktif ? '<b>' + esc(x.ad) + '</b>' : `<a href="#" data-pgec="${esc(x.id)}">${esc(x.ad)}</a>`}</td><td>${x.alan_m2 != null ? fmt(x.alan_m2 / 1000, 2) + ' da' : '—'}</td><td>${x.Q != null ? fmt(x.Q, 1) + ' m³/h' : '—'}</td><td>${x.shift != null ? x.shift : '—'}</td><td><span class="tag ${D2[x.durum][0]}">${t(D2[x.durum][1])}</span>${x.neden ? `<br><span class="muted">${esc(t(x.neden))}</span>` : ''}</td></tr>`).join('')}
+      <tr><td><b>${t('Proje toplamı')}</b></td><td><b>${fmt(oz.toplam.alan_m2 / 1000, 2)} da</b></td><td></td><td><b>${oz.toplam.shift}</b></td><td>${oz.toplam.durum === 'hesaplandi' ? `<span class="tag ok">${t('Bütün parseller hesaplandı')}</span>` : `<span class="tag warn">${t('Bazı parseller hesaplanmadı — toplam eksik')}</span>`}</td></tr></table></div>
+      ${oz.toplam.cakisma_m2 > 1 ? `<div class="note warn small">${t('Çakışan alan ({d} da) toplamda bir kez sayıldı.', { d: fmt(oz.toplam.cakisma_m2 / 1000, 2) })}</div>` : ''}
+      ${oz.uyarilar.map(u => `<div class="note warn small">${esc(t(u.mesaj, u.p))}</div>`).join('')}</div>`;
+  }
+  function parselKartiBagla() { document.querySelectorAll('[data-pgec]').forEach(a => a.onclick = ev => { ev.preventDefault(); parselGec(a.dataset.pgec); show('sonuc'); }); }
   function renderResult() {
     const r = compute(), el = $('#result');
     const notes = (r.err.length ? `<div class="note err"><b>${t('Kesin sonuç verilemiyor')}</b><ul>${r.err.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : '') +
       (!r.ok && r.warn.length ? `<div class="note warn"><b>${t('Uyarılar')}</b><ul>${r.warn.map(e => `<li>${esc(e)}</li>`).join('')}</ul></div>` : '');
-    if (!r.ok) { el.innerHTML = notes + `<button class="btn block" id="bBack">${t('Verilere dön')}</button>`; $('#bBack').onclick = () => show('veri'); return; }
+    if (!r.ok) { el.innerHTML = parselKarti() + notes + `<button class="btn block" id="bBack">${t('Verilere dön')}</button>`; $('#bBack').onclick = () => show('veri'); parselKartiBagla(); return; }
     const s = r.schedule, m = r.main.sel, sel = r.sel;
     const A = assessOf(r);
     const akil = AV.make({ t, fmt, esc, shiftYonetimi: smKod }).render(A) + (I.lang !== 'tr' && (A.other.length || r.asm.length) ? `<p class="muted small">${t('Hesap notları (uyarılar ve varsayımlar) şu an yalnız Türkçe gösterilir.')}</p>` : '');
-    el.innerHTML = `
+    el.innerHTML = parselKarti() + `
     <div class="big">
       <div><b>${fmt(r.field.da, 1)} da</b><span>${esc(t(D.CROPS[cur.inp.crop].ad))} · ${r.field.mode === 'parsel' ? t('parsel') : t('dikdörtgen')}</span></div>
       <div><b>${r.sectors.Ns}</b><span>Shift · ${t('en büyük')} ${fmt(r.sectors.Qsec, 1)} m³/h</span></div>
@@ -796,7 +919,7 @@
     const sa = $('#bShiftAuto'); if (sa) sa.onclick = () => { if (otomatigeDon()) renderResult(); };
     $('#toHydro').onclick = e => { e.preventDefault(); show('hidrolik'); };
     el.querySelectorAll('[data-shiftyon]').forEach(b => b.onclick = () => shiftYonetimiAc());
-    bindExport('#bPdf', '#bXls', r);
+    bindExport('#bPdf', '#bXls', r); parselKartiBagla();
     el.querySelectorAll('select[data-onay]').forEach(x => x.onchange = () => {
       cur.akil = cur.akil || {}; cur.akil.onay = cur.akil.onay || {};
       if (x.value === 'yok') delete cur.akil.onay[x.dataset.onay]; else cur.akil.onay[x.dataset.onay] = x.value;
@@ -811,6 +934,7 @@
     if (!cur) return toast(t('Önce bir proje açın veya oluşturun'));
     const r = lastRes && lastRes.ok ? lastRes : compute();
     if (!r.ok) return toast(t('Kesin sonuç verilemiyor'));
+    parselOzetiHazirla();
     try {
       if (kind === 'pdf') await window.IrriReport.pdf(cur, r, layoutSvg(r));
       else if (kind === 'xlsx') await window.IrriReport.xlsx(cur, r);
@@ -843,8 +967,8 @@
   const monthName = m => new Date(2026, m - 1, 1).toLocaleDateString(I.locale, { month: 'short' });
   function bindExport(a, b, r) {
     const run = (btn, label, fn) => { const el = $(btn); el.onclick = async () => { if (el.disabled) return; el.disabled = true; const old = el.textContent; el.textContent = t('{x} hazırlanıyor…', { x: label }); try { await fn(); } catch (e) { toast(t('{x} hatası: ', { x: label }) + (e && e.message || e)); } finally { el.disabled = false; el.textContent = old; } }; };
-    run(a, 'PDF', () => window.IrriReport.pdf(cur, r, layoutSvg(r)));
-    run(b, 'Excel', () => window.IrriReport.xlsx(cur, r));
+    run(a, 'PDF', () => { parselOzetiHazirla(); return window.IrriReport.pdf(cur, r, layoutSvg(r)); });
+    run(b, 'Excel', () => { parselOzetiHazirla(); return window.IrriReport.xlsx(cur, r); });
   }
 
   // Yerleşim planı (SVG, çerçeve koordinatları; y yukarı)
@@ -1520,7 +1644,7 @@
 
   // ---------- Ayarlar ----------
   function langSelect(id) { return `<select id="${id}">${Object.entries(I.LANGS).map(([k, v]) => `<option value="${k}" ${k === I.lang ? 'selected' : ''}>${v.ad}</option>`).join('')}</select>`; }
-  function bindLang(id) { const s = $('#' + id); if (s) s.onchange = () => { I.setLang(s.value); lastRes = null; $('#projName').textContent = cur ? cur.name : t('Proje seçilmedi'); const v = document.querySelector('nav.tabs button.on'); show(document.querySelector('.view.on').id.slice(2) || (v && v.dataset.v) || 'projeler'); }; }
+  function bindLang(id) { const s = $('#' + id); if (s) s.onchange = () => { I.setLang(s.value); lastRes = null; baslikYaz(); const v = document.querySelector('nav.tabs button.on'); show(document.querySelector('.view.on').id.slice(2) || (v && v.dataset.v) || 'projeler'); }; }
   // ---------- Teknik Proje (CAD görünümü, pafta, PDF, DXF) ----------
   const techOpt = () => Object.assign({ format: 'A3', orient: 'yatay', scale: 'auto', color: true, multi: false, layers: {} }, cur.techOpt || {});
   let techView = null, techTile = { i: 0, j: 0 };

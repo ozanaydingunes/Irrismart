@@ -118,6 +118,16 @@ nav.tabs button{font-size:10.5px}
 [dir=rtl] th:first-child,[dir=rtl] td:first-child{text-align:start}
 [dir=rtl] .kv div:nth-child(even){text-align:start}
 [dir=rtl] #map{direction:ltr}
+/* Çoklu parsel şeridi (Arazi alt çubuğu): kaydırılabilir parsel çipleri + işlemler */
+.parsel-bar{display:flex;align-items:center;gap:6px;margin:0 0 6px;min-height:34px}
+.parsel-bar .parsel-cipler{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.parsel-bar .chip{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.parsel-bar .chip.on .muted{color:inherit;opacity:.85}
+.parsel-bar .chip .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.parsel-bar .btn{flex:none;padding:6px 9px;min-width:0}
+.parsel-etiket{background:rgba(255,255,255,.92);color:#222;border:0;font-weight:700;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.parsel-etiket::before{display:none}
+#kmlPanel .kml-row input[type=checkbox]{width:18px;height:18px;padding:0;vertical-align:-3px}
 /* KML/KMZ içe aktarma paneli — telefonda alt çubukta (önceki davranış); masaüstü kuralları html.desk bölümünde */
 #kmlPanel{max-height:45vh;overflow:auto;margin-bottom:6px}
 #kmlPanel .kml-bas{display:flex;align-items:center;gap:8px}
@@ -446,7 +456,7 @@ html.desk #kmlPanel .kml-govde{flex:1 1 auto;min-height:0;display:flex;flex-dire
 html.desk #kmlPanel .kml-govde[hidden]{display:none}
 html.desk #kmlPanel #kmlListe{flex:1 1 auto;min-height:60px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:2px 8px}
 html.desk #kmlPanel .kml-row{cursor:pointer;display:grid!important;grid-template-columns:auto 1fr;column-gap:8px;padding:6px 2px!important;border-bottom:1px solid var(--line)}
-html.desk #kmlPanel .kml-row input[type=radio]{width:18px;height:18px;margin:2px 0 0;padding:0;grid-row:span 3}
+html.desk #kmlPanel .kml-row input[type=radio],html.desk #kmlPanel .kml-row input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;padding:0;grid-row:span 3}
 html.desk #kmlPanel .kml-alt{flex:none}
 nav.tabs button.desk-only{display:none}
 html.desk nav.tabs button.desk-only{display:flex}

@@ -49,8 +49,15 @@ module.exports = {
     const rapor = window.IrriReportData.build(proj, r);
     const wb = window.IrriReportData.workbook && window.XLSX ? window.IrriReportData.workbook(window.XLSX, proj, r) : null;
     const ts = X.teknikOzellikler(r, p.inp), sartname = Object.fromEntries(Object.entries(ts).map(([k, T]) => [k, { satir: T.satirlar.map(s => [s.ad, s.deger, s.birim, s.kaynak]), v: T.varsayimlar, e: T.eksikler, ozet: X.sartnameOzeti(k, T), ek: T.segmentler || T.islevler || T.kalemler || null }]));
+    // Çoklu parsel: aynı projeye ikinci bağımsız parsel (kendi kuyusu) → parsel bazlı ve toplam özet (motor değişmez)
+    const PS = window.IrriParsel, mp = JSON.parse(JSON.stringify(p)), G = window.IrriGeom;
+    mp.poly = [[38.10, 27.70], [38.10, 27.705], [38.104, 27.705], [38.104, 27.70]]; mp.src = [38.1001, 27.7001];
+    const gir = v => { const f = G.fieldFromPolygon(v.poly); Object.assign(v.inp, { area_da: +(f.A / 1000).toFixed(2), L: +f.L.toFixed(1), W: +f.W.toFixed(1), geom: 'parsel' }); };
+    gir(mp); PS.ekle(mp, 'İkinci'); mp.poly = [[38.09, 27.72], [38.09, 27.724], [38.093, 27.724], [38.093, 27.72]]; mp.src = [38.0901, 27.7201]; mp.inp.Q = 30; mp.inp.depth = 25; gir(mp);
+    const coz = PS.ozet(mp, v => E.design(v.inp, null, { poly: v.poly, src: v.src, station: v.station, route: v.route, manual: v.shiftEdit || null }));
+    const cokluParsel = { parseller: coz.parseller.map(x => [x.id, x.ad, x.alan_m2, x.Q, x.shift, x.Qsys, x.H, x.durum]), toplam: coz.toplam, uyari: coz.uyarilar.length };
     const urunler = veri.urunler.map(u => [u.id, u.kategori, u.inceleme, u.muhendislik]).sort();
     return yuv({ hesap: ozet(r), manuel: ozet(rm), urunler, degerSayisi: veri.degerler.length, oneriler: { pompa: oz(o.pompa), filtre: oz(o.filtre), vana: oz(o.vana), baglanti: oz(o.baglanti), boru: o.boru.segmentler.map(sg => oz(sg)) },
-      sartname, pompaUygulanmis: ozet(rp), rapor: { ozet: rapor.ozet, hidrolik: rapor.hidrolik, sektor: rapor.sektor, bomP: rapor.bomP, bomU: rapor.bomU, akil: rapor.akil.sheet }, excelSayfa: wb && wb.SheetNames ? wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 })]) : null });
+      sartname, cokluParsel, pompaUygulanmis: ozet(rp), rapor: { ozet: rapor.ozet, hidrolik: rapor.hidrolik, sektor: rapor.sektor, bomP: rapor.bomP, bomU: rapor.bomU, akil: rapor.akil.sheet }, excelSayfa: wb && wb.SheetNames ? wb.SheetNames.map(n => [n, window.XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1 })]) : null });
   },
 };

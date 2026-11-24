@@ -152,6 +152,13 @@
     doc.setFont('DV', 'bold'); doc.setFontSize(17); doc.setTextColor(15, 81, 50); doc.text(tr('Damla Sulama Ön Projesi'), M, y); y += 7;
     doc.setFont('DV', 'normal'); doc.setFontSize(10); doc.setTextColor(95, 111, 102); doc.text(`${p.name} · IrriGrow · ${new Date().toLocaleDateString(loc)}`, M, y); y += 8;
     h1(tr('Proje özeti')); kv(T.ozet);
+    if (T.parsel) {   // çoklu parsel: parsel bazlı alan ve hidrolik özet, proje toplamı
+      h1(tr('Parseller ve proje toplamı'));
+      table(T.parsel.rows, [36, 16, 16, 20, 13, 21, 18, 42], T.parsel.dec, [1, 2, 3, 4, 5, 6]);
+      doc.setFont('DV', 'normal'); doc.setFontSize(8.2); doc.setTextColor(95, 111, 102);
+      for (const nt of T.parsel.notlar) { const ln = doc.splitTextToSize(nt, Wd - 2 * M); need(ln.length * 3.8 + 1); doc.text(ln, M, y); y += ln.length * 3.8 + 1; }
+      doc.setTextColor(20, 30, 25); y += 3;
+    }
     // MH-AKIL-1: mühendislik değerlendirmesi (Sonuç ekranıyla aynı nesne); kritik uyarılar önce
     h1(tr('Mühendislik değerlendirmesi'));
     if (!T.akil.findings.length) kv([[tr('Durum'), tr('Yapılandırılmış uyarı yok.'), '', null]]);

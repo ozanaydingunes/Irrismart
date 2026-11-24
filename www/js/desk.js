@@ -126,6 +126,8 @@
     if (!fs.length) return `<p class="dk-muted">${esc(t('Bu nesneyle ilgili mühendislik uyarısı yok.'))}</p>`;
     return fs.map(x => `<button type="button" class="dk-warn dk-w-${x.seviye}" data-kod="${esc(x.kod)}"><span class="dk-lv">${esc(t(AS.LEVEL_AD[x.seviye]))}</span> <code>${esc(x.kod)}</code> ${esc(AS.text(x.baslik, t, api.fmt))}</button>`).join('');
   }
+  // Çok parselli projede panel aktif parselin değerlerini gösterir: başlıkta parsel adı
+  const projAd = p => p.name + (g.IrriParsel && g.IrriParsel.coklu(p) ? ' · ' + g.IrriParsel.aktifAd(p) : '');
   function renderRight() {
     const el = $('#deskRight'); if (!el) return;
     const t = api.t, esc = api.esc;
@@ -134,7 +136,7 @@
     const head = (kind, title) => `<div class="dk-head"><div><span class="dk-kind">${esc(t(kind))}</span><strong>${title}</strong></div><button type="button" class="dk-x" data-dk="close" aria-label="${esc(t('Mühendislik panelini kapat'))}">✕</button></div>`;
     let body = '';
     if (!c) body = head('Mühendislik paneli', esc(t('Proje seçilmedi'))) + `<div class="dk-body"><p class="dk-muted">${esc(t('Bir proje açın veya yeni proje oluşturun.'))}</p></div>`;
-    else if (!c.r) body = head('Mühendislik paneli', esc(c.cur.name)) + `<div class="dk-body"><p class="dk-muted">${esc(t('Hesap sonucu yok: Veriler ekranında kaynak debisini girip Hesapla deyin.'))}</p></div>`;
+    else if (!c.r) body = head('Mühendislik paneli', esc(projAd(c.cur))) + `<div class="dk-body"><p class="dk-muted">${esc(t('Hesap sonucu yok: Veriler ekranında kaynak debisini girip Hesapla deyin.'))}</p></div>`;
     else {
       const { r, vm, A } = c, s = st.sel;
       if (s && s.type === 'shift' && vm.shift.details[s.j]) {
@@ -177,7 +179,7 @@
           <div class="dk-links"><button type="button" data-go="pompa">${esc(t('Pompa ve Filtrasyon’da aç'))} ›</button></div></div>`;
       } else {
         const k = vm.ozet.kpis, cnt = A.count;
-        body = head('Proje özeti', esc(c.cur.name)) + `<div class="dk-body">
+        body = head('Proje özeti', esc(projAd(c.cur))) + `<div class="dk-body">
           <div class="dk-kpis">${k.slice(0, 4).map(x => kpi(x.label, N(x.v, x.d), x.unit)).join('')}</div>
           <p class="dk-counts"><span class="dk-lv dk-w-uygunsuz">${esc(t('Uygunsuz'))} ${cnt.uygunsuz}</span> <span class="dk-lv dk-w-uyari">${esc(t('Uyarı'))} ${cnt.uyari}</span> <span class="dk-lv dk-w-on-degerlendirme">${esc(t('Ön değerlendirme'))} ${cnt['on-degerlendirme']}</span></p>
           <p class="dk-muted">${esc(t('Haritada bir shift, manifold, lateral veya ana hat parçasına tıklayın; alt paneldeki tablolardan da seçebilirsiniz.'))}</p>
