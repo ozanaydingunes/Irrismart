@@ -2,7 +2,7 @@
 (function (g) {
   const SCHEMA = 2;
   const MAX_REVS = 20;
-  const REV_EXTRA = ['station', 'route', 'shiftEdit', 'shiftEditEski', 'shiftEditYedek', 'shiftSira', 'shiftHedef', 'shiftHedefler', 'shiftKullaniciKarari', 'katalogKalemleri', 'ekipmanSecimi'];   // 1.0.1: çalışma sırası ve hedef debi; 1.0.4: shift başına hedef
+  const REV_EXTRA = ['station', 'route', 'shiftEdit', 'shiftEditEski', 'shiftEditYedek', 'shiftSira', 'shiftHedef', 'shiftHedefler', 'shiftKullaniciKarari', 'katalogKalemleri', 'ekipmanSecimi', 'parseller', 'parselId', 'parselAd', 'parselSira'];   // 1.0.1: çalışma sırası ve hedef debi; 1.0.4: shift başına hedef
 
   // Tek proje: eksik alanları ekler, mevcut alanlara dokunmaz. Dönüş: yeni nesne
   function migrateProject(p) {
@@ -46,7 +46,10 @@
   }
   function restoreRev(p, rev) {
     const r = (p.revs || []).find(x => x.rev === rev); if (!r) return false;
-    const d = JSON.parse(r.data); snapshot(p, 'geri yükleme öncesi');
+    const d = JSON.parse(r.data);
+    // Çoklu parsel: revizyon başka bir parsel aktifken alındıysa o parsel seçilmeden geri yüklenmez (parsel verisi karışmasın)
+    if ((d.parselId || 'p1') !== (p.parselId || 'p1') && ((p.parseller && p.parseller.length) || d.parseller)) return false;
+    snapshot(p, 'geri yükleme öncesi');
     Object.assign(p, { inp: d.inp, poly: d.poly || [], src: d.src, hydro: d.hydro });
     for (const k of REV_EXTRA) { if (k in d) p[k] = d[k]; }   // eski revizyonda yoksa mevcut değere dokunulmaz
     return true;

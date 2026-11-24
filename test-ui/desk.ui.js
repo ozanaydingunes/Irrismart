@@ -120,7 +120,9 @@ const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - 
     const g = await box(pg, '#deskBottom .db-grip');
     await pg.mouse.move(g.x + 50, g.y + 2); await pg.mouse.down(); await pg.mouse.move(g.x + 50, g.y - 120, { steps: 6 }); await pg.mouse.up(); await pg.waitForTimeout(250);
     const h2 = (await box(pg, '#deskBottom')).h;
-    check(h2 > h1 + 80, `alt panel yüksekliği sürüklenerek ayarlanmadı (${h1} → ${h2})`);
+    // 1.0.7 düzeltme: Arazi'de alt panel haritayı 320 px'in altına indiremez → ya 80 px büyür ya da bu sınıra kadar büyür
+    const haritaH = await pg.evaluate(() => { const m = document.querySelector('#map').getBoundingClientRect(), b = document.querySelector('#v-arazi .mapbar').getBoundingClientRect(); return Math.round(Math.min(m.bottom, b.top) - m.top); });
+    check(h2 > h1 + 80 || (h2 > h1 + 20 && haritaH >= 319 && haritaH <= 330), `alt panel yüksekliği sürüklenerek ayarlanmadı (${h1} → ${h2}, harita ${haritaH} px)`);
     await pg.click('#deskBottom tr[data-sel="anahat:2"]'); await pg.waitForTimeout(250);
     check(/Ana boru şebekesi|AH-/.test(await pg.$eval('#deskRight .dk-head', e => e.textContent)), 'tablodan ana hat seçimi sağ panele gelmedi');
     await pg.click('#deskBottom [data-db=toggle]'); await pg.waitForTimeout(250);

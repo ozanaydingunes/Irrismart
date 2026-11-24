@@ -118,7 +118,10 @@
       [T('Fiyatı eksik zorunlu kalem'), r.cost.missing, 'adet', 0], [T('Örnek fiyatlı kalem'), r.cost.example, 'adet', 0],
       r.cost.total != null ? [T('TOPLAM MALZEME BEDELİ'), r.cost.total, 'TL', 0] : [T('TOPLAM MALZEME BEDELİ'), 'Hesaplanmadı (eksik fiyat)', '', null],
     ];
-    return { akil: akil(p, r), ozet, hidrolik, sektor, sektorDec, sektorPdf, sektorXls, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
+    // Çoklu parsel: parsel bazlı alanlar ve hidrolik özet + proje toplamı (uygulama hesaplayıp iletir); ayrıntılı bölümler aktif parsele aittir
+    const PS = g.IrriParsel, PO = PS && PS.ozetAl ? PS.ozetAl(p) : null, parsel = PO && PO.parseller.length > 1 ? PS.raporTablosu(PO, T) : null;
+    if (parsel) ozet.unshift([T('Aktif parsel (ayrıntılı bölümler)'), PS.aktifAd(p), '', null], [T('Proje toplam alanı (bütün parseller)'), PO.toplam.alan_m2 / 1000, 'da', 2], [T('Parsel sayısı'), PO.parseller.length, 'adet', 0]);
+    return { parsel, akil: akil(p, r), ozet, hidrolik, sektor, sektorDec, sektorPdf, sektorXls, altSek, altSekDec, altHat, altHatDec, su, prog, progDec, bomP, bomU, bomDec, toplam };
   }
 
   // Excel çalışma kitabı (SheetJS). Sayılar gerçek sayı hücresi, ondalık biçimi ayrı.
@@ -139,6 +142,7 @@
     const kv = (name, rows) => sheet(name, [[T('Kalem'), T('Değer'), T('Birim')]].concat(rows.map(([a, b, c]) => [a, b, T(c)])), [44, 26, 10], (ri) => ri ? rows[ri - 1][3] : null);
     const tbl = (name, rows, dec, cols) => sheet(name, rows, cols, (ri, ci) => ri ? dec[ci] : null);
     kv(sn('Özet'), TB.ozet);
+    if (TB.parsel) sheet(sn('Parseller'), TB.parsel.rows.concat([[]], TB.parsel.notlar.map(x => [x])), [28, 12, 12, 16, 10, 18, 16, 60], (ri, ci) => ri && ri < TB.parsel.rows.length ? TB.parsel.dec[ci] : null);
     sheet(sn('Uyarılar'), TB.akil.sheet, [10, 16, 46, 14, 12, 8, 16, 26, 90, 40], (ri, ci) => ri && (ci === 3 || ci === 4) ? TB.akil.decs[ri] : null);
     kv(sn('Hidrolik'), TB.hidrolik);
     tbl(sn('Shift’ler'), TB.sektor, TB.sektorDec, TB.sektorXls);

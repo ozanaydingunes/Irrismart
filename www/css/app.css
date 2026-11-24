@@ -10,6 +10,8 @@ header.top{position:fixed;top:0;left:0;right:0;height:calc(var(--top) + env(safe
 header .ttl{flex:1;display:flex;flex-direction:column;line-height:1.15}
 header .ttl span{font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon{background:none;border:0;color:inherit;font-size:22px;width:44px;height:44px;border-radius:10px}
+/* Firma katalogları: çizgili belge + su damlası (24×24, Ayarlar simgesiyle aynı renk ve çizgi) */
+.icon .ico-kat{display:block;margin:auto;width:24px;height:24px}
 main{position:fixed;top:calc(var(--top) + env(safe-area-inset-top));bottom:calc(var(--tab) + env(safe-area-inset-bottom));left:0;right:0;overflow:hidden}
 .view{position:absolute;top:0;right:0;bottom:0;left:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
 .view.on{display:block}
@@ -118,6 +120,24 @@ nav.tabs button{font-size:10.5px}
 [dir=rtl] th:first-child,[dir=rtl] td:first-child{text-align:start}
 [dir=rtl] .kv div:nth-child(even){text-align:start}
 [dir=rtl] #map{direction:ltr}
+/* Çoklu parsel şeridi (Arazi alt çubuğu): kaydırılabilir parsel çipleri + işlemler */
+.parsel-bar{display:flex;align-items:center;gap:6px;margin:0 0 6px;min-height:34px}
+.parsel-bar .parsel-cipler{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.parsel-bar .chip{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.parsel-bar .chip.on .muted{color:inherit;opacity:.85}
+.parsel-bar .chip .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.parsel-bar .btn{flex:none;padding:6px 9px;min-width:0}
+.parsel-etiket{background:rgba(255,255,255,.92);color:#222;border:0;font-weight:700;font-size:11px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.parsel-etiket::before{display:none}
+#kmlPanel .kml-row input[type=checkbox]{width:18px;height:18px;padding:0;vertical-align:-3px}
+/* KML/KMZ içe aktarma paneli — telefonda alt çubukta (önceki davranış); masaüstü kuralları html.desk bölümünde */
+#kmlPanel{max-height:45vh;overflow:auto;margin-bottom:6px}
+#kmlPanel .kml-bas{display:flex;align-items:center;gap:8px}
+#kmlPanel .kml-baslik{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#kmlPanel .kml-dar{flex:none;min-width:36px;padding:4px 8px}
+#kmlPanel .kml-secili{margin:4px 0}
+.kml-etiket{background:#ff6f00;color:#fff;border:0;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.kml-etiket::before{display:none}
 
 /* Faz 2: harita modları, istasyon, boru bilgisi, tam ekran, shift etiketleri */
 #mModes{display:flex;gap:4px;margin-bottom:6px}
@@ -432,6 +452,14 @@ html.desk #deskBottom{position:fixed;left:var(--rail);right:var(--right);bottom:
 /* Tam ekran harita: bütün paneller gizlenir */
 html.desk body.mapfull nav.tabs,html.desk body.mapfull #deskRight,html.desk body.mapfull #deskBottom{display:none}
 html.desk body.mapfull main{left:0;right:0;bottom:0}
+/* 1.0.7 düzeltme: masaüstünde KML/KMZ paneli haritanın üzerinde yüzen kart; harita küçülmez, liste kendi içinde kayar */
+html.desk #kmlPanel{position:absolute;top:10px;left:56px;width:min(400px,42%);max-height:calc(100% - var(--mapbar,150px) - 24px);margin:0;padding:10px 12px;flex-direction:column;overflow:hidden;z-index:600;box-shadow:0 6px 20px rgba(0,0,0,.22)}
+html.desk #kmlPanel .kml-govde{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+html.desk #kmlPanel .kml-govde[hidden]{display:none}
+html.desk #kmlPanel #kmlListe{flex:1 1 auto;min-height:60px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:2px 8px}
+html.desk #kmlPanel .kml-row{cursor:pointer;display:grid!important;grid-template-columns:auto 1fr;column-gap:8px;padding:6px 2px!important;border-bottom:1px solid var(--line)}
+html.desk #kmlPanel .kml-row input[type=radio],html.desk #kmlPanel .kml-row input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;padding:0;grid-row:span 3}
+html.desk #kmlPanel .kml-alt{flex:none}
 nav.tabs button.desk-only{display:none}
 html.desk nav.tabs button.desk-only{display:flex}
 
