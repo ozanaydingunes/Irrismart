@@ -1,0 +1,470 @@
+import type { z } from "zod";
+import { solutionSchema, type Solution } from "@/lib/schema/solution";
+
+/**
+ * DEMO ÖRNEK SORULAR — elle hazırlanmış ve otomatik testlerle doğrulanmış sabit çözümler.
+ * Yapay zekâ çıktısı DEĞİLDİR; arayüzde "Demo örneği" olarak etiketlenir.
+ */
+export interface DemoSample {
+  id: string;
+  label: string;
+  topicId: string;
+  question: string;
+  solution: Solution;
+}
+
+type RawSample = Omit<DemoSample, "solution"> & { solution: z.input<typeof solutionSchema> };
+
+const RAW_SAMPLES: RawSample[] = [
+  {
+    id: "kesir-problem",
+    label: "Kesir problemi",
+    topicId: "problemler",
+    question: "Ali parasının 2/5'i ile 60 TL'lik bir kitap aldı. Ali'nin başlangıçta kaç TL'si vardı?",
+    solution: {
+      question: "Ali parasının 2/5'i ile 60 TL'lik bir kitap aldı. Ali'nin başlangıçta kaç TL'si vardı?",
+      topic: "Kesir Problemleri",
+      topicId: "problemler",
+      difficulty: "orta",
+      givenInformation: ["Harcanan para: 60 TL", "Bu para, toplam paranın 2/5'i"],
+      requestedInformation: "Ali'nin başlangıçtaki toplam parası",
+      solutionStrategy: "Toplam parayı 5 eş parçaya bölünmüş bir şerit olarak düşüneceğiz. 2 parça 60 TL ise önce 1 parçayı, sonra 5 parçayı bulacağız.",
+      steps: [
+        {
+          stepId: "1",
+          title: "Parayı şerit modeliyle gösterelim",
+          explanation: "2/5 demek, bütünü 5 eş parçaya bölüp bunlardan 2'sini almak demektir. Ali'nin tüm parasını 5 eş parçalı bir şerit gibi düşünelim.",
+          latex: "\\frac{2}{5}",
+          narration: "Beşte iki demek, bütünü beş eş parçaya bölüp ikisini almak demek. Ali'nin bütün parasını beş eş parçalı bir şerit gibi düşünelim. Bunun iki parçası kitaba gitti.",
+          visualInstructions: [{ type: "fractionBars", bars: [{ numerator: 2, denominator: 5, label: "Kitaba harcanan: 2/5", color: "purple" }] }],
+          highlightedElements: [{ value: "2", color: "purple", reason: "harcanan parça sayısı" }],
+        },
+        {
+          stepId: "2",
+          title: "Bir parçanın değerini bulalım",
+          explanation: "2 parça 60 TL ediyorsa, 1 parça bunun yarısıdır. 60'ı 2'ye böleriz.",
+          latex: "60 \\div 2 = 30",
+          narration: "İki parça altmış lira ediyorsa, bir parça bunun yarısı olur. Altmışı ikiye bölersek otuz lira buluruz.",
+          visualInstructions: [{ type: "rule", title: "Parça–bütün ilişkisi", text: "Önce bir parçanın değerini bul, sonra istenen parça sayısıyla çarp." }],
+          highlightedElements: [{ value: "30", color: "green", reason: "bir parçanın değeri" }],
+          studentQuestion: { prompt: "60 TL iki eşit parçaya ayrılırsa bir parça kaç TL olur?", expectedAnswer: "30", hint: "60'ı 2'ye böl." },
+        },
+        {
+          stepId: "3",
+          title: "Bütünü bulalım",
+          explanation: "Bütün para 5 parçadır. Bir parça 30 TL olduğuna göre 5 parça 5 · 30 TL olur.",
+          latex: "5 \\cdot 30 = 150",
+          narration: "Bütün para beş parçadan oluşuyor. Bir parça otuz lira ise beş parça beş çarpı otuz, yani yüz elli lira eder.",
+          visualInstructions: [{ type: "fractionBars", bars: [{ numerator: 5, denominator: 5, label: "Tüm para: 5 parça × 30 TL", color: "blue" }] }],
+          highlightedElements: [{ value: "150", color: "orange", reason: "toplam para" }],
+          studentQuestion: { prompt: "Bir parça 30 TL ise 5 parça kaç TL eder?", expectedAnswer: "150", hint: "30'u 5 ile çarp." },
+        },
+        {
+          stepId: "4",
+          title: "Kontrol edelim",
+          explanation: "150 TL'nin 2/5'ini hesaplayalım: 60 TL çıkıyorsa cevabımız doğrudur.",
+          latex: "150 \\cdot \\frac{2}{5} = \\frac{300}{5} = 60",
+          narration: "Kontrol edelim. Yüz ellinin beşte ikisi, yüz elli çarpı iki bölü beş, yani altmış eder. Kitap da altmış liraydı. Cevabımız doğru!",
+        },
+      ],
+      finalAnswer: { text: "Ali'nin başlangıçta 150 TL'si vardı.", latex: "150", narration: "Ali'nin başlangıçta yüz elli lirası vardı." },
+      verification: { method: "150 TL'nin 2/5'ini hesapladık ve 60 TL bulduk.", latex: "150 \\cdot \\frac{2}{5} = 60", isVerified: true },
+      commonMistakes: ["60'ı 2/5 ile çarpmak (60 · 2/5 = 24). Bu, 60'ın 2/5'ini bulur; soru ise bütünü soruyor.", "Bir parçayı bulduktan sonra 5 ile çarpmayı unutmak."],
+      similarQuestion: { text: "Elif kitabının 3/7'sini okudu; okuduğu kısım 42 sayfa. Kitap toplam kaç sayfadır?", answer: "98" },
+    },
+  },
+  {
+    id: "denklem-problem",
+    label: "Denklem problemi",
+    topicId: "denklemler",
+    question: "Bir sayının 3 katının 4 fazlası 25'tir. Bu sayı kaçtır?",
+    solution: {
+      question: "Bir sayının 3 katının 4 fazlası 25'tir. Bu sayı kaçtır?",
+      topic: "Eşitlik ve Denklem",
+      topicId: "denklemler",
+      difficulty: "kolay",
+      givenInformation: ["Sayının 3 katı alınıyor", "Bu sonuca 4 ekleniyor", "Sonuç 25"],
+      requestedInformation: "Bilinmeyen sayı",
+      solutionStrategy: "Bilinmeyen sayıya x diyerek sözel ifadeyi denkleme çevireceğiz, sonra ters işlemlerle x'i yalnız bırakacağız.",
+      steps: [
+        {
+          stepId: "1",
+          title: "Sözel ifadeyi denkleme çevirelim",
+          explanation: "Bilinmeyen sayıya x diyelim. 3 katı: 3x. 4 fazlası: 3x + 4. Bu, 25'e eşit.",
+          latex: "3x + 4 = 25",
+          narration: "Bilinmeyen sayıya iks diyelim. Üç katı üç iks olur. Dört fazlası, üç iks artı dört. Bu da yirmi beşe eşit. Denklemimiz üç iks artı dört eşittir yirmi beş.",
+          visualInstructions: [{ type: "balance", left: "3x + 4", right: "25", label: "Terazi dengede" }],
+          highlightedElements: [{ value: "3x", color: "purple", reason: "sayının 3 katı" }, { value: "4", color: "blue", reason: "4 fazlası" }],
+        },
+        {
+          stepId: "2",
+          title: "Her iki taraftan 4 çıkaralım",
+          explanation: "x'li terimi yalnız bırakmak için 4'ü yok etmeliyiz. Toplamanın tersi çıkarmadır; terazinin dengesi bozulmasın diye her iki taraftan 4 çıkarırız.",
+          latex: "3x + 4 - 4 = 25 - 4 \\Rightarrow 3x = 21",
+          narration: "Üç iksi yalnız bırakmak için her iki taraftan dört çıkaralım. Sol tarafta üç iks kalır, sağ tarafta yirmi beş eksi dört, yani yirmi bir olur.",
+          visualInstructions: [{ type: "transform", before: "3x + 4 = 25", after: "3x = 21", label: "Her iki taraftan 4 çıkar" }],
+          highlightedElements: [{ value: "21", color: "green", reason: "25 − 4" }],
+          studentQuestion: { prompt: "25 − 4 kaçtır?", expectedAnswer: "21", hint: "25'ten 4 geri say." },
+        },
+        {
+          stepId: "3",
+          title: "Her iki tarafı 3'e bölelim",
+          explanation: "3x, 3 çarpı x demektir. Çarpmanın tersi bölmedir; her iki tarafı 3'e böleriz.",
+          latex: "\\frac{3x}{3} = \\frac{21}{3} \\Rightarrow x = 7",
+          narration: "Üç iks, üç çarpı iks demek. Her iki tarafı üçe bölersek iks eşittir yedi buluruz.",
+          visualInstructions: [{ type: "transform", before: "3x = 21", after: "x = 7", label: "Her iki tarafı 3'e böl" }],
+          highlightedElements: [{ value: "7", color: "orange", reason: "aranan sayı" }],
+          studentQuestion: { prompt: "21 ÷ 3 kaçtır?", expectedAnswer: "7", hint: "3 ile çarpınca 21 eden sayıyı düşün." },
+        },
+        {
+          stepId: "4",
+          title: "Kontrol edelim",
+          explanation: "7'nin 3 katı 21, 4 fazlası 25. Soruda verilen sonuçla aynı!",
+          latex: "3 \\cdot 7 + 4 = 21 + 4 = 25",
+          narration: "Kontrol edelim. Yedinin üç katı yirmi bir, dört fazlası yirmi beş. Sorudaki sonuçla aynı, cevabımız doğru.",
+        },
+      ],
+      finalAnswer: { text: "Aranan sayı 7'dir.", latex: "x = 7", narration: "Aranan sayı yedidir." },
+      verification: { method: "x = 7 değerini 3x + 4 ifadesinde yerine koyduk ve 25 bulduk.", latex: "3 \\cdot 7 + 4 = 25", isVerified: true },
+      commonMistakes: ["'3 katının 4 fazlası' ifadesini 3(x + 4) diye yazmak.", "4'ü çıkarmak yerine eklemek."],
+      similarQuestion: { text: "Bir sayının 5 katının 6 eksiği 29'dur. Bu sayı kaçtır?", answer: "7" },
+    },
+  },
+  {
+    id: "yuzde-indirim",
+    label: "Yüzde (indirim)",
+    topicId: "yuzdeler",
+    question: "Fiyatı 400 TL olan bir ayakkabıya %20 indirim yapılıyor. Ayakkabının indirimli fiyatı kaç TL olur?",
+    solution: {
+      question: "Fiyatı 400 TL olan bir ayakkabıya %20 indirim yapılıyor. Ayakkabının indirimli fiyatı kaç TL olur?",
+      topic: "Yüzdeler",
+      topicId: "yuzdeler",
+      difficulty: "kolay",
+      givenInformation: ["İlk fiyat: 400 TL", "İndirim oranı: %20"],
+      requestedInformation: "İndirimli fiyat",
+      solutionStrategy: "Önce indirim miktarını (%20'yi) bulup ilk fiyattan çıkaracağız. Sonra başka bir yolla, %80'ini hesaplayarak kontrol edeceğiz.",
+      steps: [
+        {
+          stepId: "1",
+          title: "%20'yi kesir olarak düşünelim",
+          explanation: "%20, 100 eş parçanın 20'si demektir; yani 20/100.",
+          latex: "\\%20 = \\frac{20}{100}",
+          narration: "Yüzde yirmi, yüz eş parçanın yirmisi demek. Yani yüzde yirmi.",
+          visualInstructions: [{ type: "percentGrid", percent: 20, label: "%20 indirim", color: "orange" }],
+          highlightedElements: [{ value: "20", color: "orange", reason: "indirim oranı" }],
+        },
+        {
+          stepId: "2",
+          title: "İndirim miktarını bulalım",
+          explanation: "400 TL'nin %20'sini bulmak için 400'ü 20/100 ile çarparız.",
+          latex: "400 \\cdot \\frac{20}{100} = \\frac{8000}{100} = 80",
+          narration: "Dört yüz liranın yüzde yirmisini bulalım. Dört yüz çarpı yirmi bölü yüz, seksen lira eder. Yani indirim seksen lira.",
+          highlightedElements: [{ value: "80", color: "red", reason: "indirim miktarı" }],
+          studentQuestion: { prompt: "400'ün %20'si kaç TL'dir?", expectedAnswer: "80", hint: "400'ü 100'e böl, sonra 20 ile çarp." },
+        },
+        {
+          stepId: "3",
+          title: "İndirimi fiyattan çıkaralım",
+          explanation: "İndirimli fiyat, ilk fiyattan indirim miktarı çıkarılarak bulunur.",
+          latex: "400 - 80 = 320",
+          narration: "İndirimli fiyatı bulmak için dört yüzden seksen çıkarırız. Sonuç üç yüz yirmi lira.",
+          visualInstructions: [{ type: "barChart", bars: [{ label: "İlk fiyat", value: 400, color: "blue" }, { label: "İndirim", value: 80, color: "red" }, { label: "Yeni fiyat", value: 320, color: "green" }], unit: "TL" }],
+          highlightedElements: [{ value: "320", color: "green", reason: "indirimli fiyat" }],
+        },
+        {
+          stepId: "4",
+          title: "Başka yolla kontrol edelim",
+          explanation: "%20 indirim yapılırsa geriye fiyatın %80'i kalır. 400'ün %80'i de 320 olmalı.",
+          latex: "400 \\cdot \\frac{80}{100} = 320",
+          narration: "Başka bir yolla kontrol edelim. Yüzde yirmi indirim yapılınca fiyatın yüzde sekseni kalır. Dört yüzün yüzde sekseni de üç yüz yirmi eder. Cevabımız doğru.",
+          visualInstructions: [{ type: "rule", title: "Kısa yol", text: "%a indirimli fiyat = ilk fiyatın %(100 − a)'sı" }],
+        },
+      ],
+      finalAnswer: { text: "Ayakkabının indirimli fiyatı 320 TL olur.", latex: "320", narration: "İndirimli fiyat üç yüz yirmi liradır." },
+      verification: { method: "Fiyatın %80'ini ayrıca hesapladık ve yine 320 TL bulduk.", latex: "400 \\cdot \\frac{80}{100} = 320", isVerified: true },
+      commonMistakes: ["İndirim miktarını (80 TL) cevap olarak yazmak.", "%20'yi 20 TL sanmak."],
+      similarQuestion: { text: "Fiyatı 250 TL olan bir montun fiyatına %12 zam yapılıyor. Yeni fiyat kaç TL olur?", answer: "280" },
+    },
+  },
+  {
+    id: "ucgen-aci",
+    label: "Geometri (üçgende açı)",
+    topicId: "cokgenler",
+    question: "Bir ABC üçgeninde A açısı 50°, B açısı 70°'dir. C açısı kaç derecedir? A) 50° B) 60° C) 70° D) 80°",
+    solution: {
+      question: "Bir ABC üçgeninde A açısı 50°, B açısı 70°'dir. C açısı kaç derecedir? A) 50° B) 60° C) 70° D) 80°",
+      topic: "Çokgenler (Üçgenin İç Açıları)",
+      topicId: "cokgenler",
+      difficulty: "kolay",
+      givenInformation: ["m(A) = 50°", "m(B) = 70°"],
+      requestedInformation: "m(C)",
+      solutionStrategy: "Üçgenin iç açılarının toplamının 180° olduğu kuralını kullanacağız.",
+      choices: [
+        { key: "A", text: "50°" },
+        { key: "B", text: "60°" },
+        { key: "C", text: "70°" },
+        { key: "D", text: "80°" },
+      ],
+      steps: [
+        {
+          stepId: "1",
+          title: "Şekli çizelim",
+          explanation: "ABC üçgenini çizip bildiğimiz açıları üzerine yazalım. Bilmediğimiz C açısını soru işaretiyle gösterelim.",
+          latex: "",
+          narration: "Önce şekli çizelim. A köşesindeki açı elli derece, B köşesindeki açı yetmiş derece. C köşesindeki açıyı bulacağız.",
+          visualInstructions: [
+            {
+              type: "geometry",
+              points: [
+                { id: "A", x: 10, y: 85 },
+                { id: "B", x: 90, y: 85 },
+                { id: "C", x: 38, y: 15 },
+              ],
+              segments: [
+                { from: "A", to: "B" },
+                { from: "B", to: "C" },
+                { from: "C", to: "A" },
+              ],
+              angles: [
+                { at: "A", from: "B", to: "C", label: "50°", color: "blue" },
+                { at: "B", from: "C", to: "A", label: "70°", color: "green" },
+                { at: "C", from: "A", to: "B", label: "?", color: "orange" },
+              ],
+              circles: [],
+              fill: ["A", "B", "C"],
+              caption: "ABC üçgeni",
+            },
+          ],
+          highlightedElements: [],
+        },
+        {
+          stepId: "2",
+          title: "Kuralı hatırlayalım",
+          explanation: "Her üçgenin iç açılarının toplamı 180°'dir. Bir üçgenin köşelerini kesip yan yana koyarsan düz bir çizgi (180°) oluşturduklarını görürsün.",
+          latex: "m(\\hat{A}) + m(\\hat{B}) + m(\\hat{C}) = 180^\\circ",
+          narration: "Her üçgenin iç açılarının toplamı yüz seksen derecedir. Bir kâğıttan üçgen kesip köşelerini yan yana koyarsan düz bir çizgi oluştuğunu görürsün.",
+          visualInstructions: [{ type: "rule", title: "Kural", text: "Üçgenin iç açılarının toplamı 180°'dir.", latex: "\\hat{A}+\\hat{B}+\\hat{C}=180^\\circ" }],
+          highlightedElements: [{ value: "180", color: "purple", reason: "iç açılar toplamı" }],
+        },
+        {
+          stepId: "3",
+          title: "Bilinen açıları toplayalım",
+          explanation: "A ve B açılarını toplarsak 50° + 70° = 120° olur.",
+          latex: "50 + 70 = 120",
+          narration: "Bildiğimiz iki açıyı toplayalım. Elli artı yetmiş, yüz yirmi derece eder.",
+          highlightedElements: [{ value: "120", color: "blue", reason: "iki açının toplamı" }],
+          studentQuestion: { prompt: "50 + 70 kaçtır?", expectedAnswer: "120" },
+        },
+        {
+          stepId: "4",
+          title: "C açısını bulalım",
+          explanation: "Toplam 180° olmalı. 180°'den 120°'yi çıkarırsak C açısını buluruz.",
+          latex: "180 - 120 = 60",
+          narration: "Toplam yüz seksen olmalı. Yüz seksenden yüz yirmiyi çıkarırsak altmış derece buluruz. Yani C açısı altmış derece.",
+          highlightedElements: [{ value: "60", color: "orange", reason: "C açısı" }],
+          studentQuestion: { prompt: "180 − 120 kaçtır?", expectedAnswer: "60" },
+        },
+        {
+          stepId: "5",
+          title: "Kontrol edelim ve şıkkı seçelim",
+          explanation: "50° + 70° + 60° = 180°. Toplam doğru! 60° B şıkkında.",
+          latex: "50 + 70 + 60 = 180",
+          narration: "Kontrol edelim: elli artı yetmiş artı altmış, yüz seksen eder. Doğru! Altmış derece B şıkkında.",
+        },
+      ],
+      finalAnswer: { text: "C açısı 60°'dir. Doğru cevap B şıkkı.", latex: "m(\\hat{C}) = 60^\\circ", choice: "B", narration: "C açısı altmış derecedir. Doğru cevap B şıkkı." },
+      verification: { method: "Üç açının toplamının 180° olduğunu kontrol ettik.", latex: "50 + 70 + 60 = 180", isVerified: true },
+      commonMistakes: ["İç açılar toplamını 360° sanmak (o dörtgenler için).", "Çıkarma yerine toplama yapmak."],
+      similarQuestion: { text: "Bir üçgenin iki açısı 35° ve 95° ise üçüncü açısı kaç derecedir?", answer: "50°" },
+    },
+  },
+  {
+    id: "rasyonel-siralama",
+    label: "Rasyonel sayılarda sıralama",
+    topicId: "rasyonel-sayilar",
+    question: "-3/4, 1/2 ve -1/3 rasyonel sayılarını küçükten büyüğe sıralayınız.",
+    solution: {
+      question: "-3/4, 1/2 ve -1/3 rasyonel sayılarını küçükten büyüğe sıralayınız.",
+      topic: "Rasyonel Sayılar",
+      topicId: "rasyonel-sayilar",
+      difficulty: "orta",
+      givenInformation: ["-3/4", "1/2", "-1/3"],
+      requestedInformation: "Sayıların küçükten büyüğe sıralanışı",
+      solutionStrategy: "Önce pozitif ve negatifleri ayıracağız, sonra negatifleri paydalarını eşitleyerek karşılaştıracağız ve sayı doğrusunda göstereceğiz.",
+      steps: [
+        {
+          stepId: "1",
+          title: "Pozitif ve negatifleri ayıralım",
+          explanation: "Her negatif sayı, her pozitif sayıdan küçüktür. 1/2 tek pozitif sayı olduğu için en büyüğü odur.",
+          latex: "-\\frac{3}{4},\\; -\\frac{1}{3} < 0 < \\frac{1}{2}",
+          narration: "Önce işaretlere bakalım. Negatif sayılar her zaman pozitif sayılardan küçüktür. Burada tek pozitif sayı ikide bir, o yüzden en büyük sayı ikide bir.",
+          highlightedElements: [{ value: "\\frac{1}{2}", color: "green", reason: "tek pozitif sayı" }],
+        },
+        {
+          stepId: "2",
+          title: "Negatifleri ortak paydada yazalım",
+          explanation: "-3/4 ve -1/3'ü karşılaştırmak için paydaları 12'de eşitleyelim.",
+          latex: "-\\frac{3}{4} = -\\frac{9}{12} \\quad -\\frac{1}{3} = -\\frac{4}{12}",
+          narration: "Şimdi negatif sayıları karşılaştıralım. Paydaları on ikide eşitleyelim. Eksi dörtte üç, eksi on ikide dokuz olur. Eksi üçte bir, eksi on ikide dört olur.",
+          visualInstructions: [{ type: "rule", title: "Negatiflerde dikkat!", text: "Negatif sayılarda sıfıra uzak olan daha küçüktür.", latex: "-\\frac{9}{12} < -\\frac{4}{12}" }],
+          highlightedElements: [{ value: "12", color: "orange", reason: "ortak payda" }],
+        },
+        {
+          stepId: "3",
+          title: "Sayı doğrusunda gösterelim",
+          explanation: "Sayı doğrusunda solda olan sayı daha küçüktür. -3/4 sıfırdan en uzakta, en solda.",
+          latex: "-\\frac{3}{4} < -\\frac{1}{3} < \\frac{1}{2}",
+          narration: "Sayı doğrusunda solda kalan sayı daha küçüktür. Eksi dörtte üç en solda, sonra eksi üçte bir, en sağda ikide bir var.",
+          visualInstructions: [
+            {
+              type: "numberLine",
+              min: -1,
+              max: 1,
+              step: 0.25,
+              points: [
+                { value: -0.75, label: "-3/4", color: "red" },
+                { value: -1 / 3, label: "-1/3", color: "orange" },
+                { value: 0.5, label: "1/2", color: "green" },
+              ],
+              jumps: [],
+            },
+          ],
+          highlightedElements: [],
+        },
+      ],
+      finalAnswer: { text: "Sıralama: -3/4 < -1/3 < 1/2", latex: "-\\frac{3}{4} < -\\frac{1}{3} < \\frac{1}{2}", narration: "Küçükten büyüğe sıralama: eksi dörtte üç, eksi üçte bir, ikide bir." },
+      verification: { method: "Ondalık karşılıklarıyla kontrol: -0,75 < -0,33… < 0,5", latex: "-0{,}75 < -0{,}33 < 0{,}5", isVerified: true },
+      commonMistakes: ["Negatif sayılarda payı büyük olanı daha büyük sanmak.", "Paydaları eşitlemeden karşılaştırmak."],
+      similarQuestion: { text: "-2/5, -1/2 ve 1/4 sayılarını küçükten büyüğe sıralayınız.", answer: "-1/2 < -2/5 < 1/4" },
+    },
+  },
+  {
+    id: "oran-oranti",
+    label: "Doğru orantı",
+    topicId: "oran-oranti",
+    question: "3 kalem 12 TL ise aynı kalemlerden 5 tanesi kaç TL'dir?",
+    solution: {
+      question: "3 kalem 12 TL ise aynı kalemlerden 5 tanesi kaç TL'dir?",
+      topic: "Oran ve Orantı",
+      topicId: "oran-oranti",
+      difficulty: "kolay",
+      givenInformation: ["3 kalem = 12 TL", "Kalemler aynı fiyatta"],
+      requestedInformation: "5 kalemin fiyatı",
+      solutionStrategy: "Kalem sayısı artınca fiyat aynı oranda artar (doğru orantı). Önce 1 kalemin fiyatını (birim fiyat) bulacağız.",
+      steps: [
+        {
+          stepId: "1",
+          title: "Tabloyu oluşturalım",
+          explanation: "Kalem sayısı ve fiyatı bir tabloya yazalım. Kalem sayısı arttıkça fiyat da artar: bu doğru orantıdır.",
+          latex: "",
+          narration: "Bilgileri bir tabloya yazalım. Üç kalem on iki lira. Beş kalemin fiyatını bulacağız. Kalem sayısı artınca fiyat da artar, bu bir doğru orantı.",
+          visualInstructions: [{ type: "table", headers: ["Kalem sayısı", "Fiyat (TL)"], rows: [["3", "12"], ["1", "?"], ["5", "?"]], highlight: [{ row: 0, col: 1 }] }],
+          highlightedElements: [],
+        },
+        {
+          stepId: "2",
+          title: "Birim fiyatı bulalım",
+          explanation: "3 kalem 12 TL ise 1 kalem 12 ÷ 3 = 4 TL'dir.",
+          latex: "12 \\div 3 = 4",
+          narration: "Bir kalemin fiyatını bulalım. On ikiyi üçe bölersek dört lira buluruz.",
+          highlightedElements: [{ value: "4", color: "green", reason: "birim fiyat" }],
+          studentQuestion: { prompt: "12 ÷ 3 kaçtır?", expectedAnswer: "4" },
+        },
+        {
+          stepId: "3",
+          title: "5 kalemin fiyatını bulalım",
+          explanation: "1 kalem 4 TL ise 5 kalem 5 · 4 = 20 TL'dir.",
+          latex: "5 \\cdot 4 = 20",
+          narration: "Bir kalem dört lira ise beş kalem beş çarpı dört, yirmi lira eder.",
+          visualInstructions: [{ type: "lineGraph", xLabel: "Kalem", yLabel: "TL", points: [{ x: 1, y: 4 }, { x: 3, y: 12 }, { x: 5, y: 20, label: "20 TL" }], connect: true }],
+          highlightedElements: [{ value: "20", color: "orange", reason: "5 kalemin fiyatı" }],
+        },
+        {
+          stepId: "4",
+          title: "Orantıyla kontrol edelim",
+          explanation: "Doğru orantıda oranlar eşittir: 12/3 = 20/5 = 4.",
+          latex: "\\frac{12}{3} = \\frac{20}{5} = 4",
+          narration: "Kontrol edelim. Doğru orantıda oranlar eşittir. On iki bölü üç dört, yirmi bölü beş de dört. Cevabımız doğru.",
+        },
+      ],
+      finalAnswer: { text: "5 kalem 20 TL'dir.", latex: "20", narration: "Beş kalem yirmi liradır." },
+      verification: { method: "Fiyat/kalem oranının her iki durumda da 4 olduğunu gösterdik.", latex: "\\frac{12}{3} = \\frac{20}{5}", isVerified: true },
+      commonMistakes: ["Ters orantı gibi düşünüp fiyatın azalacağını sanmak.", "12'ye 2 ekleyip 14 TL bulmak (toplamsal düşünme)."],
+      similarQuestion: { text: "4 defter 60 TL ise 7 defter kaç TL'dir?", answer: "105" },
+    },
+  },
+  {
+    id: "daire-alan",
+    label: "Dairenin alanı",
+    topicId: "cember-daire",
+    question: "Yarıçapı 5 cm olan bir dairenin alanı kaç cm²'dir? (π = 3 alınız)",
+    solution: {
+      question: "Yarıçapı 5 cm olan bir dairenin alanı kaç cm²'dir? (π = 3 alınız)",
+      topic: "Çember ve Daire",
+      topicId: "cember-daire",
+      difficulty: "kolay",
+      givenInformation: ["Yarıçap r = 5 cm", "π = 3"],
+      requestedInformation: "Dairenin alanı",
+      solutionStrategy: "Dairenin alan formülü A = π · r² kullanılacak.",
+      steps: [
+        {
+          stepId: "1",
+          title: "Daireyi çizelim",
+          explanation: "Merkezi O olan, yarıçapı 5 cm olan bir daire çizelim. Yarıçap, merkezden çembere olan uzaklıktır.",
+          latex: "r = 5",
+          narration: "Merkezi O olan bir daire çizelim. Merkezden çembere olan uzaklık yarıçaptır ve beş santimetre.",
+          visualInstructions: [
+            {
+              type: "geometry",
+              points: [
+                { id: "O", x: 50, y: 50 },
+                { id: "P", x: 85, y: 50 },
+              ],
+              segments: [{ from: "O", to: "P", label: "r = 5 cm", color: "orange" }],
+              angles: [],
+              circles: [{ center: "O", radius: 35, color: "purple" }],
+              caption: "Yarıçapı 5 cm olan daire",
+            },
+          ],
+          highlightedElements: [],
+        },
+        {
+          stepId: "2",
+          title: "Alan formülünü yazalım",
+          explanation: "Dairenin alanı, π ile yarıçapın karesinin çarpımıdır.",
+          latex: "A = \\pi \\cdot r^2",
+          narration: "Dairenin alanı, pi ile yarıçapın karesinin çarpımıdır. Yani A eşittir pi çarpı r kare.",
+          visualInstructions: [{ type: "rule", title: "Formül", text: "Dairenin alanı = π × yarıçap × yarıçap", latex: "A=\\pi r^2" }],
+          highlightedElements: [],
+        },
+        {
+          stepId: "3",
+          title: "Değerleri yerine koyalım",
+          explanation: "r = 5 ve π = 3 alınır. Önce 5'in karesini, sonra 3 ile çarpımını hesaplarız.",
+          latex: "A = 3 \\cdot 5^2 = 3 \\cdot 25 = 75",
+          narration: "Pi yerine üç, r yerine beş yazalım. Beşin karesi yirmi beş. Üç çarpı yirmi beş, yetmiş beş eder.",
+          highlightedElements: [{ value: "25", color: "blue", reason: "5'in karesi" }, { value: "75", color: "orange", reason: "alan" }],
+          studentQuestion: { prompt: "5'in karesi kaçtır?", expectedAnswer: "25", hint: "5 · 5" },
+        },
+      ],
+      finalAnswer: { text: "Dairenin alanı 75 cm²'dir.", latex: "75", narration: "Dairenin alanı yetmiş beş santimetrekaredir." },
+      verification: { method: "Hesabı 3 · 25 = 75 olarak tekrar yaptık.", latex: "3 \\cdot 25 = 75", isVerified: true },
+      commonMistakes: ["r² yerine 2r hesaplamak (2 · 5 = 10).", "Alan yerine çevre formülünü (2πr) kullanmak."],
+      similarQuestion: { text: "Yarıçapı 4 cm olan dairenin alanı kaç cm²'dir? (π = 3)", answer: "48" },
+    },
+  },
+];
+
+/** Örnekler yüklenirken de şemadan geçirilir; şemaya uymayan örnek uygulamayı başlatmaz (testler yakalar). */
+export const DEMO_SAMPLES: DemoSample[] = RAW_SAMPLES.map((s) => ({ ...s, solution: solutionSchema.parse(s.solution) }));
+
+function norm(s: string) {
+  return s
+    .toLocaleLowerCase("tr-TR")
+    .replace(/[^a-z0-9çğıöşü%/=+-]/g, "");
+}
+
+export function findSample(text: string): DemoSample | undefined {
+  const n = norm(text);
+  return DEMO_SAMPLES.find((s) => norm(s.question) === n || n === s.id);
+}

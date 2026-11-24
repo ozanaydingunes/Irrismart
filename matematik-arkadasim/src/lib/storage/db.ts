@@ -1,0 +1,194 @@
+"use client";
+
+import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import type { LearningMode, Solution, SolutionSource, SolveResult, VerificationIssue } from "@/lib/schema/solution";
+
+/**
+ * Yerel veri (IndexedDB). Üyelik yok; veriler yalnızca bu cihazda kalır.
+ * Fotoğraflar varsayılan olarak SAKLANMAZ (Ayarlar'dan açılabilir). Ses kayıtları hiç saklanmaz.
+ */
+
+export type EntryStatus = "solved" | "wrong" | "review";
+
+export interface NotebookEntry {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  question: string;
+  topicId?: string;
+  topic: string;
+  difficulty: Solution["difficulty"];
+  source: SolutionSource;
+  provider: string;
+  solution: Solution;
+  issues: VerificationIssue[];
+  imageDataUrl?: string;
+  favorite: boolean;
+  status: EntryStatus;
+  mode: LearningMode;
+  reviewCount: number;
+  nextReviewAt?: number;
+  lastResult?: "correct" | "wrong";
+}
+
+export interface AnswerEvent {
+  id: string;
+  at: number;
+  topicId: string;
+  correct: boolean;
+  scope: "final" | "step";
+  mode: LearningMode;
+  entryId?: string;
+}
+
+export interface LessonEvent {
+  id: string;
+  at: number;
+  topicId: string;
+  source: SolutionSource;
+}
+
+export interface StudyDay {
+  day: string; // YYYY-MM-DD (yerel saat)
+  seconds: number;
+}
+
+interface CacheRow {
+  key: string;
+  createdAt: number;
+  result: SolveResult;
+}
+
+interface MathDB extends DBSchema {
+  notebook: { key: string; value: NotebookEntry; indexes: { byUpdated: number; byTopic: string } };
+  answers: { key: string; value: AnswerEvent; indexes: { byAt: number } };
+  lessons: { key: string; value: LessonEvent; indexes: { byAt: number } };
+  study: { key: string; value: StudyDay };
+  cache: { key: string; value: CacheRow; indexes: { byCreated: number } };
+}
+
+let dbPromise: Promise<IDBPDatabase<MathDB>> | null = null;
+
+export function db() {
+  if (!dbPromise) {
+    dbPromise = openDB<MathDB>("matematik-arkadasim", 1, {
+      upgrade(d) {
+        const nb = d.createObjectStore("notebook", { keyPath: "id" });
+        nb.createIndex("byUpdated", "updatedAt");
+        nb.createIndex("byTopic", "topicId");
+        d.createObjectStore("answers", { keyPath: "id" }).createIndex("byAt", "at");
+        d.createObjectStore("lessons", { keyPath: "id" }).createIndex("byAt", "at");
+        d.createObjectStore("study", { keyPath: "day" });
+        d.createObjectStore("cache", { keyPath: "key" }).createIndex("byCreated", "createdAt");
+      },
+    });
+  }
+  return dbPromise;
+}
+
+export function newId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function localDay(t = Date.now()) {
+  const d = new Date(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/* ───── Soru defteri ───── */
+
+export async function listEntries(): Promise<NotebookEntry[]> {
+  const all = await (await db()).getAllFromIndex("notebook", "byUpdated");
+  return all.reverse();
+}
+
+export async function getEntry(id: string) {
+  return (await db()).get("notebook", id);
+}
+
+export async function saveEntry(entry: NotebookEntry) {
+  await (await db()).put("notebook", entry);
+  notifyDataChanged();
+}
+
+export async function updateEntry(id: string, patch: Partial<NotebookEntry>) {
+  const d = await db();
+  const cur = await d.get("notebook", id);
+  if (!cur) return;
+  await d.put("notebook", { ...cur, ...patch, updatedAt: Date.now() });
+  notifyDataChanged();
+}
+
+export async function deleteEntry(id: string) {
+  await (await db()).delete("notebook", id);
+  notifyDataChanged();
+}
+
+/** Aynı soru deftere iki kez eklenmesin diye metne göre arar. */
+export async function findEntryByQuestion(question: string) {
+  const all = await (await db()).getAll("notebook");
+  return all.find((e) => e.question.trim() === question.trim());
+}
+
+/* ───── Olaylar (gelişim paneli için gerçek kullanım verisi) ───── */
+
+export async function recordLesson(topicId: string, source: SolutionSource) {
+  await (await db()).put("lessons", { id: newId(), at: Date.now(), topicId, source });
+  notifyDataChanged();
+}
+
+export async function recordAnswer(e: Omit<AnswerEvent, "id" | "at">) {
+  await (await db()).put("answers", { ...e, id: newId(), at: Date.now() });
+  notifyDataChanged();
+}
+
+export async function addStudySeconds(seconds: number) {
+  if (seconds <= 0) return;
+  const d = await db();
+  const day = localDay();
+  const cur = await d.get("study", day);
+  await d.put("study", { day, seconds: (cur?.seconds ?? 0) + Math.round(seconds) });
+}
+
+export async function loadAllStats() {
+  const d = await db();
+  const [answers, lessons, study, notebook] = await Promise.all([d.getAll("answers"), d.getAll("lessons"), d.getAll("study"), d.getAll("notebook")]);
+  return { answers, lessons, study, notebook };
+}
+
+/* ───── Çözüm önbelleği (gereksiz API çağrılarını önler) ───── */
+
+const CACHE_TTL = 7 * 24 * 3600 * 1000;
+
+export async function getCachedSolve(key: string): Promise<SolveResult | null> {
+  const row = await (await db()).get("cache", key);
+  if (!row || Date.now() - row.createdAt > CACHE_TTL) return null;
+  return row.result;
+}
+
+export async function putCachedSolve(key: string, result: SolveResult) {
+  const d = await db();
+  await d.put("cache", { key, createdAt: Date.now(), result });
+  // en fazla 50 kayıt
+  const keys = await d.getAllKeysFromIndex("cache", "byCreated");
+  if (keys.length > 50) for (const k of keys.slice(0, keys.length - 50)) await d.delete("cache", k);
+}
+
+/* ───── Veri yönetimi ───── */
+
+export async function exportAll() {
+  const data = await loadAllStats();
+  return { app: "matematik-arkadasim", version: 1, exportedAt: new Date().toISOString(), ...data };
+}
+
+export async function clearAll() {
+  const d = await db();
+  await Promise.all([d.clear("notebook"), d.clear("answers"), d.clear("lessons"), d.clear("study"), d.clear("cache")]);
+  notifyDataChanged();
+}
+
+/* ───── Değişiklik bildirimi ───── */
+export const DATA_EVENT = "matematik:data-changed";
+export function notifyDataChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(DATA_EVENT));
+}

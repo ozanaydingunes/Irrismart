@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: "Nunito", "Quicksand";
+    --background: 240 60% 98.5%;
+    --foreground: 245 35% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 245 35% 16%;
+    --primary: 256 62% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 90% 95%;
+    --secondary-foreground: 228 60% 30%;
+    --accent: 268 85% 94%;
+    --accent-foreground: 262 55% 34%;
+    --muted: 245 40% 95%;
+    --muted-foreground: 245 14% 40%;
+    --border: 245 35% 89%;
+    --input: 245 30% 85%;
+    --ring: 256 62% 54%;
+    --destructive: 356 70% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 58% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-strong: 152 70% 24%;
+    --warning: 36 95% 50%;
+    --warning-strong: 30 90% 30%;
+
+    /* Akıllı tahta: yeşil-lacivert tebeşir tahtası yerine yumuşak beyaz tahta */
+    --board: 240 50% 99%;
+    --board-foreground: 245 40% 18%;
+    --board-line: 240 40% 92%;
+
+    /* Matematik vurgu renkleri (AA kontrast: açık zeminde) */
+    --math-blue: 217 85% 44%;
+    --math-purple: 262 60% 50%;
+    --math-green: 152 65% 30%;
+    --math-orange: 24 92% 44%;
+    --math-red: 356 72% 47%;
+    --math-pink: 328 70% 46%;
+    --math-teal: 184 75% 28%;
+    --math-gray: 230 10% 40%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 248 32% 9%;
+    --foreground: 240 40% 96%;
+    --card: 248 28% 13%;
+    --card-foreground: 240 40% 96%;
+    --primary: 258 85% 74%;
+    --primary-foreground: 250 50% 12%;
+    --secondary: 225 35% 20%;
+    --secondary-foreground: 220 80% 88%;
+    --accent: 262 32% 24%;
+    --accent-foreground: 266 90% 88%;
+    --muted: 248 22% 18%;
+    --muted-foreground: 245 18% 72%;
+    --border: 248 20% 24%;
+    --input: 248 20% 30%;
+    --ring: 258 85% 74%;
+    --destructive: 356 80% 64%;
+    --destructive-foreground: 250 50% 10%;
+    --success: 152 55% 52%;
+    --success-foreground: 152 60% 8%;
+    --success-strong: 152 60% 70%;
+    --warning: 38 95% 60%;
+    --warning-strong: 40 95% 72%;
+
+    --board: 222 30% 12%;
+    --board-foreground: 220 40% 95%;
+    --board-line: 222 25% 19%;
+
+    --math-blue: 212 95% 72%;
+    --math-purple: 262 90% 80%;
+    --math-green: 150 60% 62%;
+    --math-orange: 30 95% 66%;
+    --math-red: 356 90% 72%;
+    --math-pink: 328 85% 76%;
+    --math-teal: 180 60% 60%;
+    --math-gray: 230 12% 70%;
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 1;
+  }
+  :focus-visible {
+    outline: 3px solid hsl(var(--ring) / 0.6);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .board-surface {
+    background-color: hsl(var(--board));
+    background-image: linear-gradient(hsl(var(--board-line)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--board-line)) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: hsl(var(--board-foreground));
+  }
+  .katex-host .katex {
+    font-size: 1.25em;
+  }
+  .katex-host-lg .katex {
+    font-size: 1.55em;
+  }
+  .katex-display {
+    margin: 0.25rem 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.25rem 0;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
