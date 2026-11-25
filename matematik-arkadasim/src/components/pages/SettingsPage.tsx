@@ -4,6 +4,7 @@ import { Download, Play, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ParentSettings } from "@/components/common/ParentSettings";
+import { SyncSettings } from "@/components/common/SyncSettings";
 import { ModeSelector } from "@/components/lesson/ModeSelector";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { chooseVoice, guessGender, loadTurkishVoices, ServerTtsEngine, speechSyn
 import { RATES } from "@/lib/speech/narrationController";
 import { textToSpeech } from "@/lib/speech/mathToSpeech";
 import { clearAll, exportAll } from "@/lib/storage/db";
+import { wipeServerCopy } from "@/lib/storage/sync";
 import { cn } from "@/lib/utils";
 
 const SAMPLE = "Merhaba! Ben matematik arkadaşın. 2x + 5 = 15 denkleminde x'i bulalım. 3/5 ile x² gibi ifadeleri de böyle okurum.";
@@ -34,6 +36,8 @@ function Row({ title, desc, children, htmlFor }: { title: string; desc?: string;
     </div>
   );
 }
+
+const settings_syncOn = (s: { syncEnabled: boolean }) => s.syncEnabled;
 
 export function SettingsPage() {
   const [s, save] = useSettings();
@@ -78,8 +82,10 @@ export function SettingsPage() {
   }
 
   async function doClear() {
-    if (!confirm("Soru defteri, gelişim verileri ve önbellek bu cihazdan kalıcı olarak silinecek. Emin misin?")) return;
+    const withServer = !!status?.syncAvailable && settings_syncOn(s);
+    if (!confirm(withServer ? "Soru defteri ve gelişim verileri bu cihazdan VE evdeki Pi Hoca bilgisayarındaki aile kopyasından (dolayısıyla diğer cihazlardan da) kalıcı olarak silinecek. Emin misin?" : "Soru defteri, gelişim verileri ve önbellek bu cihazdan kalıcı olarak silinecek. Emin misin?")) return;
     await clearAll();
+    if (withServer) await wipeServerCopy();
     save({ ...DEFAULT_SETTINGS, theme: s.theme });
     setMessage("Tüm veriler silindi.");
   }
@@ -201,6 +207,8 @@ export function SettingsPage() {
       </Card>
 
       <ParentSettings status={status} />
+
+      <SyncSettings status={status} />
 
       <Card>
         <CardHeader>

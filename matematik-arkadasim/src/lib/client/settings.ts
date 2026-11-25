@@ -18,6 +18,8 @@ export interface Settings {
   micConsent: boolean;
   /** İsteğe bağlı takma ad (yalnızca selamlamada; zorunlu değil) */
   nickname: string;
+  /** Cihazlar arası eşitleme (ev sunucusu üzerinden) */
+  syncEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraConsent: false,
   micConsent: false,
   nickname: "",
+  syncEnabled: true,
 };
 
 const KEY = "matematik-arkadasim:settings";

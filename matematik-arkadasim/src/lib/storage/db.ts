@@ -59,27 +59,39 @@ interface CacheRow {
   result: SolveResult;
 }
 
+/** Başka cihazlardan eşitlemeyle gelen çalışma süresi (cihaz başına, gün başına) */
+export interface RemoteStudy {
+  id: string; // `${day}:${deviceId}`
+  day: string;
+  deviceId: string;
+  seconds: number;
+}
+
 interface MathDB extends DBSchema {
   notebook: { key: string; value: NotebookEntry; indexes: { byUpdated: number; byTopic: string } };
   answers: { key: string; value: AnswerEvent; indexes: { byAt: number } };
   lessons: { key: string; value: LessonEvent; indexes: { byAt: number } };
   study: { key: string; value: StudyDay };
   cache: { key: string; value: CacheRow; indexes: { byCreated: number } };
+  studyRemote: { key: string; value: RemoteStudy };
 }
 
 let dbPromise: Promise<IDBPDatabase<MathDB>> | null = null;
 
 export function db() {
   if (!dbPromise) {
-    dbPromise = openDB<MathDB>("matematik-arkadasim", 1, {
-      upgrade(d) {
-        const nb = d.createObjectStore("notebook", { keyPath: "id" });
-        nb.createIndex("byUpdated", "updatedAt");
-        nb.createIndex("byTopic", "topicId");
-        d.createObjectStore("answers", { keyPath: "id" }).createIndex("byAt", "at");
-        d.createObjectStore("lessons", { keyPath: "id" }).createIndex("byAt", "at");
-        d.createObjectStore("study", { keyPath: "day" });
-        d.createObjectStore("cache", { keyPath: "key" }).createIndex("byCreated", "createdAt");
+    dbPromise = openDB<MathDB>("matematik-arkadasim", 2, {
+      upgrade(d, oldVersion) {
+        if (oldVersion < 1) {
+          const nb = d.createObjectStore("notebook", { keyPath: "id" });
+          nb.createIndex("byUpdated", "updatedAt");
+          nb.createIndex("byTopic", "topicId");
+          d.createObjectStore("answers", { keyPath: "id" }).createIndex("byAt", "at");
+          d.createObjectStore("lessons", { keyPath: "id" }).createIndex("byAt", "at");
+          d.createObjectStore("study", { keyPath: "day" });
+          d.createObjectStore("cache", { keyPath: "key" }).createIndex("byCreated", "createdAt");
+        }
+        if (oldVersion < 2) d.createObjectStore("studyRemote", { keyPath: "id" });
       },
     });
   }
@@ -121,7 +133,35 @@ export async function updateEntry(id: string, patch: Partial<NotebookEntry>) {
 
 export async function deleteEntry(id: string) {
   await (await db()).delete("notebook", id);
+  // Diğer cihazlardan da silinsin diye eşitleme için işaretle
+  markDeleted(id);
   notifyDataChanged();
+}
+
+const DELETED_KEY = "matematik-arkadasim:silinenler";
+export function markDeleted(id: string) {
+  try {
+    const list = JSON.parse(localStorage.getItem(DELETED_KEY) ?? "[]") as { id: string; at: number }[];
+    list.push({ id, at: Date.now() });
+    localStorage.setItem(DELETED_KEY, JSON.stringify(list.slice(-500)));
+  } catch {
+    /* yoksay */
+  }
+}
+export function takeDeleted(): { id: string; at: number }[] {
+  try {
+    return JSON.parse(localStorage.getItem(DELETED_KEY) ?? "[]") as { id: string; at: number }[];
+  } catch {
+    return [];
+  }
+}
+export function clearDeleted(upTo: number) {
+  try {
+    const list = takeDeleted().filter((d) => d.at > upTo);
+    localStorage.setItem(DELETED_KEY, JSON.stringify(list));
+  } catch {
+    /* yoksay */
+  }
 }
 
 /** Aynı soru deftere iki kez eklenmesin diye metne göre arar. */
@@ -152,8 +192,16 @@ export async function addStudySeconds(seconds: number) {
 
 export async function loadAllStats() {
   const d = await db();
-  const [answers, lessons, study, notebook] = await Promise.all([d.getAll("answers"), d.getAll("lessons"), d.getAll("study"), d.getAll("notebook")]);
-  return { answers, lessons, study, notebook };
+  const [answers, lessons, localStudy, remoteStudy, notebook] = await Promise.all([d.getAll("answers"), d.getAll("lessons"), d.getAll("study"), d.getAll("studyRemote"), d.getAll("notebook")]);
+  return { answers, lessons, study: mergeStudy(localStudy, remoteStudy), notebook };
+}
+
+/** Bu cihazın ve diğer cihazların çalışma sürelerini gün bazında toplar. */
+export function mergeStudy(local: StudyDay[], remote: RemoteStudy[]): StudyDay[] {
+  const m = new Map<string, number>();
+  for (const s of local) m.set(s.day, (m.get(s.day) ?? 0) + s.seconds);
+  for (const r of remote) m.set(r.day, (m.get(r.day) ?? 0) + r.seconds);
+  return [...m.entries()].map(([day, seconds]) => ({ day, seconds }));
 }
 
 /* ───── Çözüm önbelleği (gereksiz API çağrılarını önler) ───── */
@@ -183,7 +231,7 @@ export async function exportAll() {
 
 export async function clearAll() {
   const d = await db();
-  await Promise.all([d.clear("notebook"), d.clear("answers"), d.clear("lessons"), d.clear("study"), d.clear("cache")]);
+  await Promise.all([d.clear("notebook"), d.clear("answers"), d.clear("lessons"), d.clear("study"), d.clear("cache"), d.clear("studyRemote")]);
   notifyDataChanged();
 }
 
