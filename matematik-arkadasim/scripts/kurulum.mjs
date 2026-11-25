@@ -45,7 +45,9 @@ for (;;) {
   console.log("  Ebeveyn PIN'i aile PIN'iyle aynı olmamalı.");
 }
 const ram = (await rl.question("3) Bilgisayarınızın belleği (RAM) 16 GB veya daha fazla mı? (e/h): ")).trim().toLowerCase();
+// 8 GB RAM: gemma3:4b (≈3,4 GB) ve küçük bağlam penceresi; 16 GB+: gemma4:e4b
 const model = ram === "e" ? "gemma4:e4b" : "gemma3:4b";
+const numCtx = ram === "e" ? "16384" : "8192";
 const limitRaw = (await rl.question("4) Günlük soru sınırı (Enter = 10): ")).trim();
 const limit = /^\d{1,3}$/.test(limitRaw) ? limitRaw : "10";
 rl.close();
@@ -55,6 +57,7 @@ const env = `# Matematik Arkadaşım — ücretsiz ev kurulumu (npm run kurulum 
 AI_PROVIDER=ollama
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=${model}
+OLLAMA_NUM_CTX=${numCtx}
 # Ücretli yapay zekâ ve ücretli seslendirme KAPALI (açmayın)
 ALLOW_PAID_AI=0
 TTS_PROVIDER=none

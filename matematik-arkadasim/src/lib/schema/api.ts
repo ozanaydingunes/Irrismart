@@ -65,6 +65,10 @@ export interface StatusResponse {
   /** 0 = sınırsız */
   dailyQuestionLimit: number;
   parentPinSet: boolean;
+  /** Şu anda bir yapay zekâ isteği işleniyor mu (tek seferde bir istek) */
+  aiBusy: boolean;
+  /** Cihazlar arası eşitleme (ev sunucusunda dosyaya) kullanılabilir mi */
+  syncAvailable: boolean;
 }
 
 export const parentSettingsSchema = z.object({

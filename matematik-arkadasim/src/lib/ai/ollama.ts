@@ -21,6 +21,7 @@ export class OllamaProvider implements AIProvider {
     timeoutMs: number,
     private authHeader = "",
     private fetchImpl: FetchLike = fetch,
+    private numCtx = 8192,
   ) {
     this.name = `Ollama — yerel ücretsiz model (${model})`;
     this.timeBudgetMs = timeoutMs;
@@ -40,7 +41,7 @@ export class OllamaProvider implements AIProvider {
       stream: false,
       format: "json",
       keep_alive: "15m",
-      options: { temperature: 0.2, num_ctx: 16384, num_predict: Math.min(req.maxTokens, 8192) },
+      options: { temperature: 0.2, num_ctx: this.numCtx, num_predict: Math.min(req.maxTokens, Math.max(1024, this.numCtx - 2048)) },
       messages: [{ role: "system", content: req.system }, ...req.messages.map(toOllama)],
     };
     let res: Response;

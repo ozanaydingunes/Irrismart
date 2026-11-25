@@ -49,6 +49,7 @@ export type AIErrorKind =
   | "invalid_output"
   | "unavailable" // yerel model motoruna (Ollama) ulaşılamıyor
   | "model_missing" // yerel model indirilmemiş
+  | "busy" // başka bir istek işleniyor ve sıra dolu
   | "unknown";
 
 export class AIError extends Error {
@@ -86,6 +87,8 @@ export function userMessageFor(error: unknown): string {
         return "Pi Hoca'nın çalıştığı ev bilgisayarına ulaşılamadı. Bilgisayarın açık olduğundan ve Ollama'nın çalıştığından emin olup tekrar dene.";
       case "model_missing":
         return "Pi Hoca'nın yapay zekâ modeli bilgisayara henüz indirilmemiş. Kurulum rehberindeki 'model indirme' adımını yapın.";
+      case "busy":
+        return "Pi Hoca şu an başka bir soruyu çözüyor. Bir iki dakika sonra tekrar dener misin?";
       case "invalid_output":
         return "Yapay zekânın çözümü doğrulamadan geçemedi. Lütfen tekrar dene.";
       default:

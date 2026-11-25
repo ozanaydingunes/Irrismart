@@ -18,7 +18,7 @@ export interface ServerConfig {
   provider: ProviderName;
   /** Ücretli sağlayıcılar (Anthropic, OpenAI, sunucu TTS) yalnızca ALLOW_PAID_AI=1 ile açılır */
   paidAllowed: boolean;
-  ollama: { baseUrl: string; model: string; lightModel: string; timeoutMs: number; authHeader: string };
+  ollama: { baseUrl: string; model: string; lightModel: string; timeoutMs: number; authHeader: string; numCtx: number };
   anthropic: { apiKey: string; model: string; lightModel: string; effort: Effort };
   openai: { apiKey: string; model: string; lightModel: string; baseUrl: string };
   tts: { provider: "none" | "openai"; model: string; voiceFemale: string; voiceMale: string };
@@ -57,7 +57,8 @@ export function getConfig(): ServerConfig {
   const effortEnv = (process.env.ANTHROPIC_EFFORT ?? "medium").trim() as Effort;
   // Ücretli seslendirme varsayılan olarak kapalı; ücretsiz Web Speech API kullanılır
   const ttsProvider = paidAllowed && process.env.TTS_PROVIDER?.trim() === "openai" && openaiKey ? "openai" : "none";
-  const ollamaModel = process.env.OLLAMA_MODEL?.trim() || "gemma4:e4b";
+  // 8 GB RAM'li ev bilgisayarı için varsayılan: gemma3:4b (≈3,4 GB, metin + görsel). 16 GB+ için gemma4:e4b önerilir.
+  const ollamaModel = process.env.OLLAMA_MODEL?.trim() || "gemma3:4b";
 
   return {
     provider,
@@ -71,6 +72,8 @@ export function getConfig(): ServerConfig {
       timeoutMs: Math.round(num("OLLAMA_TIMEOUT_SECONDS", 300, 30, 1800) * 1000),
       // İsteğe bağlı: Ollama bir ters vekil/tünel arkasındaysa gönderilecek yetki başlığı ("Ad: değer")
       authHeader: process.env.OLLAMA_AUTH_HEADER?.trim() ?? "",
+      // Bağlam penceresi: büyüdükçe bellek kullanımı artar. 8 GB RAM için 8192 önerilir.
+      numCtx: Math.round(num("OLLAMA_NUM_CTX", 8192, 2048, 131072)),
     },
     anthropic: {
       apiKey: anthropicKey,

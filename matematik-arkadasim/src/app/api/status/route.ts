@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { OllamaProvider } from "@/lib/ai/ollama";
+import { aiQueue } from "@/lib/ai/queue";
 import { getProvider } from "@/lib/ai/service";
 import type { StatusResponse } from "@/lib/schema/api";
 import { getConfig } from "@/lib/server/config";
@@ -33,6 +34,8 @@ export async function GET(req: Request) {
     questionsUsedToday: used,
     dailyQuestionLimit: limit,
     parentPinSet: !!cfg.access.parentPin,
+    aiBusy: aiQueue().busy,
+    syncAvailable: cfg.store.useFile,
   };
   return NextResponse.json(body, { headers: { "cache-control": "no-store" } });
 }
