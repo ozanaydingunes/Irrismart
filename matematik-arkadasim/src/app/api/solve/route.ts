@@ -5,7 +5,7 @@ import { guardedJsonRoute, jsonError } from "@/lib/server/handler";
 import { parseImageDataUrl } from "@/lib/server/image";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300; // Vercel Hobby üst sınırı (ücretsiz yedek sağlayıcıya geçiş için süre)
 
 export async function POST(req: Request) {
   const cfg = getConfig();
@@ -13,7 +13,6 @@ export async function POST(req: Request) {
     schema: solveRequestSchema,
     maxBodyBytes: Math.ceil(cfg.limits.maxImageBytes * 1.4) + 20_000,
     countsTowardQuota: () => cfg.provider !== "demo",
-    countsAsQuestion: () => true,
     handle: async (input) => {
       let image;
       if (input.image) {

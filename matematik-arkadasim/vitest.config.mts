@@ -11,7 +11,8 @@ export default defineConfig({
   test: {
     environment: "node",
     // Testler proje klasörüne sayaç dosyası yazmasın
-    env: { COUNTER_STORE: "memory" },
+    // LOCAL_SOLVER_FIRST=0: mevcut sağlayıcı testleri sahte modele gerçekten ulaşsın (yerel motor ayrıca test edilir)
+    env: { COUNTER_STORE: "memory", LOCAL_SOLVER_FIRST: "0" },
     include: ["tests/**/*.test.ts"],
   },
 });

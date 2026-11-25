@@ -184,9 +184,14 @@ export function SolvePage() {
             </Card>
           )}
           <p className="text-muted-foreground">Sorunu fotoğrafla, yaz ya da sesle söyle. Öğretmenin tahtada adım adım anlatsın.</p>
-          {status?.mode === "ai" && status.dailyQuestionLimit > 0 && (
-            <p className="text-sm font-semibold text-primary" aria-live="polite">
-              Bugün kalan soru hakkın: {Math.max(0, status.dailyQuestionLimit - status.questionsUsedToday)} / {status.dailyQuestionLimit}
+          {status?.setupProblem && (
+            <p className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm" role="status">
+              <b className="text-warning-strong">Kurulum tamamlanmamış.</b> {status.setupProblem}
+            </p>
+          )}
+          {status?.mode === "ai" && status.freeAi.length > 0 && status.freeAi.every((p) => p.state === "full") && (
+            <p className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm" role="status">
+              <b className="text-warning-strong">Pi Hoca&apos;nın bugünkü ücretsiz yapay zekâ kapasitesi doldu.</b> Yarın tekrar devam edebiliriz! Bu sırada Soru Defterim&apos;deki soruları tekrar edebilir, basit işlem ve denklemleri yine sorabilirsin (bunlar yapay zekâsız çözülür).
             </p>
           )}
           {status?.localModel && !status.localModel.reachable && (

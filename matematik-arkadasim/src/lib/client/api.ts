@@ -2,7 +2,7 @@
 
 import type { CheckRequest, PracticeRequest, SolveRequest, TutorRequest } from "@/lib/schema/api";
 import type { CheckReply, SolveFailure, SolveResult, TutorReply } from "@/lib/schema/solution";
-import { getCachedSolve, putCachedSolve } from "@/lib/storage/db";
+import { getCached, getCachedSolve, putCached, putCachedSolve } from "@/lib/storage/db";
 
 /** Sunucu API istemcisi: ağ hatalarını Türkçe mesajlara çevirir, aynı soruyu önbellekten verir. */
 
@@ -23,8 +23,8 @@ async function post<T>(url: string, body: unknown, timeoutMs = 130_000): Promise
     if (!json) return { ok: false, code: "BAD_RESPONSE", message: "Sunucudan anlaşılır bir yanıt gelmedi. Lütfen tekrar dene." };
     return json as T | ApiFailure;
   } catch (e) {
-    if (e instanceof DOMException && e.name === "TimeoutError") return { ok: false, code: "TIMEOUT", message: "Yanıt çok uzun sürdü. Pi Hoca'nın bilgisayarı yavaş olabilir; biraz bekleyip tekrar dene." };
-    return { ok: false, code: "NETWORK", message: "Pi Hoca'nın bilgisayarına ulaşılamadı. Evdeki bilgisayar açık mı? Ev dışındaysan Tailscale açık mı? Kontrol edip tekrar dene." };
+    if (e instanceof DOMException && e.name === "TimeoutError") return { ok: false, code: "TIMEOUT", message: "Yanıt çok uzun sürdü. Biraz bekleyip tekrar dener misin?" };
+    return { ok: false, code: "NETWORK", message: "Pi Hoca'ya ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene." };
   }
 }
 
@@ -39,14 +39,28 @@ export async function solve(req: SolveRequest, opts: { useCache?: boolean } = {}
     const hit = await getCachedSolve(key).catch(() => null);
     if (hit) return hit;
   }
-  // Yerel (ev bilgisayarındaki) model yavaş olabilir: 6 dakikaya kadar bekle
+  // Yerel model / ücretsiz yedek sağlayıcıya geçiş zaman alabilir: 6 dakikaya kadar bekle
   const res = await post<SolveResult | SolveFailure>("/api/solve", req, 360_000);
   if (res.ok && key) await putCachedSolve(key, res as SolveResult).catch(() => undefined);
   return res;
 }
 
-export function tutor(req: TutorRequest) {
-  return post<{ ok: true; source: "ai" | "demo"; reply: TutorReply } | ApiFailure>("/api/tutor", req, 360_000);
+type TutorResult = { ok: true; source: "ai" | "demo"; reply: TutorReply; cached?: boolean } | ApiFailure;
+
+/**
+ * Hazır düğmelerin ("Anlamadım", "İpucu ver", "Neden?"…) yanıtı aynı soru + aynı adım için önbellekten
+ * verilir; yapay zekâya tekrar istek gitmez. Serbest yazılı sorular önbelleğe alınmaz.
+ */
+export async function tutor(req: TutorRequest): Promise<TutorResult> {
+  const cacheable = req.action !== "free_question";
+  const key = cacheable ? await sha256(JSON.stringify(["ogretmen", req.solution.question, req.solution.finalAnswer, req.stepIndex, req.action])).then((h) => `ogretmen:${h}`).catch(() => null) : null;
+  if (key) {
+    const hit = await getCached<TutorResult>(key).catch(() => null);
+    if (hit && hit.ok) return { ...hit, cached: true };
+  }
+  const res = await post<TutorResult>("/api/tutor", req, 360_000);
+  if (res.ok && key && res.source === "ai") await putCached(key, res).catch(() => undefined);
+  return res;
 }
 
 export function check(req: CheckRequest) {

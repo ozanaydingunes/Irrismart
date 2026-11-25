@@ -3,7 +3,7 @@
 import { Download, Play, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { ParentSettings } from "@/components/common/ParentSettings";
+import { AiStatusCard } from "@/components/common/AiStatusCard";
 import { SyncSettings } from "@/components/common/SyncSettings";
 import { ModeSelector } from "@/components/lesson/ModeSelector";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -206,7 +206,7 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      <ParentSettings status={status} />
+      <AiStatusCard status={status} />
 
       <SyncSettings status={status} />
 

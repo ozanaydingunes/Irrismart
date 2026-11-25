@@ -10,6 +10,7 @@ type FetchLike = typeof fetch;
  * Hiçbir durumda ücretli bir sağlayıcıya geçiş yapılmaz.
  */
 export class OllamaProvider implements AIProvider {
+  readonly serial = true;
   readonly name: string;
   /** Yerel model yavaş olabileceği için istek bütçesi daha uzundur */
   readonly timeBudgetMs: number;

@@ -150,6 +150,7 @@ export function NotebookPage() {
                         <Badge variant={STATUS_LABEL[e.status].variant}>{STATUS_LABEL[e.status].text}</Badge>
                         {due && <Badge variant="warning">Tekrar zamanı</Badge>}
                         {e.source === "demo" && <Badge variant="outline">Demo</Badge>}
+                        {e.source === "local" && <Badge variant="outline">Yerel hesaplama</Badge>}
                         <Badge variant="outline">{new Date(e.createdAt).toLocaleDateString("tr-TR")}</Badge>
                       </div>
                       <div className="mt-auto flex flex-wrap gap-2">

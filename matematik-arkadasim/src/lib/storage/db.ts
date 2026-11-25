@@ -56,7 +56,8 @@ export interface StudyDay {
 interface CacheRow {
   key: string;
   createdAt: number;
-  result: SolveResult;
+  /** Çözüm (SolveResult) veya öğretmen yanıtı (anahtar "ogretmen:" ile başlar) */
+  result: unknown;
 }
 
 /** Başka cihazlardan eşitlemeyle gelen çalışma süresi (cihaz başına, gün başına) */
@@ -206,21 +207,25 @@ export function mergeStudy(local: StudyDay[], remote: RemoteStudy[]): StudyDay[]
 
 /* ───── Çözüm önbelleği (gereksiz API çağrılarını önler) ───── */
 
-const CACHE_TTL = 7 * 24 * 3600 * 1000;
+// Aynı soru tekrar sorulduğunda yapay zekâ çağrılmaz (30 gün, en fazla 300 kayıt; fotoğraf saklanmaz)
+const CACHE_TTL = 30 * 24 * 3600 * 1000;
+const CACHE_MAX = 300;
 
-export async function getCachedSolve(key: string): Promise<SolveResult | null> {
+export async function getCached<T>(key: string): Promise<T | null> {
   const row = await (await db()).get("cache", key);
   if (!row || Date.now() - row.createdAt > CACHE_TTL) return null;
-  return row.result;
+  return row.result as T;
 }
 
-export async function putCachedSolve(key: string, result: SolveResult) {
+export async function putCached(key: string, result: unknown) {
   const d = await db();
   await d.put("cache", { key, createdAt: Date.now(), result });
-  // en fazla 50 kayıt
   const keys = await d.getAllKeysFromIndex("cache", "byCreated");
-  if (keys.length > 50) for (const k of keys.slice(0, keys.length - 50)) await d.delete("cache", k);
+  if (keys.length > CACHE_MAX) for (const k of keys.slice(0, keys.length - CACHE_MAX)) await d.delete("cache", k);
 }
+
+export const getCachedSolve = (key: string) => getCached<SolveResult>(key);
+export const putCachedSolve = (key: string, result: SolveResult) => putCached(key, result);
 
 /* ───── Veri yönetimi ───── */
 

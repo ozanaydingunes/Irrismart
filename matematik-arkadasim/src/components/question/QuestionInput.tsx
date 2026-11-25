@@ -154,6 +154,9 @@ export function QuestionInput({ onSubmit, busy, demo, initialMethod, pendingImag
                     </Button>
                   </div>
                   <ImageEditor image={img} onChange={onImageChange} />
+                  <p className="rounded-xl bg-accent/60 p-3 text-sm" role="note">
+                    <b>Göndermeden önce bak:</b> Fotoğrafta yalnızca soru görünsün. Adın, okulun, bir yüz veya başka kişisel bilgi varsa önce <b>kırp</b>. Fotoğraf çözüm için yapay zekâ servisine gönderilir ve saklanmaz.
+                  </p>
                 </div>
               )}
               <input ref={cameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0]).finally(() => (e.target.value = ""))} aria-label="Kamera ile fotoğraf çek" />

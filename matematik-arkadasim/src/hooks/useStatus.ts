@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { StatusResponse } from "@/lib/schema/api";
 
 let cached: StatusResponse | null = null;
+export const HOSTING_KEY = "matematik-arkadasim:barindirma";
 let inflight: Promise<StatusResponse | null> | null = null;
 
 function fetchStatus(): Promise<StatusResponse | null> {
@@ -14,6 +15,12 @@ function fetchStatus(): Promise<StatusResponse | null> {
       .then((s) => {
         cached = s;
         setReachable(s !== null);
+        try {
+          // Bağlantı koptuğunda doğru uyarıyı gösterebilmek için: ev bilgisayarı mı, internet sitesi mi?
+          if (s) localStorage.setItem(HOSTING_KEY, s.providerKind === "ollama" ? "ev" : "bulut");
+        } catch {
+          /* yoksay */
+        }
         return s;
       })
       .catch(() => {

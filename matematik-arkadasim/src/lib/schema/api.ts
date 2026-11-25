@@ -61,19 +61,16 @@ export interface StatusResponse {
   paidAllowed: boolean;
   /** Yerel model durumu (yalnızca Ollama için) */
   localModel?: { reachable: boolean; modelInstalled: boolean; model: string };
-  questionsUsedToday: number;
-  /** 0 = sınırsız */
-  dailyQuestionLimit: number;
-  parentPinSet: boolean;
+  /** Ücretsiz yapay zekâ sağlayıcılarının bugünkü durumu (kesin sayı yok: gerçek tüketim tahminidir) */
+  freeAi: { kind: string; name: string; state: "ok" | "full" }[];
+  /** İnternette yayında eksik güvenlik ayarı (PIN, kalıcı sayaç deposu) varsa açıklaması */
+  setupProblem: string | null;
+  /** Lisans gereği gösterilecek model ibaresi (ör. "Built with Llama") */
+  modelCredit: string | null;
   /** Şu anda bir yapay zekâ isteği işleniyor mu (tek seferde bir istek) */
   aiBusy: boolean;
   /** Cihazlar arası eşitleme (ev sunucusunda dosyaya) kullanılabilir mi */
   syncAvailable: boolean;
 }
-
-export const parentSettingsSchema = z.object({
-  pin: z.string().trim().min(1, "Ebeveyn PIN'ini yazın.").max(32),
-  dailyQuestions: z.number().int("Tam sayı girin.").min(0, "0 veya daha büyük olmalı.").max(200, "En fazla 200 olabilir."),
-});
 
 export const authRequestSchema = z.object({ pin: z.string().trim().min(1, "PIN'i yaz.").max(32) });

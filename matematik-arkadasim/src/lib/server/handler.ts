@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { AUTH_COOKIE, cookieHeader, isValidSessionId, newSessionId, parseCookies, requestIsHttps, SESSION_COOKIE, verifyAuthToken } from "./auth";
 import { getConfig } from "./config";
 import { logError } from "./log";
-import { checkAndConsume, dailyQuestionLimit, questionAllowed, recordQuestion } from "./quota";
+import { checkAndConsume } from "./quota";
 import { clientKey } from "./rateLimit";
 import { getStore } from "./store";
 
@@ -45,6 +45,17 @@ export function accessMisconfigured(): boolean {
   return !!access.pin && access.sessionSecret.length < 32;
 }
 
+/**
+ * İnternette yayında (Vercel) güvenlik ayarları eksikse yapay zekâ uçları çalışmaz:
+ * aile PIN'i zorunlu, sayaçlar (hız sınırı, PIN deneme sınırı, ücretsiz kota) kalıcı depoda olmalı.
+ */
+export function deploymentProblem(): string | null {
+  const cfg = getConfig();
+  if (cfg.access.pinRequired && !cfg.access.pin) return "Aile PIN'i tanımlanmamış (APP_ACCESS_PIN). Kurulum rehberindeki 'Aile PIN'i' adımını yapın.";
+  if (cfg.store.persistentRequired && !(cfg.store.upstashUrl && cfg.store.upstashToken)) return "Kalıcı sayaç deposu (Upstash) bağlanmamış. Kurulum rehberindeki 'Upstash' adımını yapın.";
+  return null;
+}
+
 function withSession(res: Response, id: RequestIdentity): Response {
   if (id.isNewSession) res.headers.append("set-cookie", cookieHeader(SESSION_COOKIE, id.sessionId, 365 * 86400, id.https));
   return res;
@@ -55,8 +66,6 @@ export interface GuardOptions<S extends z.ZodTypeAny> {
   maxBodyBytes: number;
   /** Bu istek yapay zekâ kotasından düşülsün mü? (demo/yerel yanıtlar düşülmez) */
   countsTowardQuota: (input: z.infer<S>) => boolean;
-  /** Yeni soru mu? (günlük soru sınırına tabi; hak yalnızca başarılı çözümde düşer) */
-  countsAsQuestion?: (input: z.infer<S>) => boolean;
   handle: (input: z.infer<S>, meta: { remainingToday?: number; identity: RequestIdentity }) => Promise<Response | Record<string, unknown>>;
 }
 
@@ -67,6 +76,11 @@ export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opt
   if (accessMisconfigured()) {
     logError("config", new Error("APP_ACCESS_PIN tanımlı ama APP_SESSION_SECRET en az 32 karakter değil"));
     return jsonError(500, "CONFIG", "Uygulamanın erişim ayarı eksik. Lütfen uygulamayı kuran yetişkine haber ver.");
+  }
+  const problem = deploymentProblem();
+  if (problem) {
+    logError("config", new Error(problem));
+    return jsonError(503, "CONFIG", `Uygulamanın kurulumu tamamlanmamış: ${problem}`);
   }
   if (!id.authenticated) return withSession(jsonError(401, "AUTH_REQUIRED", "Devam etmek için aile PIN'ini girmen gerekiyor."), id);
 
@@ -110,42 +124,15 @@ export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opt
           ? `Çok hızlı soru gönderdin. ${d.retryAfterSec ?? 60} saniye sonra tekrar dene.`
           : d.reason === "budget" || d.reason === "global"
             ? "Uygulamanın bugünkü yapay zekâ kullanım sınırı doldu. Yarın tekrar dene; kayıtlı çözümlerine Soru Defterim'den ulaşabilirsin."
-            : "Bugünkü soru çözme hakkın doldu. Yarın tekrar görüşmek üzere! Kayıtlı sorularını Soru Defterim'den tekrar edebilirsin.";
+            : "Bugün çok fazla istek gönderildi. Yarın tekrar devam edebiliriz; kayıtlı sorularını Soru Defterim'den tekrar edebilirsin.";
       return withSession(jsonError(429, d.reason === "rate" ? "RATE_LIMITED" : "DAILY_LIMIT", msg, { retryAfterSec: d.retryAfterSec }), id);
     }
     remainingToday = d.remainingToday;
   }
 
-  const isQuestion = opts.countsTowardQuota(input) && !!opts.countsAsQuestion?.(input);
-  let questionInfo: { used: number; limit: number } | undefined;
-  if (isQuestion) {
-    try {
-      const limit = await dailyQuestionLimit(getStore(), cfg.limits.dailyQuestions);
-      const q = await questionAllowed(getStore(), limit);
-      if (!q.allowed) {
-        return withSession(
-          jsonError(429, "DAILY_LIMIT", `Bugünkü ${q.limit} soru hakkın doldu. Yarın Pi Hoca seni yine bekliyor! Bu sırada Soru Defterim'deki soruları tekrar edebilirsin.`, {
-            questionsUsed: q.used,
-            questionLimit: q.limit,
-          }),
-          id,
-        );
-      }
-      questionInfo = { used: q.used, limit: q.limit };
-    } catch (e) {
-      logError("quota", e);
-      return jsonError(503, "AI_ERROR", "Günlük soru sınırı şu an kontrol edilemedi. Biraz sonra tekrar dene.");
-    }
-  }
-
   try {
     const result = await opts.handle(input, { remainingToday, identity: id });
     if (result instanceof Response) return withSession(result, id);
-    if (isQuestion && questionInfo && (result as { ok?: boolean }).ok === true) {
-      const used = await recordQuestion(getStore()).catch(() => questionInfo!.used + 1);
-      (result as Record<string, unknown>).questionsUsed = used;
-      (result as Record<string, unknown>).questionLimit = questionInfo.limit;
-    }
     return withSession(NextResponse.json({ ...result, remainingToday }, { headers: { "cache-control": "no-store" } }), id);
   } catch (e) {
     logError("api", e);

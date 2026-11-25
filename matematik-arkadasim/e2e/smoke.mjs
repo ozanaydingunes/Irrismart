@@ -410,11 +410,11 @@ await test("Ev bilgisayarı kapalıysa açık Türkçe uyarı görünür", deskt
   await p.getByRole("button", { name: /Fotoğraf çek/ }).first().waitFor();
   await p.route("**/api/status", (r) => r.abort("connectionrefused"));
   await p.reload();
-  await p.getByText("Pi Hoca'nın bilgisayarına bağlanılamıyor").waitFor({ timeout: 20000 });
+  await p.getByText("Pi Hoca'ya şu an ulaşılamıyor").waitFor({ timeout: 20000 });
   await p.screenshot({ path: `${OUT}/bilgisayar-kapali-uyarisi.png` });
   await p.unroute("**/api/status");
   await p.getByRole("button", { name: "Tekrar dene" }).click();
-  await p.getByText("Pi Hoca'nın bilgisayarına bağlanılamıyor").waitFor({ state: "detached", timeout: 15000 });
+  await p.getByText("Pi Hoca'ya şu an ulaşılamıyor").waitFor({ state: "detached", timeout: 15000 });
 });
 
 if (syncBase) {

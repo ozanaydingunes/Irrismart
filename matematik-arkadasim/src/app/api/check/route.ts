@@ -5,7 +5,7 @@ import { getConfig } from "@/lib/server/config";
 import { guardedJsonRoute } from "@/lib/server/handler";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const cfg = getConfig();

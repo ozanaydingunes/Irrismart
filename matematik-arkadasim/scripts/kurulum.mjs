@@ -38,18 +38,10 @@ async function askPin(label) {
 }
 
 const familyPin = await askPin("1) Kızınızın gireceği AİLE PIN'i (4–8 rakam): ");
-let parentPin;
-for (;;) {
-  parentPin = await askPin("2) Yalnızca sizin bileceğiniz EBEVEYN PIN'i (aile PIN'inden farklı): ");
-  if (parentPin !== familyPin) break;
-  console.log("  Ebeveyn PIN'i aile PIN'iyle aynı olmamalı.");
-}
-const ram = (await rl.question("3) Bilgisayarınızın belleği (RAM) 16 GB veya daha fazla mı? (e/h): ")).trim().toLowerCase();
+const ram = (await rl.question("2) Bilgisayarınızın belleği (RAM) 16 GB veya daha fazla mı? (e/h): ")).trim().toLowerCase();
 // 8 GB RAM: gemma3:4b (≈3,4 GB) ve küçük bağlam penceresi; 16 GB+: gemma4:e4b
 const model = ram === "e" ? "gemma4:e4b" : "gemma3:4b";
 const numCtx = ram === "e" ? "16384" : "8192";
-const limitRaw = (await rl.question("4) Günlük soru sınırı (Enter = 10): ")).trim();
-const limit = /^\d{1,3}$/.test(limitRaw) ? limitRaw : "10";
 rl.close();
 
 const env = `# Matematik Arkadaşım — ücretsiz ev kurulumu (npm run kurulum ile oluşturuldu)
@@ -63,11 +55,9 @@ ALLOW_PAID_AI=0
 TTS_PROVIDER=none
 APP_ACCESS_PIN=${familyPin}
 APP_SESSION_SECRET=${randomBytes(32).toString("hex")}
-PARENT_PIN=${parentPin}
-DAILY_QUESTION_LIMIT=${limit}
 APP_TIMEZONE=Europe/Istanbul
 `;
 writeFileSync(".env.local", env, { mode: 0o600 });
-console.log(`\n✓ .env.local oluşturuldu (model: ${model}, günlük sınır: ${limit}).`);
+console.log(`\n✓ .env.local oluşturuldu (model: ${model}; soru sınırı yok).`);
 console.log(`\nSıradaki adım: model indirilmediyse  ollama pull ${model}`);
 console.log("Ardından:  npm run evde-baslat\n");

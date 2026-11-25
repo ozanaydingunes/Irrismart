@@ -3,10 +3,18 @@
 import { Loader2, MonitorOff, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useOnline } from "@/hooks/useOnline";
-import { refreshStatus, useServerReachable } from "@/hooks/useStatus";
+import { HOSTING_KEY, refreshStatus, useServerReachable } from "@/hooks/useStatus";
+
+function hosting() {
+  try {
+    return localStorage.getItem(HOSTING_KEY);
+  } catch {
+    return null;
+  }
+}
 
 /**
- * Pi Hoca bilgisayarı (ev sunucusu) kapalıysa veya cihaz ona bağlanamıyorsa anlaşılır Türkçe uyarı.
+ * Pi Hoca'nın sunucusuna (internet sitesi veya ev bilgisayarı) ulaşılamıyorsa anlaşılır Türkçe uyarı.
  * Uygulama önbellekten açılmış olabilir; soru defteri bu sırada kullanılabilir.
  */
 export function ServerOfflineBanner() {
@@ -26,7 +34,11 @@ export function ServerOfflineBanner() {
     <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/15 px-4 py-2.5 text-sm" role="alert">
       <MonitorOff className="size-5 shrink-0 text-warning-strong" aria-hidden />
       <span className="min-w-0 flex-1">
-        <b className="text-warning-strong">Pi Hoca&apos;nın bilgisayarına bağlanılamıyor.</b> Evdeki bilgisayar açık mı? Ev dışındaysan telefondaki Tailscale açık mı? Bu sırada Soru Defterim&apos;deki kayıtlı soruları çalışabilirsin.
+        <b className="text-warning-strong">Pi Hoca&apos;ya şu an ulaşılamıyor.</b>{" "}
+        {hosting() === "ev"
+          ? "Evdeki bilgisayar açık mı? Ev dışındaysan telefondaki Tailscale açık mı?"
+          : "İnternet bağlantını kontrol et ya da biraz sonra tekrar dene."}{" "}
+        Bu sırada Soru Defterim&apos;deki kayıtlı soruları çalışabilirsin.
       </span>
       <button
         type="button"

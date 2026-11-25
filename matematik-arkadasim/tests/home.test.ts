@@ -53,6 +53,7 @@ describe("Tek seferde tek yapay zekâ isteği", () => {
   it("servis: sıra dolunca Türkçe 'Pi Hoca başka bir soruyu çözüyor' mesajı", async () => {
     class Slow implements AIProvider {
       readonly name = "yavaş";
+    readonly serial = true;
       async complete(): Promise<CompletionResult> {
         await wait(120);
         return { text: JSON.stringify({ status: "ok", solution: DEMO_SAMPLES[1].solution }), model: "mock", usage: { inputTokens: 0, outputTokens: 0 } };

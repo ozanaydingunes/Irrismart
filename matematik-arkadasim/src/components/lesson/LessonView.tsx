@@ -15,6 +15,7 @@ import {
   Star,
   Target,
   X,
+  Calculator,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SmartBoard } from "@/components/board/SmartBoard";
@@ -200,6 +201,10 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
               <Badge variant="warning">TEST SAĞLAYICISI — gerçek yapay zekâ değil</Badge>
             ) : source === "demo" ? (
               <Badge variant="warning">DEMO — yapay zekâ çözümü değil</Badge>
+            ) : source === "local" ? (
+              <Badge variant="secondary">
+                <Calculator className="size-3" /> Yerel hesaplama — yapay zekâ kullanılmadı
+              </Badge>
             ) : (
               <Badge variant="success">
                 <Sparkles className="size-3" /> Yapay zekâ çözümü
@@ -678,7 +683,7 @@ function ResultSection({
               <MathTex latex={s.verification.latex} display />
             </div>
           )}
-          {result.issues.length === 0 && result.source === "ai" && <p className="text-sm text-muted-foreground">Uygulama, adımlardaki sayısal eşitlikleri ayrıca kesin aritmetikle kontrol etti.</p>}
+          {result.issues.length === 0 && result.source !== "demo" && <p className="text-sm text-muted-foreground">Uygulama, adımlardaki sayısal eşitlikleri ayrıca kesin aritmetikle kontrol etti.</p>}
         </CardContent>
       </Card>
 

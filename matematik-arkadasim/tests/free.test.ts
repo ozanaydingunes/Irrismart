@@ -8,7 +8,6 @@ import type { CompletionRequest } from "@/lib/ai/provider";
 import { getProvider, solveQuestion } from "@/lib/ai/service";
 import { DEMO_SAMPLES } from "@/lib/demo/samples";
 import { getConfig } from "@/lib/server/config";
-import { dailyQuestionLimit, questionAllowed, questionDay, recordQuestion, setDailyQuestionLimit } from "@/lib/server/quota";
 import { FileStore, MemoryStore, setStore } from "@/lib/server/store";
 
 const req: CompletionRequest = { system: "sistem", messages: [{ role: "user", parts: [{ type: "image", mediaType: "image/jpeg", base64: "QUJD" }, { type: "text", text: "soru" }] }], maxTokens: 16000 };
@@ -30,12 +29,13 @@ const okChat = (content: string, extra: Record<string, unknown> = {}) =>
 describe("Sıfır maliyet yapılandırması", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("varsayılan sağlayıcı ücretsiz yerel Ollama; günlük soru sınırı 10", () => {
-    vi.stubEnv("AI_PROVIDER", "");
+  it("ev kurulumu: AI_PROVIDER=ollama ile ücretsiz yerel Ollama; günlük soru sınırı yok", () => {
+    vi.stubEnv("AI_PROVIDER", "ollama");
     const c = getConfig();
     expect(c.provider).toBe("ollama");
     expect(c.paidAllowed).toBe(false);
-    expect(c.limits.dailyQuestions).toBe(10);
+    expect(c.limits.dailyPerClient).toBe(0);
+    expect(c.limits.dailyGlobal).toBe(0);
     expect(getProvider(c)).toBeInstanceOf(OllamaProvider);
   });
 
@@ -49,7 +49,8 @@ describe("Sıfır maliyet yapılandırması", () => {
       expect(getProvider(c)).toBeNull();
     }
     vi.stubEnv("AI_PROVIDER", "");
-    expect(getConfig().provider).toBe("ollama"); // anahtar var diye ücretliye geçmez
+    vi.stubEnv("CLOUDFLARE_ACCOUNT_ID", "");
+    expect(getConfig().provider).toBe("demo"); // anahtar var diye ücretliye geçmez
   });
 
   it("ücretli seslendirme varsayılan olarak kapalı", () => {
@@ -154,80 +155,50 @@ describe("Kalıcı dosya deposu (ev bilgisayarı)", () => {
   });
 });
 
-describe("Günlük soru sınırı", () => {
-  it("varsayılan 10; ebeveyn değiştirebilir; 0 = sınırsız", async () => {
-    const st = new MemoryStore();
-    expect(await dailyQuestionLimit(st, 10)).toBe(10);
-    await setDailyQuestionLimit(st, 3);
-    expect(await dailyQuestionLimit(st, 10)).toBe(3);
-    await setDailyQuestionLimit(st, 0);
-    expect(await dailyQuestionLimit(st, 10)).toBe(0);
-    expect((await questionAllowed(st, 0)).allowed).toBe(true);
-  });
-  it("sınır dolunca yeni soruya izin verilmez; ertesi gün sıfırlanır", async () => {
-    const st = new MemoryStore();
-    const t = Date.UTC(2026, 10, 25, 10);
-    for (let i = 0; i < 3; i++) {
-      expect((await questionAllowed(st, 3, t)).allowed).toBe(true);
-      await recordQuestion(st, t);
-    }
-    expect((await questionAllowed(st, 3, t)).allowed).toBe(false);
-    expect((await questionAllowed(st, 3, t + 86400_000)).allowed).toBe(true);
-  });
-  it("gün Türkiye saatine göre döner (UTC 21:30 = TR 00:30 ertesi gün)", () => {
-    expect(questionDay(Date.UTC(2026, 10, 25, 21, 30))).toBe("2026-11-26");
-    expect(questionDay(Date.UTC(2026, 10, 25, 20, 30))).toBe("2026-11-25");
-  });
-});
-
-describe("API: günlük soru sınırı ve ebeveyn ayarı (sunucu tarafında)", () => {
+describe("Soru sınırı yok (yalnızca kötüye kullanım koruması)", () => {
   beforeEach(() => {
     setStore(new MemoryStore());
     vi.stubEnv("AI_PROVIDER", "mock");
     vi.stubEnv("ALLOW_MOCK_PROVIDER", "1");
-    vi.stubEnv("DAILY_QUESTION_LIMIT", "2");
-    vi.stubEnv("RATE_LIMIT_PER_MINUTE", "100");
     vi.stubEnv("APP_ACCESS_PIN", "");
-    vi.stubEnv("PARENT_PIN", "9753");
+    vi.stubEnv("DAILY_LIMIT_PER_CLIENT", "");
+    vi.stubEnv("DAILY_LIMIT_GLOBAL", "");
+    vi.stubEnv("RATE_LIMIT_PER_MINUTE", "1000");
+    vi.stubEnv("LOCAL_SOLVER_FIRST", "0");
   });
   afterEach(() => vi.unstubAllEnvs());
   const post = (url: string, body: unknown) => new Request(url, { method: "POST", headers: { "content-type": "application/json", "x-real-ip": "10.0.0.1" }, body: JSON.stringify(body) });
 
-  it("2 başarılı sorudan sonra üçüncüsü reddedilir; başarısız çözüm hak düşürmez", async () => {
+  it("aynı gün 30 soru: hepsi çözülür, kalan hak bilgisi dönmez", async () => {
     const { POST } = await import("@/app/api/solve/route");
-    const bad = await (await POST(post("http://x/api/solve", { text: "[test:unreadable] yarım", mode: "full" }))).json();
-    expect(bad.code).toBe("UNREADABLE");
-    const r1 = await (await POST(post("http://x/api/solve", { text: "2x+5=15", mode: "full" }))).json();
-    expect(r1.ok && r1.questionsUsed).toBe(1);
-    const r2 = await (await POST(post("http://x/api/solve", { text: "3x=9", mode: "full" }))).json();
-    expect(r2.questionsUsed).toBe(2);
-    const r3 = await POST(post("http://x/api/solve", { text: "4x=8", mode: "full" }));
-    expect(r3.status).toBe(429);
-    expect((await r3.json()).message).toMatch(/2 soru hakkın doldu/);
+    for (let i = 0; i < 30; i++) {
+      const r = await POST(post("http://x/api/solve", { text: `${i + 2}x=${(i + 2) * 3}`, mode: "full" }));
+      expect(r.status).toBe(200);
+      const j = await r.json();
+      expect(j.ok).toBe(true);
+      expect(j).not.toHaveProperty("questionsUsed");
+      expect(j).not.toHaveProperty("questionLimit");
+    }
   });
 
-  it("ebeveyn PIN'i yanlışsa ayar değişmez; doğruysa yeni sınır durum bilgisinde görünür", async () => {
-    const { POST } = await import("@/app/api/parent/route");
+  it("durum bilgisinde soru sayacı/kalan hak yok; ebeveyn sınır ucu kaldırıldı", async () => {
     const { GET } = await import("@/app/api/status/route");
-    expect((await POST(post("http://x/api/parent", { pin: "1111", dailyQuestions: 50 }))).status).toBe(401);
-    const ok = await POST(post("http://x/api/parent", { pin: "9753", dailyQuestions: 5 }));
-    expect(ok.status).toBe(200);
     const st = await (await GET(new Request("http://x/api/status"))).json();
-    expect(st.dailyQuestionLimit).toBe(5);
-    expect(st.parentPinSet).toBe(true);
+    expect(st).not.toHaveProperty("dailyQuestionLimit");
+    expect(st).not.toHaveProperty("questionsUsedToday");
     expect(st.paidAllowed).toBe(false);
-    expect(JSON.stringify(st)).not.toContain("9753");
+    await expect(import("@/app/api/parent/route" as string)).rejects.toThrow();
   });
 
-  it("5 yanlış ebeveyn PIN denemesinden sonra kilitlenir", async () => {
-    const { POST } = await import("@/app/api/parent/route");
-    for (let i = 0; i < 5; i++) await POST(post("http://x/api/parent", { pin: "0000", dailyQuestions: 1 }));
-    expect((await POST(post("http://x/api/parent", { pin: "9753", dailyQuestions: 1 }))).status).toBe(429);
-  });
-
-  it("ebeveyn PIN'i tanımlı değilse ayar değiştirilemez", async () => {
-    vi.stubEnv("PARENT_PIN", "");
-    const { POST } = await import("@/app/api/parent/route");
-    expect((await POST(post("http://x/api/parent", { pin: "x", dailyQuestions: 99 }))).status).toBe(403);
+  it("dakikalık kötüye kullanım koruması korunur", async () => {
+    vi.stubEnv("RATE_LIMIT_PER_MINUTE", "3");
+    const { POST } = await import("@/app/api/tutor/route");
+    const { DEMO_SAMPLES: S } = await import("@/lib/demo/samples");
+    const body = { solution: S[1].solution, stepIndex: 0, action: "hint" };
+    const codes = [];
+    // Çerezsiz her istek yeni oturum sayılır; IP sınırı oturum sınırının 3 katıdır (9)
+    for (let i = 0; i < 10; i++) codes.push((await POST(post("http://x/api/tutor", body))).status);
+    expect(codes.slice(0, 9).every((c) => c === 200)).toBe(true);
+    expect(codes[9]).toBe(429);
   });
 });

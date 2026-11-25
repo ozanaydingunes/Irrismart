@@ -33,6 +33,8 @@ export interface AIProvider {
   readonly name: string;
   /** Bu sağlayıcı için bir isteğin toplam süre bütçesi (yoksa varsayılan) */
   readonly timeBudgetMs?: number;
+  /** true ise istekler tek tek işlenir (ev bilgisayarındaki yerel model gibi) */
+  readonly serial?: boolean;
   complete(req: CompletionRequest): Promise<CompletionResult>;
 }
 
@@ -50,6 +52,8 @@ export type AIErrorKind =
   | "unavailable" // yerel model motoruna (Ollama) ulaşılamıyor
   | "model_missing" // yerel model indirilmemiş
   | "busy" // başka bir istek işleniyor ve sıra dolu
+  | "quota" // ücretsiz sağlayıcının günlük kotası doldu (ücretli plana GEÇİLMEZ)
+  | "quota_all" // onaylı tüm ücretsiz sağlayıcıların bugünkü kotası doldu
   | "unknown";
 
 export class AIError extends Error {
@@ -89,6 +93,9 @@ export function userMessageFor(error: unknown): string {
         return "Pi Hoca'nın yapay zekâ modeli bilgisayara henüz indirilmemiş. Kurulum rehberindeki 'model indirme' adımını yapın.";
       case "busy":
         return "Pi Hoca şu an başka bir soruyu çözüyor. Bir iki dakika sonra tekrar dener misin?";
+      case "quota":
+      case "quota_all":
+        return "Pi Hoca'nın bugünkü ücretsiz yapay zekâ kapasitesi doldu. Yarın tekrar devam edebiliriz! Bu sırada Soru Defterim'deki soruları tekrar edebilir, Konular bölümünden alıştırma çözebilirsin.";
       case "invalid_output":
         return "Yapay zekânın çözümü doğrulamadan geçemedi. Lütfen tekrar dene.";
       default:

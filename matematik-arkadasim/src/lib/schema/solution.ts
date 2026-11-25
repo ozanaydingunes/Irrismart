@@ -270,7 +270,8 @@ export type SolveEnvelope = z.infer<typeof solveEnvelopeSchema>;
 export const LEARNING_MODES = ["full", "hint", "together", "exam"] as const;
 export type LearningMode = (typeof LEARNING_MODES)[number];
 
-export type SolutionSource = "ai" | "demo";
+/** ai: yapay zekâ · demo: demo modu · local: uygulamanın kendi kesin hesaplama motoru (yapay zekâ yok) */
+export type SolutionSource = "ai" | "demo" | "local";
 
 export interface VerificationIssue {
   stepId: string;
