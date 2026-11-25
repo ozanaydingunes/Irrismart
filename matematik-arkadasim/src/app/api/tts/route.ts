@@ -1,11 +1,9 @@
 import { ttsRequestSchema } from "@/lib/schema/api";
 import { getConfig } from "@/lib/server/config";
 import { guardedJsonRoute, jsonError } from "@/lib/server/handler";
-import { clientKey, SlidingWindowLimiter } from "@/lib/server/rateLimit";
-
-// Seslendirme her cümle için istek attığından ayrı ve daha geniş bir dakikalık sınır kullanılır.
-const g = globalThis as unknown as { __ttsLimiter?: SlidingWindowLimiter };
-const ttsLimiter = (g.__ttsLimiter ??= new SlidingWindowLimiter(60, 60_000));
+import { hashId, recordSpend, spentToday } from "@/lib/server/quota";
+import { clientKey } from "@/lib/server/rateLimit";
+import { getStore } from "@/lib/server/store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -18,13 +16,21 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   const cfg = getConfig();
   if (cfg.tts.provider === "none") return jsonError(501, "TTS_DISABLED", "Sunucu seslendirmesi yapılandırılmamış.");
-  const rl = ttsLimiter.check(clientKey(req.headers));
-  if (!rl.allowed) return jsonError(429, "RATE_LIMITED", "Çok fazla seslendirme isteği. Biraz sonra tekrar dene.");
+  // Seslendirme her cümle için istek attığından ayrı ve daha geniş bir dakikalık sınır (IP başına 60)
+  const n = await getStore()
+    .incr(`tts:${hashId(clientKey(req.headers))}:${Math.floor(Date.now() / 60_000)}`, 1, 90)
+    .catch(() => 0);
+  if (n > 60) return jsonError(429, "RATE_LIMITED", "Çok fazla seslendirme isteği. Biraz sonra tekrar dene.");
   return guardedJsonRoute(req, {
     schema: ttsRequestSchema,
     maxBodyBytes: 5_000,
     countsTowardQuota: () => false,
     handle: async ({ text, voice }) => {
+      if (cfg.limits.dailyBudgetUsd > 0 && (await spentToday(getStore())) >= cfg.limits.dailyBudgetUsd) {
+        return jsonError(429, "DAILY_LIMIT", "Bugünkü sesli anlatım sınırı doldu; anlatım tarayıcı sesiyle veya yazılı devam edebilir.");
+      }
+      // Yaklaşık maliyet: karakter başına ~15 USD / 1 milyon karakter (temkinli üst sınır)
+      await recordSpend(getStore(), (text.length * 15) / 1_000_000).catch(() => undefined);
       const res = await fetch(`${cfg.openai.baseUrl}/audio/speech`, {
         method: "POST",
         headers: { authorization: `Bearer ${cfg.openai.apiKey}`, "content-type": "application/json" },

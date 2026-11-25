@@ -243,6 +243,8 @@ export const solutionSchema = z.object({
     .optional(),
   /** YZ'nin emin olmadığı noktalar — öğrenciye dürüstçe gösterilir. */
   uncertainty: shortText(400).optional(),
+  /** Fotoğraftan okurken yapılan yorumlar (ör. "x işaretini çarpı olarak okudum") — öğrenciye doğrulatılır. */
+  readingNote: shortText(300).optional(),
 });
 export type Solution = z.infer<typeof solutionSchema>;
 
@@ -253,6 +255,15 @@ export const solveEnvelopeSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("ok"), solution: solutionSchema }),
   z.object({ status: z.literal("unreadable"), message: shortText(400).pipe(z.string().min(1)) }),
   z.object({ status: z.literal("not_math"), message: shortText(400).pipe(z.string().min(1)) }),
+  /** Fotoğrafta birden fazla soru var: öğrenciye hangisini çözmek istediği sorulur. */
+  z.object({
+    status: z.literal("multiple"),
+    message: shortText(300).optional(),
+    questions: z
+      .array(z.object({ label: shortText(20).pipe(z.string().min(1)), text: shortText(600).pipe(z.string().min(1)) }))
+      .min(2)
+      .max(8),
+  }),
 ]);
 export type SolveEnvelope = z.infer<typeof solveEnvelopeSchema>;
 
@@ -279,9 +290,11 @@ export interface SolveResult {
 
 export interface SolveFailure {
   ok: false;
-  code: "UNREADABLE" | "NOT_MATH" | "DEMO_UNSUPPORTED" | "RATE_LIMITED" | "DAILY_LIMIT" | "BAD_INPUT" | "AI_ERROR" | "INVALID_AI_OUTPUT";
+  code: "UNREADABLE" | "NOT_MATH" | "DEMO_UNSUPPORTED" | "RATE_LIMITED" | "DAILY_LIMIT" | "BAD_INPUT" | "AI_ERROR" | "INVALID_AI_OUTPUT" | "MULTIPLE" | "AUTH_REQUIRED";
   message: string;
   source?: SolutionSource;
+  /** code === "MULTIPLE" ise fotoğrafta algılanan sorular */
+  questions?: { label: string; text: string }[];
 }
 
 /* ───────────────────────────── Özel ders yanıtı ───────────────────────────── */

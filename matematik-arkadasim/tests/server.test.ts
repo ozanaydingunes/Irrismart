@@ -3,33 +3,74 @@ import { extractJson, parseWithSchema } from "@/lib/ai/json";
 import { solutionSchema, solveEnvelopeSchema } from "@/lib/schema/solution";
 import { DEMO_SAMPLES } from "@/lib/demo/samples";
 import { parseImageDataUrl } from "@/lib/server/image";
-import { DailyCounter, SlidingWindowLimiter } from "@/lib/server/rateLimit";
+import { checkAndConsume, recordSpend, spentToday } from "@/lib/server/quota";
+import { MemoryStore, setStore, UpstashStore } from "@/lib/server/store";
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
-describe("Hız sınırı ve günlük limit", () => {
-  it("dakikalık sınırı uygular ve zamanla açar", () => {
-    let t = 0;
-    const l = new SlidingWindowLimiter(2, 60_000, () => t);
-    expect(l.check("a").allowed).toBe(true);
-    expect(l.check("a").allowed).toBe(true);
-    const third = l.check("a");
+describe("Kalıcı kota: hız sınırı, günlük limit, harcama sınırı", () => {
+  const limits = { perMinute: 2, dailyPerClient: 3, dailyGlobal: 5, dailyBudgetUsd: 1 };
+  it("oturum başına dakikalık sınır, dakika dönünce açılır", async () => {
+    let t = Date.UTC(2026, 0, 1, 10, 0, 5);
+    const st = new MemoryStore(() => t);
+    const ids = { session: "s1", ip: "1.1.1.1" };
+    expect((await checkAndConsume(st, ids, limits, t)).allowed).toBe(true);
+    expect((await checkAndConsume(st, ids, limits, t)).allowed).toBe(true);
+    const third = await checkAndConsume(st, ids, limits, t);
     expect(third.allowed).toBe(false);
-    expect(third.retryAfterSec).toBeGreaterThan(0);
-    expect(l.check("b").allowed).toBe(true); // başka istemci etkilenmez
-    t = 61_000;
-    expect(l.check("a").allowed).toBe(true);
+    expect(!third.allowed && third.reason).toBe("rate");
+    t += 61_000;
+    expect((await checkAndConsume(st, ids, limits, t)).allowed).toBe(true);
   });
-  it("istemci başına ve genel günlük limit; gün dönünce sıfırlanır", () => {
+  it("çerez silinse de IP sınırı devreye girer (oturum sınırının 3 katı)", async () => {
+    const t = Date.UTC(2026, 0, 1, 10);
+    const st = new MemoryStore(() => t);
+    const results = [];
+    for (let i = 0; i < 7; i++) results.push((await checkAndConsume(st, { session: `yeni${i}`, ip: "9.9.9.9" }, { ...limits, dailyGlobal: 0, dailyPerClient: 0 }, t)).allowed);
+    expect(results.filter(Boolean)).toHaveLength(6);
+  });
+  it("günlük istemci ve genel limit; ertesi gün sıfırlanır", async () => {
     let t = Date.UTC(2026, 0, 1, 10);
-    const d = new DailyCounter(2, 3, () => t);
-    expect(d.consume("a").allowed).toBe(true);
-    expect(d.consume("a").remainingToday).toBe(0);
-    expect(d.consume("a").reason).toBe("daily");
-    expect(d.consume("b").allowed).toBe(true);
-    expect(d.consume("c").reason).toBe("global");
-    t += 24 * 3600 * 1000;
-    expect(d.consume("a").allowed).toBe(true);
+    const st = new MemoryStore(() => t);
+    const L = { ...limits, perMinute: 0 };
+    for (let i = 0; i < 3; i++) expect((await checkAndConsume(st, { session: "a", ip: "1" }, L, t)).allowed).toBe(true);
+    const d = await checkAndConsume(st, { session: "a", ip: "1" }, L, t);
+    expect(!d.allowed && d.reason).toBe("daily");
+    expect((await checkAndConsume(st, { session: "b", ip: "2" }, L, t)).allowed).toBe(true); // genel sayaç: 5
+    const g = await checkAndConsume(st, { session: "c", ip: "3" }, L, t);
+    expect(!g.allowed && g.reason).toBe("global");
+    t += 86400_000;
+    expect((await checkAndConsume(st, { session: "a", ip: "1" }, L, t)).allowed).toBe(true);
+  });
+  it("günlük harcama sınırı aşılınca yeni istek reddedilir", async () => {
+    const t = Date.UTC(2026, 0, 1, 10);
+    const st = new MemoryStore(() => t);
+    await recordSpend(st, 0.6, t);
+    expect((await checkAndConsume(st, { session: "a", ip: "1" }, limits, t)).allowed).toBe(true);
+    await recordSpend(st, 0.5, t);
+    expect(await spentToday(st, t)).toBeCloseTo(1.1, 5);
+    const d = await checkAndConsume(st, { session: "a", ip: "1" }, limits, t);
+    expect(!d.allowed && d.reason).toBe("budget");
+  });
+  it("sayaç anahtarları ham IP veya oturum kimliği içermez", async () => {
+    const keys: string[] = [];
+    const st = { persistent: true, incr: async (k: string) => (keys.push(k), 1), get: async () => 0 };
+    await checkAndConsume(st, { session: "gizli-oturum", ip: "203.0.113.7" }, limits);
+    expect(keys.join(" ")).not.toMatch(/203\.0\.113\.7|gizli-oturum/);
+  });
+  it("Upstash REST deposu doğru komutları gönderir", async () => {
+    const calls: unknown[] = [];
+    const fake = (async (_url: string, init: RequestInit) => {
+      calls.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify([{ result: 4 }, { result: 1 }]), { status: 200 });
+    }) as unknown as typeof fetch;
+    const st = new UpstashStore("https://ornek.upstash.io", "tok", fake);
+    expect(await st.incr("k", 1, 60)).toBe(4);
+    expect(calls[0]).toEqual([["INCRBY", "k", 1], ["EXPIRE", "k", 60, "NX"]]);
+  });
+  it("Upstash hata verirse istisna fırlatır (koruma katmanı isteği reddeder)", async () => {
+    const st = new UpstashStore("https://x", "t", (async () => new Response("", { status: 500 })) as unknown as typeof fetch);
+    await expect(st.incr("k", 1, 60)).rejects.toThrow();
   });
 });
 
@@ -86,8 +127,7 @@ describe("API uçları (demo modu)", () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     vi.stubEnv("OPENAI_API_KEY", "");
     vi.stubEnv("RATE_LIMIT_PER_MINUTE", "100");
-    const { resetLimiters } = await import("@/lib/server/handler");
-    resetLimiters();
+    setStore(new MemoryStore());
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -96,7 +136,8 @@ describe("API uçları (demo modu)", () => {
   it("status: demo modunu bildirir, anahtar sızdırmaz", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     const { GET } = await import("@/app/api/status/route");
-    const json = await (await GET()).json();
+    const json = await (await GET(new Request("http://x/api/status"))).json();
+    expect(json.accessRequired).toBe(false);
     expect(json.mode).toBe("demo");
     expect(JSON.stringify(json)).not.toMatch(/sk-|api_key/i);
   });

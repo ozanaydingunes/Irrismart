@@ -1,52 +1,73 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import type { z } from "zod";
+import { AUTH_COOKIE, cookieHeader, isValidSessionId, newSessionId, parseCookies, SESSION_COOKIE, verifyAuthToken } from "./auth";
 import { getConfig } from "./config";
-import { clientKey, DailyCounter, SlidingWindowLimiter } from "./rateLimit";
+import { logError } from "./log";
+import { checkAndConsume } from "./quota";
+import { clientKey } from "./rateLimit";
+import { getStore } from "./store";
 
 /**
  * Tüm yapay zekâ uçları için ortak koruma katmanı:
- * gövde boyutu → JSON → Zod girdi doğrulaması → dakikalık hız sınırı → günlük kullanım sınırı.
+ * gövde boyutu → JSON → Zod girdi doğrulaması → (varsa) aile PIN'i → hız sınırı, günlük kota ve
+ * günlük harcama sınırı (kalıcı depo) → işleyici. Hata mesajları Türkçe ve teknik ayrıntısızdır.
  */
-
-interface Limiters {
-  minute: SlidingWindowLimiter;
-  daily: DailyCounter;
-}
-
-const g = globalThis as unknown as { __mathLimiters?: Limiters };
-
-function limiters(): Limiters {
-  if (!g.__mathLimiters) {
-    const cfg = getConfig();
-    g.__mathLimiters = {
-      minute: new SlidingWindowLimiter(cfg.limits.perMinute, 60_000),
-      daily: new DailyCounter(cfg.limits.dailyPerClient, cfg.limits.dailyGlobal),
-    };
-  }
-  return g.__mathLimiters;
-}
-
-/** Testlerde sayaçları sıfırlamak için */
-export function resetLimiters() {
-  g.__mathLimiters = undefined;
-}
 
 export function jsonError(status: number, code: string, message: string, extra: Record<string, unknown> = {}) {
   return NextResponse.json({ ok: false, code, message, ...extra }, { status, headers: { "cache-control": "no-store" } });
 }
 
+export interface RequestIdentity {
+  sessionId: string;
+  ip: string;
+  isNewSession: boolean;
+  authenticated: boolean;
+}
+
+export function identify(req: Request): RequestIdentity {
+  const cfg = getConfig();
+  const cookies = parseCookies(req.headers.get("cookie"));
+  const sid = cookies[SESSION_COOKIE];
+  const valid = isValidSessionId(sid);
+  return {
+    sessionId: valid ? sid : newSessionId(),
+    ip: clientKey(req.headers),
+    isNewSession: !valid,
+    authenticated: !cfg.access.pin || verifyAuthToken(cfg.access.sessionSecret, cookies[AUTH_COOKIE]),
+  };
+}
+
+export function accessMisconfigured(): boolean {
+  const { access } = getConfig();
+  return !!access.pin && access.sessionSecret.length < 32;
+}
+
+function withSession(res: Response, id: RequestIdentity): Response {
+  if (id.isNewSession) res.headers.append("set-cookie", cookieHeader(SESSION_COOKIE, id.sessionId, 365 * 86400, getConfig().isProduction));
+  return res;
+}
+
 export interface GuardOptions<S extends z.ZodTypeAny> {
   schema: S;
   maxBodyBytes: number;
-  /** Bu istek günlük yapay zekâ kotasından düşülsün mü? (demo/yerel yanıtlar düşülmez) */
+  /** Bu istek yapay zekâ kotasından düşülsün mü? (demo/yerel yanıtlar düşülmez) */
   countsTowardQuota: (input: z.infer<S>) => boolean;
-  handle: (input: z.infer<S>, meta: { remainingToday?: number }) => Promise<Response | Record<string, unknown>>;
+  handle: (input: z.infer<S>, meta: { remainingToday?: number; identity: RequestIdentity }) => Promise<Response | Record<string, unknown>>;
 }
 
 export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opts: GuardOptions<S>): Promise<Response> {
+  const cfg = getConfig();
+  const id = identify(req);
+
+  if (accessMisconfigured()) {
+    logError("config", new Error("APP_ACCESS_PIN tanımlı ama APP_SESSION_SECRET en az 32 karakter değil"));
+    return jsonError(500, "CONFIG", "Uygulamanın erişim ayarı eksik. Lütfen uygulamayı kuran yetişkine haber ver.");
+  }
+  if (!id.authenticated) return withSession(jsonError(401, "AUTH_REQUIRED", "Devam etmek için aile PIN'ini girmen gerekiyor."), id);
+
   const len = Number(req.headers.get("content-length") ?? 0);
-  if (len && len > opts.maxBodyBytes) return jsonError(413, "BAD_INPUT", "Gönderilen veri çok büyük.");
+  if (len && len > opts.maxBodyBytes) return jsonError(413, "BAD_INPUT", "Gönderilen veri çok büyük. Fotoğrafı kırpıp tekrar dene.");
 
   let raw: string;
   try {
@@ -54,7 +75,7 @@ export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opt
   } catch {
     return jsonError(400, "BAD_INPUT", "İstek okunamadı.");
   }
-  if (raw.length > opts.maxBodyBytes) return jsonError(413, "BAD_INPUT", "Gönderilen veri çok büyük.");
+  if (raw.length > opts.maxBodyBytes) return jsonError(413, "BAD_INPUT", "Gönderilen veri çok büyük. Fotoğrafı kırpıp tekrar dene.");
 
   let body: unknown;
   try {
@@ -68,35 +89,35 @@ export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opt
     return jsonError(400, "BAD_INPUT", first?.message && /[çğıöşü]/i.test(first.message) ? first.message : "Gönderilen bilgiler eksik veya hatalı.");
   }
   const input = parsed.data as z.infer<S>;
-  const key = clientKey(req.headers);
-  const L = limiters();
 
-  const counts = opts.countsTowardQuota(input);
   let remainingToday: number | undefined;
-  if (counts) {
-    const m = L.minute.check(key);
-    if (!m.allowed) {
-      return jsonError(429, "RATE_LIMITED", `Çok hızlı istek gönderdin. ${m.retryAfterSec} saniye sonra tekrar dene.`, { retryAfterSec: m.retryAfterSec });
+  if (opts.countsTowardQuota(input)) {
+    let d;
+    try {
+      d = await checkAndConsume(getStore(), { session: id.sessionId, ip: id.ip }, cfg.limits);
+    } catch (e) {
+      // Sayaç deposuna ulaşılamıyorsa maliyet kontrolü yapılamaz: güvenli tarafta kalıp reddet
+      logError("quota", e);
+      return jsonError(503, "AI_ERROR", "Kullanım sınırı şu an kontrol edilemedi. Biraz sonra tekrar dene.");
     }
-    const d = L.daily.consume(key);
     if (!d.allowed) {
-      return jsonError(
-        429,
-        "DAILY_LIMIT",
-        d.reason === "global"
-          ? "Uygulamanın bugünkü yapay zekâ kullanım sınırı doldu. Yarın tekrar dene; kayıtlı çözümlerine Soru Defterim'den ulaşabilirsin."
-          : "Bugünkü soru çözme hakkın doldu. Yarın tekrar görüşmek üzere! Kayıtlı sorularını Soru Defterim'den tekrar edebilirsin.",
-      );
+      const msg =
+        d.reason === "rate"
+          ? `Çok hızlı soru gönderdin. ${d.retryAfterSec ?? 60} saniye sonra tekrar dene.`
+          : d.reason === "budget" || d.reason === "global"
+            ? "Uygulamanın bugünkü yapay zekâ kullanım sınırı doldu. Yarın tekrar dene; kayıtlı çözümlerine Soru Defterim'den ulaşabilirsin."
+            : "Bugünkü soru çözme hakkın doldu. Yarın tekrar görüşmek üzere! Kayıtlı sorularını Soru Defterim'den tekrar edebilirsin.";
+      return withSession(jsonError(429, d.reason === "rate" ? "RATE_LIMITED" : "DAILY_LIMIT", msg, { retryAfterSec: d.retryAfterSec }), id);
     }
     remainingToday = d.remainingToday;
   }
 
   try {
-    const result = await opts.handle(input, { remainingToday });
-    if (result instanceof Response) return result;
-    return NextResponse.json({ ...result, remainingToday }, { headers: { "cache-control": "no-store" } });
+    const result = await opts.handle(input, { remainingToday, identity: id });
+    if (result instanceof Response) return withSession(result, id);
+    return withSession(NextResponse.json({ ...result, remainingToday }, { headers: { "cache-control": "no-store" } }), id);
   } catch (e) {
-    console.error("[api] unexpected:", e instanceof Error ? e.message : e);
-    return jsonError(500, "AI_ERROR", "Beklenmedik bir hata oluştu. Lütfen tekrar dene.");
+    logError("api", e);
+    return withSession(jsonError(500, "AI_ERROR", "Beklenmedik bir hata oluştu. Lütfen tekrar dene."), id);
   }
 }

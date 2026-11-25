@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         image = check.image;
       }
       // Görsel yalnızca bu istek süresince bellekte tutulur; diske/kalıcı depoya yazılmaz.
-      const result = await solveQuestion({ text: input.text, image, mode: input.mode });
+      const result = await solveQuestion({ text: input.text, image, mode: input.mode, selectedQuestion: input.selectedQuestion });
       return { ...result };
     },
   });

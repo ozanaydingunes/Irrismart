@@ -1,25 +1,37 @@
 import "server-only";
 
 /**
- * Sunucu yapılandırması. API anahtarları yalnızca burada okunur ve tarayıcıya gönderilmez.
+ * Sunucu yapılandırması. API anahtarları ve gizli değerler yalnızca burada okunur;
+ * tarayıcıya hiçbir zaman gönderilmez.
  */
 
 export type ProviderName = "anthropic" | "openai" | "demo";
+type Effort = "low" | "medium" | "high";
 
-function int(name: string, fallback: number): number {
-  const v = Number.parseInt(process.env[name] ?? "", 10);
-  return Number.isFinite(v) && v >= 0 ? v : fallback;
+function num(name: string, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER): number {
+  const v = Number(process.env[name]);
+  if (!process.env[name]?.trim() || !Number.isFinite(v)) return fallback;
+  return Math.min(max, Math.max(min, v));
 }
 
 export interface ServerConfig {
   provider: ProviderName;
-  anthropic: { apiKey: string; model: string; effort: "low" | "medium" | "high" | "xhigh" | "max" };
-  openai: { apiKey: string; model: string; baseUrl: string };
+  anthropic: { apiKey: string; model: string; lightModel: string; effort: Effort };
+  openai: { apiKey: string; model: string; lightModel: string; baseUrl: string };
   tts: { provider: "none" | "openai"; model: string; voiceFemale: string; voiceMale: string };
-  limits: { perMinute: number; dailyPerClient: number; dailyGlobal: number; maxImageBytes: number };
+  limits: {
+    perMinute: number;
+    dailyPerClient: number;
+    dailyGlobal: number;
+    dailyBudgetUsd: number;
+    maxImageBytes: number;
+  };
+  access: { pin: string; sessionSecret: string };
+  store: { upstashUrl: string; upstashToken: string };
+  isProduction: boolean;
 }
 
-const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
+const EFFORTS: Effort[] = ["low", "medium", "high"];
 
 export function getConfig(): ServerConfig {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim() ?? "";
@@ -30,21 +42,26 @@ export function getConfig(): ServerConfig {
   let provider: ProviderName = "demo";
   if (requested === "openai") provider = openaiKey ? "openai" : "demo";
   else if (requested === "demo") provider = "demo";
-  else if (requested === "anthropic" || requested === "") provider = anthropicKey ? "anthropic" : requested === "" && openaiKey ? "openai" : "demo";
+  else if (requested === "anthropic") provider = anthropicKey ? "anthropic" : "demo";
+  else if (requested === "") provider = anthropicKey ? "anthropic" : openaiKey ? "openai" : "demo";
 
-  const effortEnv = (process.env.ANTHROPIC_EFFORT ?? "medium").trim() as ServerConfig["anthropic"]["effort"];
+  const effortEnv = (process.env.ANTHROPIC_EFFORT ?? "medium").trim() as Effort;
   const ttsProvider = process.env.TTS_PROVIDER?.trim() === "openai" && openaiKey ? "openai" : "none";
 
   return {
     provider,
     anthropic: {
       apiKey: anthropicKey,
-      model: process.env.ANTHROPIC_MODEL?.trim() || "claude-opus-5-5",
+      // Varsayılan: doğruluk/maliyet dengesi iyi olan Sonnet. Daha ucuz: claude-haiku-5-5, en doğru: claude-opus-5-5
+      model: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5-5",
+      // Cevap kontrolü ve ipucu gibi basit görevler için ucuz model
+      lightModel: process.env.ANTHROPIC_LIGHT_MODEL?.trim() || "claude-haiku-5-5",
       effort: EFFORTS.includes(effortEnv) ? effortEnv : "medium",
     },
     openai: {
       apiKey: openaiKey,
       model: process.env.OPENAI_MODEL?.trim() || "gpt-4.1",
+      lightModel: process.env.OPENAI_LIGHT_MODEL?.trim() || process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini",
       baseUrl: (process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1").replace(/\/+$/, ""),
     },
     tts: {
@@ -54,10 +71,21 @@ export function getConfig(): ServerConfig {
       voiceMale: process.env.OPENAI_TTS_VOICE_MALE?.trim() || "onyx",
     },
     limits: {
-      perMinute: int("RATE_LIMIT_PER_MINUTE", 10),
-      dailyPerClient: int("DAILY_LIMIT_PER_CLIENT", 60),
-      dailyGlobal: int("DAILY_LIMIT_GLOBAL", 2000),
-      maxImageBytes: Math.round(Math.min(10, Math.max(0.5, Number(process.env.MAX_IMAGE_MB ?? 4) || 4)) * 1024 * 1024),
+      perMinute: num("RATE_LIMIT_PER_MINUTE", 8, 0, 1000),
+      dailyPerClient: num("DAILY_LIMIT_PER_CLIENT", 40, 0, 100000),
+      dailyGlobal: num("DAILY_LIMIT_GLOBAL", 300, 0, 1000000),
+      dailyBudgetUsd: num("DAILY_BUDGET_USD", 2, 0, 10000),
+      // Vercel sunucusuz fonksiyon gövde sınırı ~4,5 MB: base64 şişmesiyle 3 MB görsel ≈ 4 MB gövde
+      maxImageBytes: Math.round(num("MAX_IMAGE_MB", 3, 0.5, 10) * 1024 * 1024),
     },
+    access: {
+      pin: process.env.APP_ACCESS_PIN?.trim() ?? "",
+      sessionSecret: process.env.APP_SESSION_SECRET?.trim() ?? "",
+    },
+    store: {
+      upstashUrl: (process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "").replace(/\/+$/, ""),
+      upstashToken: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "",
+    },
+    isProduction: process.env.NODE_ENV === "production",
   };
 }

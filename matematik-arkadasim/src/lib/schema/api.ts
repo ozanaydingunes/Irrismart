@@ -8,6 +8,8 @@ export const solveRequestSchema = z
     text: z.string().max(2000, "Soru metni en fazla 2000 karakter olabilir.").optional(),
     image: z.string().max(14_000_000, "Görsel çok büyük.").optional(),
     mode: z.enum(LEARNING_MODES).default("full"),
+    /** Fotoğrafta birden fazla soru varsa öğrencinin seçtiği soru */
+    selectedQuestion: z.string().max(600).optional(),
   })
   .refine((v) => (v.text && v.text.trim().length > 0) || !!v.image, { message: "Lütfen bir soru yaz veya fotoğraf yükle." });
 export type SolveRequest = z.input<typeof solveRequestSchema>;
@@ -50,4 +52,9 @@ export interface StatusResponse {
   serverTts: boolean;
   dailyLimitPerClient: number;
   maxImageMb: number;
+  /** Aile PIN'i etkin mi ve bu tarayıcı giriş yapmış mı */
+  accessRequired: boolean;
+  authenticated: boolean;
 }
+
+export const authRequestSchema = z.object({ pin: z.string().trim().min(1, "PIN'i yaz.").max(32) });
