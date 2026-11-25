@@ -19,15 +19,37 @@ function rl(r: Rational, wrapNegative = false): string {
 }
 
 /** Soru metnindeki "kaçtır", "işleminin sonucu" gibi kalıpları temizler. */
-export function stripQuestionWords(text: string): string {
-  return text
+/**
+ * Saf işlem / denklem sorularında bulunabilecek soru kalıpları. Bunların DIŞINDA bir sözcük varsa
+ * soru sözel bir problemdir ve kural tabanlı çözücü onu ÇÖZMEZ (kelimeleri atıp kalan sayılarla işlem
+ * yapmak yanlış cevaba yol açar).
+ */
+const QUESTION_WORDS = new Set([
+  "işleminin", "işlemin", "işlemi", "işlemini", "sonucu", "sonucunu", "kaçtır", "kaç", "olur", "eder", "nedir",
+  "değeri", "değerini", "ifadesinin", "hesaplayınız", "hesaplayın", "hesapla", "bulunuz", "bulun", "bul",
+  "denklemini", "denkleminde", "denklemin", "denklemi", "çözünüz", "çözün", "çöz", "için",
+]);
+
+/** Soru metnini saf matematik ifadesine indirger; tanınmayan sözcük varsa null. */
+export function pureMath(text: string): string | null {
+  let t = text
     .replace(/['’][a-zçğıöşü]+/gi, "") // 15'tir → 15
-    .replace(/[A-Za-zÇĞİÖŞÜçğıöşüâîû]{2,}/g, " ") // Türkçe sözcükler (tek harfli değişkenler kalır)
+    .replace(/(=[^=]*?)\s[a-zA-Z]\s+(?=kaçtır|nedir|değeri)/i, "$1 "); // "… = 15 denkleminde x kaçtır"
+  const words = t.match(/[A-Za-zÇĞİÖŞÜçğıöşüâîû]{2,}/g) ?? [];
+  if (words.some((w) => !QUESTION_WORDS.has(w.toLocaleLowerCase("tr-TR")))) return null;
+  t = t
+    .replace(/[A-Za-zÇĞİÖŞÜçğıöşüâîû]{2,}/g, " ")
     .replace(/[?!:;]/g, " ")
     .replace(/\.\s*$/, "")
     .replace(/=\s*$/, "")
     .replace(/\s+/g, " ")
     .trim();
+  return t || null;
+}
+
+/** Geriye dönük uyumluluk: saf matematik değilse boş dize döner. */
+export function stripQuestionWords(text: string): string {
+  return pureMath(text) ?? "";
 }
 
 let stepCounter = 0;
@@ -538,10 +560,10 @@ export function solveLinearEquation(questionText: string): Solution | null {
     const sideOp = lb.n > 0n ? "-" : "+";
     steps.push(
       step({
-        title: "Sabit terimi karşı tarafa geçirelim",
+        title: lb.n > 0n ? `Her iki taraftan ${amount.toString()} çıkaralım` : `Her iki tarafa ${amount.toString()} ekleyelim`,
         explanation: `${v} terimini yalnız bırakmak için her iki ${fromTo} ${amount.toString()} ${op}. Toplamanın tersi çıkarma, çıkarmanın tersi toplamadır.`,
         latex: `${linLatex(la, lb, v)} ${sideOp} ${amount.toLatex()} = ${rb.toLatex()} ${sideOp} ${amount.toLatex()} \\Rightarrow ${next}`,
-        narration: `Terazinin dengesi bozulmasın diye her iki ${fromTo} ${say(amount.toLatex())} ${op}. Böylece ${say(next)} olur.`,
+        narration: `Eşitliğin dengesini bozmamak için her iki ${fromTo} da ${say(amount.toLatex())} ${op}. Böylece ${say(next)} olur ve bilinmeyeni yalnız bırakmaya bir adım daha yaklaşırız.`,
         visualInstructions: [
           { type: "transform", before, after: next, label: `Her iki tarafa ${sideOp === "-" ? "−" : "+"}${amount.toString()}` },
           { type: "balance", left: linLatex(la, Rational.of(0), v), right: newR.toLatex(), label: "Terazi hâlâ dengede" },
@@ -594,7 +616,7 @@ export function solveLinearEquation(questionText: string): Solution | null {
     finalAnswer: { text: `${v} = ${value.toString()}`, latex: `${v} = ${value.toLatex()}`, narration: `${say(v)} eşittir ${say(value.toLatex())}.` },
     verification: { method: `${v} = ${value.toString()} değerini denklemde yerine koyduk; iki taraf eşit çıktı.`, latex: `${check}`, isVerified: true },
     commonMistakes: [
-      "Sayıyı karşı tarafa geçirirken işaretini değiştirmemek.",
+      "Sayıyı yalnızca bir taraftan çıkarıp diğer tarafı unutmak (eşitliğin dengesi bozulur).",
       "Sadece bir tarafa işlem yapıp diğer tarafı unutmak.",
       "Katsayıya bölmek yerine katsayıyı çıkarmak.",
     ],
@@ -674,7 +696,8 @@ function substituteLatex(n: Node, v: string, value: Rational): string {
 
 /* ───────────────────────────── Yüzde ───────────────────────────── */
 
-const PERCENT_RE = /(\d+(?:[.,]\d+)?)\s*(?:'?[a-zçğıöşü]*\s*)?(?:sayısının|tl'?nin|liranın|'?[ıiuü]?n[ıiuü]n|'?[ıiuü]n)?\s*%\s*(\d+(?:[.,]\d+)?)/i;
+/** Yalnızca "N sayısının %P'si kaçtır?" biçimindeki soruların TAMAMI eşleşir; sözel problemler eşleşmez. */
+const PERCENT_RE = /^\s*(\d+(?:[.,]\d+)?)\s*(?:sayısının|['’][a-zçğıöşü]*n)\s*%\s*(\d+(?:[.,]\d+)?)['’]?[a-zçğıöşü]*\s*(?:kaçtır|kaç eder|nedir)?\s*\??\s*$/i;
 
 export function solvePercent(questionText: string): Solution | null {
   const t = questionText.replace(/yüzde\s*(\d)/gi, "%$1");
@@ -733,7 +756,11 @@ export function solvePercent(questionText: string): Solution | null {
 /** Demo çözücünün desteklediği türlerden birini dener. */
 export function solveDemo(text: string): Solution | null {
   try {
-    return solvePercent(text) ?? (text.includes("=") && /[a-z]/i.test(stripQuestionWords(text)) ? solveLinearEquation(text) : null) ?? solveArithmetic(text);
+    const pct = solvePercent(text);
+    if (pct) return pct;
+    const pure = pureMath(text);
+    if (!pure) return null; // sözel problem: demo çözücü kapsam dışı (uydurmaz)
+    return (pure.includes("=") && /[a-z]/i.test(pure) ? solveLinearEquation(text) : null) ?? (pure.includes("=") ? null : solveArithmetic(text));
   } catch {
     return null;
   }

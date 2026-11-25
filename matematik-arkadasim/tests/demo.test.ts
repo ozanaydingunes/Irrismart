@@ -97,3 +97,31 @@ describe("Demo özel ders ve kontrol", () => {
     }
   });
 });
+
+describe("Öğretmen anlatım kalitesi (demo çıktıları)", () => {
+  const BANNED = /karşıya at|karşı tarafa geçir|karşıya geçir|karşıya götür/i;
+  const outputs = [
+    ...DEMO_SAMPLES.map((s) => s.solution),
+    ...["2x + 5 = 15", "4x - 7 = 2x + 9", "3(x - 2) = 2x + 4", "3/4 + 1/6", "(-8) + 5 - (-3)", "240 sayısının %25'i kaçtır?"].map((q) => solveDemo(q)!),
+  ];
+  it("ezber 'karşıya at' dili kullanılmaz", () => {
+    for (const s of outputs) expect(JSON.stringify(s)).not.toMatch(BANNED);
+  });
+  it("denklem adımları işlemin nedenini (denge) anlatır ve kontrol adımıyla biter", () => {
+    const s = solveDemo("2x + 5 = 15")!;
+    expect(s.steps.map((x) => x.narration).join(" ")).toMatch(/dengesini bozmamak/);
+    expect(s.steps.at(-1)!.title).toMatch(/Kontrol/);
+  });
+  it("her çözümde verilenler, istenen, strateji, kontrol ve benzer soru var", () => {
+    for (const s of outputs) {
+      expect(s.givenInformation.length).toBeGreaterThan(0);
+      expect(s.requestedInformation).toBeTruthy();
+      expect(s.solutionStrategy).toBeTruthy();
+      expect(s.verification.method).toBeTruthy();
+      expect(s.similarQuestion.text).toBeTruthy();
+    }
+  });
+  it("öğrenciyi küçümseyen ifade yok", () => {
+    for (const s of outputs) expect(JSON.stringify(s)).not.toMatch(/çok kolay|bunu bilmen gerek|basit bir şey/i);
+  });
+});
