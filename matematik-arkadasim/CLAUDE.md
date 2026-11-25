@@ -34,14 +34,20 @@ dosyalara (www/, android/, kök package.json) bu proje için dokunma.
 - Anlatımda ezber dil ("karşıya at") yok; işlemin nedeni (eşitliğin dengesi vb.) anlatılır.
 - Fotoğrafta birden fazla soru → `status: "multiple"`; eksik/kesik bilgi → `unreadable` (tahmin yok).
 
-## Ev kurulumu (varsayılan)
-- Varsayılan sağlayıcı yerel Ollama (`gemma3:4b`, 8 GB RAM). Ücretli sağlayıcı yalnızca `ALLOW_PAID_AI=1` ile
-  ve asla yedek olarak kullanılmaz. Gemini entegre edilmez (API şartları 18 yaş altına izin vermiyor).
-- Uygulama ve Ollama 127.0.0.1'de dinler; cihazlar Tailscale Serve (HTTPS) ile bağlanır. Port yönlendirme,
-  `tailscale funnel`, güvenlik duvarını kapatma önerme. `--wifi` modu yalnızca isteğe bağlı yedek.
-- Tek seferde tek YZ isteği (`src/lib/ai/queue.ts`); fazlası Türkçe "meşgul" mesajı alır.
-- Eşitleme yalnızca ev sunucusunda dosyaya (`src/lib/server/syncStore.ts`, `.data/esitleme.json`);
-  fotoğraflar eşitlenmez. Sunucusuz ortamda (Vercel) eşitleme kapalıdır (501).
+## Yayın ve yapay zekâ (varsayılan: ücretsiz bulut)
+- Varsayılan: Vercel Hobby + Cloudflare Workers AI (`@cf/meta/llama-4-scout-17b-16e-instruct`, görsel destekli).
+  Mistral Small 3.1 Cloudflare'de yalnızca metin alır. Rehber: `UCRETSIZ_BULUT_KURULUMU.md`.
+- Ücretsiz zincir (`src/lib/ai/freeChain.ts`): birincil → ebeveynin onayladığı ücretsiz yedekler (`AI_FALLBACK_PROVIDERS`,
+  yalnızca cloudflare/groq). Kota/geçici hata → sıradaki ücretsiz; **güvenlik reddi, yetki hatası, geçersiz çıktı başka
+  sağlayıcıya gönderilmez**. Ücretli sağlayıcı (Anthropic/OpenAI) yalnızca `ALLOW_PAID_AI=1` ile birincil olabilir, asla yedek değil.
+- Kapasite sayaçları kalıcı depoda, 00:00 UTC'de sıfırlanır, güvenlik paylı (Cloudflare 9.000/10.000 nöron).
+  Kesin tüketim sayısı arayüzde gösterilmez (tahmindir).
+- **Soru/süre/ipucu sınırı yok.** Günlük soru sınırı ve kalan hak göstergesi kaldırıldı; geri ekleme.
+  Yalnızca dakikalık kötüye kullanım koruması ve PIN deneme sınırı var.
+- Vercel'de aile PIN'i ve Upstash zorunlu (`deploymentProblem`). Bulutta soru defteri/eşitleme yok; veriler cihazda.
+- Saf işlem/denklem ve kurallı alıştırmalar yerel motorla (`source: "local"`, "Yerel hesaplama" etiketi); yapay zekâ çağrılmaz.
+- Llama 4 lisansı gereği arayüzde "Built with Llama" ibaresi korunur. Gemini entegre edilmez (18 yaş altı yasak).
+- Alternatif ev kurulumu: `AI_PROVIDER=ollama` (tek seferde tek istek kuyruğu, dosya sayaçları, yerel eşitleme; `EV_KURULUMU.md`).
 - Gerçek model testi yapılmadan performans/doğruluk garantisi verme.
 
 ## Kod kuralları

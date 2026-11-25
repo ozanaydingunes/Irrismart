@@ -23,11 +23,14 @@ Sıradan bir soru çözücü değil: öğretmen soruyu tahtada adım adım yazar
 
 ## Kurulum
 
-> 🏠 **Önerilen: ücretsiz ev kurulumu.** Yapay zekâ evdeki Windows bilgisayarda (Ollama) çalışır;
-> telefon ve tabletler Tailscale ile güvenli HTTPS adresinden bağlanır. Adım adım, teknik bilgi
-> gerektirmeyen rehber: **[EV_KURULUMU.md](EV_KURULUMU.md)**.
-> Kısaca: `npm install` → `npm run kurulum` → `tailscale serve --bg 3000` (bir kez) → `npm run evde-baslat`.
-> Ücretli API ile internette yayın (KURULUM_REHBERI.md, DEPLOYMENT_GUIDE.md) **isteğe bağlıdır ve önerilmez**.
+> ☁️ **Önerilen: ücretsiz internet sitesi.** Vercel Hobby (barındırma) + Cloudflare Workers AI
+> (ücretsiz yapay zekâ, Llama 4 Scout ile fotoğraf okuma) + Upstash Free (güvenlik sayaçları);
+> isteğe bağlı ücretsiz yedek Groq. Telefona/tablete program kurulmaz, ev bilgisayarı gerekmez,
+> soru sınırı yoktur, ücretli servise asla geçilmez. Teknik bilgi gerektirmeyen rehber:
+> **[UCRETSIZ_BULUT_KURULUMU.md](UCRETSIZ_BULUT_KURULUMU.md)**.
+>
+> 🏠 Alternatif: evdeki bilgisayarda Ollama ile çalıştırma — **[EV_KURULUMU.md](EV_KURULUMU.md)**.
+> Ücretli API ile yayın (KURULUM_REHBERI.md, DEPLOYMENT_GUIDE.md) **isteğe bağlıdır ve önerilmez**.
 
 Gereksinim: **Node.js 20.9+** (22 önerilir).
 
@@ -105,8 +108,9 @@ ve `src/lib/speech/browserEngines.ts` (`SpeechEngine` arayüzü) üzerinden ekle
 - API çağrıları yalnızca sunucu katmanından (`src/app/api/*`) yapılır.
 - **İsteğe bağlı aile PIN'i** (`APP_ACCESS_PIN` + `APP_SESSION_SECRET`): yapay zekâ özellikleri için imzalı,
   HttpOnly çerezle giriş; 15 dakikada en fazla 5 yanlış deneme. İnternette yayınlıyorsan önerilir.
-- **Kalıcı kota** (Upstash Redis REST; yoksa bellek): oturum + IP bazlı dakikalık hız sınırı, günlük istek
-  kotası ve **günlük yaklaşık USD harcama sınırı** (`DAILY_BUDGET_USD`).
+- **Kalıcı sayaçlar** (Upstash Redis REST; ev kurulumunda dosya): oturum + IP bazlı dakikalık hız sınırı (kötüye
+  kullanım koruması), PIN deneme sınırı ve ücretsiz sağlayıcı kapasite tahmini. **Soru sınırı yoktur.**
+  Ücretli sağlayıcı yalnızca `ALLOW_PAID_AI=1` ile ve birincil olarak kullanılabilir; ücretsiz yedek zincirine hiç girmez.
 - İstem enjeksiyonuna karşı öğrenci metni veri etiketleri içinde gönderilir; loglarda anahtar/görsel maskelenir;
   CSP ve HSTS başlıkları etkindir.
 - Görseller tarayıcıda küçültülür (≤1600 px, JPEG); sunucuda tür, **sihirli bayt** ve boyut kontrolü yapılır.

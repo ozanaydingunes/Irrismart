@@ -1,5 +1,9 @@
 # Pi Hoca'yı evde ücretsiz kurma: bilgisayar, telefon ve tablet
 
+> ℹ️ **Önerilen kurulum artık bulut:** ev bilgisayarı ve telefona program gerektirmeyen ücretsiz kurulum için
+> **[UCRETSIZ_BULUT_KURULUMU.md](UCRETSIZ_BULUT_KURULUMU.md)**. Bu rehber, isterseniz evdeki bilgisayarla çalıştırma (alternatif) içindir.
+> Ev kurulumunda `.env.local` içine `AI_PROVIDER=ollama` yazılmalıdır (`npm run kurulum` bunu yapar).
+
 Bu rehber teknik bilgi gerektirmez. Sonunda kızınız **telefonundan veya tabletinden** Pi Hoca'ya
 soru sorabilir. Yapay zekâ **evdeki Windows bilgisayarda** çalışır; telefon ve tabletlere model
 kurulmaz. Hiçbir ücretli servis veya abonelik kullanılmaz.
@@ -60,7 +64,6 @@ sunucusuna göndermiyoruz.
    Kurulum sihirbazı birkaç soru sorar:
    - **RAM**: 8 GB için `gemma3:4b` önerilir.
    - **Aile PIN'i**: telefon ve tabletlerde bir kez girilir.
-   - **Ebeveyn PIN'i**: günlük soru sınırını yalnızca siz değiştirebilirsiniz. Varsayılan sınır günde 10 sorudur.
 
    Ayarlar bilgisayardaki `.env.local` dosyasına yazılır. Bu dosya hiçbir yere gönderilmez.
 
@@ -168,7 +171,6 @@ Bu yöntemin **sınırları** var:
 | "Yapay zekâ modeli indirilmemiş" | Bilgisayarda `ollama pull gemma3:4b` komutunu çalıştırın. |
 | Cevap çok geç geliyor / bilgisayar donuyor | Diğer programları (özellikle tarayıcı sekmelerini) kapatın. `.env.local` içinde `OLLAMA_NUM_CTX=4096` yapıp Pi Hoca'yı yeniden başlatın. |
 | Mikrofon düğmesi çalışmıyor | Adres `https://` ile mi başlıyor? (Wi-Fi modunda mikrofon çalışmaz.) İzinleri kontrol edin. |
-| Günlük soru sınırı doldu | **Ayarlar → Ebeveyn ayarları** bölümünden ebeveyn PIN'iyle değiştirebilirsiniz. Sayaç gece yarısı sıfırlanır. |
 | Yeni cihaz eklemek | Bölüm 3'ü o cihazda tekrarlayın. |
 
 ---

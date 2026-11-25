@@ -1,7 +1,7 @@
 # Kurulum Rehberi (sade anlatım)
 
 > ⚠️ **İsteğe bağlı, ücretli yol — önerilmez.** Bu rehber ücretli API ve internette yayın içindir.
-> Ücretsiz, verinin evde kaldığı önerilen kurulum için **[EV_KURULUMU.md](EV_KURULUMU.md)** dosyasına bakın.
+> Önerilen ücretsiz kurulum (Vercel Hobby + Cloudflare Workers AI) için **[UCRETSIZ_BULUT_KURULUMU.md](UCRETSIZ_BULUT_KURULUMU.md)** dosyasına bakın.
 
 
 Bu rehber, Matematik Arkadaşım'ı **demo modundan gerçek yapay zekâ moduna** geçirmek için yapman

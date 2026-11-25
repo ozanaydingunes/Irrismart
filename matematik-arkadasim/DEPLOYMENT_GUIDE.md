@@ -1,6 +1,6 @@
 # Yayınlama Kılavuzu — Matematik Arkadaşım
 
-> ⚠️ **İsteğe bağlı, ücretli yol — önerilmez.** Önerilen kurulum: **[EV_KURULUMU.md](EV_KURULUMU.md)** (ücretsiz, yerel Ollama + Tailscale).
+> ⚠️ **İsteğe bağlı, ücretli yol — önerilmez.** Önerilen kurulum: **[UCRETSIZ_BULUT_KURULUMU.md](UCRETSIZ_BULUT_KURULUMU.md)** (ücretsiz Vercel Hobby + Cloudflare Workers AI). Bu rehberdeki günlük soru/istek sınırı ayarları artık varsayılan olarak kapalıdır.
 
 
 Bu kılavuz uygulamayı **Vercel** üzerinde yayınlamayı adım adım anlatır. Hiçbir adım otomatik yapılmadı;
