@@ -46,7 +46,8 @@ npm start
 ```ini
 AI_PROVIDER=anthropic          # anthropic | openai | demo
 ANTHROPIC_API_KEY=...          # Anthropic Claude
-ANTHROPIC_MODEL=claude-opus-5-5
+ANTHROPIC_MODEL=claude-sonnet-5-5       # ucuz: claude-haiku-5-5 · en doğru: claude-opus-5-5
+ANTHROPIC_LIGHT_MODEL=claude-haiku-5-5  # cevap kontrolü / ipucu için
 ANTHROPIC_EFFORT=medium        # low | medium | high (düşük = daha ucuz/hızlı)
 
 # veya
@@ -58,7 +59,9 @@ OPENAI_MODEL=gpt-4.1
 - Anahtarlar **yalnızca sunucuda** okunur (`src/lib/server/config.ts`); tarayıcıya gönderilmez.
 - Seçilen sağlayıcının anahtarı yoksa uygulama **demo moduna** geçer (başka sağlayıcıya sessizce geçmez).
 - Claude entegrasyonu resmî `@anthropic-ai/sdk` ile yapılır: akış (streaming), sistem istemi önbelleği
-  (prompt caching) ve güvenlik reddinde sunucu tarafı yedek model (`fallbacks: "default"`) etkindir.
+  (prompt caching), istek başına 100 sn süre bütçesi ve geçici hatalarda en fazla 1 yeniden deneme.
+  Model güvenlik nedeniyle reddederse **başka modele geçilmez**.
+- API anahtarını nasıl güvenle ekleyeceğin ve Vercel'de yayınlama: **`DEPLOYMENT_GUIDE.md`**.
 - Yeni sağlayıcı eklemek için `src/lib/ai/provider.ts` içindeki `AIProvider` arayüzünü uygulayıp
   `src/lib/ai/service.ts` → `getProvider` içine eklemek yeterlidir.
 
@@ -94,9 +97,12 @@ ve `src/lib/speech/browserEngines.ts` (`SpeechEngine` arayüzü) üzerinden ekle
 ## Güvenlik, gizlilik ve maliyet
 
 - API çağrıları yalnızca sunucu katmanından (`src/app/api/*`) yapılır.
-- **Hız sınırı** (dakikalık) ve **günlük kullanım limiti** (istemci başına + genel) yapılandırılabilir
-  (`RATE_LIMIT_PER_MINUTE`, `DAILY_LIMIT_PER_CLIENT`, `DAILY_LIMIT_GLOBAL`). Sayaçlar bellek içidir;
-  birden fazla sunucu örneğinde Redis gibi paylaşımlı depo önerilir.
+- **İsteğe bağlı aile PIN'i** (`APP_ACCESS_PIN` + `APP_SESSION_SECRET`): yapay zekâ özellikleri için imzalı,
+  HttpOnly çerezle giriş; 15 dakikada en fazla 5 yanlış deneme. İnternette yayınlıyorsan önerilir.
+- **Kalıcı kota** (Upstash Redis REST; yoksa bellek): oturum + IP bazlı dakikalık hız sınırı, günlük istek
+  kotası ve **günlük yaklaşık USD harcama sınırı** (`DAILY_BUDGET_USD`).
+- İstem enjeksiyonuna karşı öğrenci metni veri etiketleri içinde gönderilir; loglarda anahtar/görsel maskelenir;
+  CSP ve HSTS başlıkları etkindir.
 - Görseller tarayıcıda küçültülür (≤1600 px, JPEG); sunucuda tür, **sihirli bayt** ve boyut kontrolü yapılır.
 - Aynı soru için önbellek (SHA-256) — gereksiz API çağrısı yapılmaz. Yerel olarak kontrol edilebilen cevaplar YZ'ye gönderilmez.
 - YZ çıktısı **Zod** ile doğrulanır, geçersizse bir kez onarım istenir. Bilinmeyen görsel türleri ayıklanır.
@@ -113,10 +119,11 @@ ve `src/lib/speech/browserEngines.ts` (`SpeechEngine` arayüzü) üzerinden ekle
 ```bash
 npm run typecheck   # TypeScript
 npm run lint        # ESLint
-npm test            # Vitest: 135 birim/entegrasyon testi
+npm test            # Vitest: 304 birim/entegrasyon testi (117 soruluk doğruluk kümesi dahil)
 npm run build
-npm run test:e2e    # Playwright: 13 uçtan uca senaryo (demo modunda, ekran görüntüleri e2e/screens/)
+npm run test:e2e    # Playwright: 18 uçtan uca senaryo (demo + test sağlayıcısı/PIN; ekran görüntüleri e2e/screens/)
 npm run check       # typecheck + lint + test + build
+npm run eval:ai     # GERÇEK YZ doğruluk ölçümü: önce yalnızca tahmini maliyet; AI_EVAL_CONFIRM=1 ile çalışır
 ```
 
 Test kapsamı: kesirler, tam sayılar ve işlem önceliği, rasyonel sayılar/ondalıklar, yüzdeler, denklemler,
@@ -139,11 +146,13 @@ tests/              Vitest testleri
 e2e/                Playwright duman testi
 ```
 
-Ayrıntılı mimari için `PROJECT_PLAN.md`, geliştirme kuralları için `CLAUDE.md`.
+Ayrıntılı mimari için `PROJECT_PLAN.md`, geliştirme kuralları için `CLAUDE.md`, denetim bulguları için
+`AUDIT_REPORT.md`, son durum için `FINAL_REPORT.md`, yayınlama için `DEPLOYMENT_GUIDE.md`.
 
 ## Bilinen sınırlamalar
 
 - Web Speech API'de Türkçe ses ve kadın/erkek ayrımı cihaza bağlıdır; ses adından tahmin edilir.
 - Konuşma tanıma Firefox'ta desteklenmez (yazarak devam edilir).
 - HEIC fotoğraflar yalnızca tarayıcı destekliyorsa açılır.
-- Bellek içi limitler sunucu yeniden başlatılınca sıfırlanır.
+- Upstash yapılandırılmazsa limitler bellek içidir ve sunucusuz ortamda güvenilir değildir.
+- Gerçek yapay zekâ ile doğruluk henüz ölçülmedi (bkz. `FINAL_REPORT.md`).

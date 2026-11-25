@@ -183,3 +183,13 @@ describe("API uçları (demo modu)", () => {
     expect((await POST(post("http://x/api/tts", { text: "merhaba" }))).status).toBe(501);
   });
 });
+
+describe("Service worker önbellek güvenliği", () => {
+  it("API yanıtlarını ve POST isteklerini asla önbelleğe almaz", async () => {
+    const { readFileSync } = await import("node:fs");
+    const sw = readFileSync("public/sw.js", "utf8");
+    expect(sw).toMatch(/if \(req\.method !== "GET"\) return;/);
+    expect(sw).toMatch(/if \(url\.pathname\.startsWith\("\/api\/"\)\) return;/);
+    expect(sw).toMatch(/if \(url\.origin !== self\.location\.origin\) return;/);
+  });
+});

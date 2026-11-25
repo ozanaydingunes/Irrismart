@@ -85,8 +85,9 @@ export function getConfig(): ServerConfig {
       sessionSecret: process.env.APP_SESSION_SECRET?.trim() ?? "",
     },
     store: {
-      upstashUrl: (process.env.UPSTASH_REDIS_REST_URL?.trim() ?? "").replace(/\/+$/, ""),
-      upstashToken: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ?? "",
+      // Vercel Marketplace (Upstash) entegrasyonu KV_REST_API_* adlarını da kullanabilir
+      upstashUrl: (process.env.UPSTASH_REDIS_REST_URL?.trim() || process.env.KV_REST_API_URL?.trim() || "").replace(/\/+$/, ""),
+      upstashToken: process.env.UPSTASH_REDIS_REST_TOKEN?.trim() || process.env.KV_REST_API_TOKEN?.trim() || "",
     },
     isProduction: process.env.NODE_ENV === "production",
   };

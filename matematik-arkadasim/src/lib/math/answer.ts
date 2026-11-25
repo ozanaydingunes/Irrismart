@@ -7,8 +7,9 @@ import type { Rational } from "./rational";
  * Karar verilemezse null döner (bu durumda YZ'ye sorulur veya öğrenciye kendini değerlendirmesi önerilir).
  */
 
+// Türkçe harfler \b ile çalışmadığı için harf olmayan sınırlar kullanılır
 const UNIT_WORDS =
-  /\b(tl|lira|kuruş|cm²|cm2|cm³|cm|mm|m²|m2|m|km|kg|g|gr|derece|adet|tane|sayfa|öğrenci|kişi|saat|dakika|dk|sn|saniye|litre|lt|ml|cevap|sonuç|sonucu|eder|olur|dır|dir|dur|dür|tır|tir|tur|tür)\b/gi;
+  /(?<![A-Za-zÇĞİÖŞÜçğıöşü])(tl|lira|kuruş|cm²|cm2|cm³|cm|mm|m²|m2|m|km|kg|g|gr|derece|adet|tane|sayfa|öğrenci|kişi|saat|dakika|dk|sn|saniye|litre|lt|ml|cevap|sonuç|sonucu|eder|olur|dır|dir|dur|dür|tır|tir|tur|tür)(?![A-Za-zÇĞİÖŞÜçğıöşü])/gi;
 
 export function choiceLetter(s: string): string | null {
   const m = /^\s*([A-Ea-e])\s*[).:\-]?\s*(?:şıkkı|seçeneği)?\s*$/.exec(s);

@@ -76,7 +76,6 @@ export function demoPractice(topicId: string): Solution | null {
       return `${rnd(1, d1 - 1)}/${d1} + ${rnd(1, d2 - 1)}/${d2}`;
     },
     "tam-sayilar": () => `(${-rnd(2, 9)}) + ${rnd(2, 6)} · (${-rnd(2, 5)})`,
-    "cebirsel-ifadeler": () => `${rnd(2, 5)}x + ${rnd(1, 9)} = ${rnd(20, 40)}`,
     denklemler: () => {
       const a = rnd(2, 6);
       const x = rnd(2, 9);
@@ -100,5 +99,5 @@ export function demoPractice(topicId: string): Solution | null {
 export const DEMO_TOPICS_WITH_PRACTICE = TOPICS.filter((t) => demoPracticeAvailable(t.id)).map((t) => t.id);
 
 function demoPracticeAvailable(id: string) {
-  return ["kesirler", "tam-sayilar", "cebirsel-ifadeler", "denklemler", "yuzdeler", "rasyonel-sayilar"].includes(id) || DEMO_SAMPLES.some((s) => s.topicId === id);
+  return ["kesirler", "tam-sayilar", "denklemler", "yuzdeler", "rasyonel-sayilar"].includes(id) || DEMO_SAMPLES.some((s) => s.topicId === id);
 }

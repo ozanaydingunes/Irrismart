@@ -4,10 +4,10 @@
  * - /api/* ASLA önbelleğe alınmaz (yapay zekâ çağrıları her zaman internet ister).
  * - Kayıtlı çözümler IndexedDB'de olduğu için Soru Defterim çevrimdışı açılır.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const STATIC = `static-${VERSION}`;
-const PAGES = ["/", "/coz", "/konular", "/defter", "/gelisim", "/ayarlar", "/offline"];
+const PAGES = ["/", "/coz", "/konular", "/defter", "/gelisim", "/ayarlar", "/gizlilik", "/offline"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

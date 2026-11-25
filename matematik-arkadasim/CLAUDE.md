@@ -11,6 +11,7 @@ dosyalara (www/, android/, kök package.json) bu proje için dokunma.
 - `npm run build` — üretim derlemesi
 - `npm run test:e2e` — Playwright duman testi (önce `npm run build`; betik sunucuyu kendisi başlatır)
 - `npm run check` — hepsi (typecheck + lint + test + build). Her değişiklikten sonra çalıştır.
+- `npm run eval:ai` — GERÇEK (ücretli) YZ doğruluk ölçümü. Kullanıcı onayı olmadan `AI_EVAL_CONFIRM=1` ile çalıştırma.
 
 ## Ürün kuralları
 - Tüm arayüz metinleri **Türkçe**. Hedef kitle 12–13 yaş, 7. sınıf MEB müfredatı.
@@ -27,11 +28,20 @@ dosyalara (www/, android/, kök package.json) bu proje için dokunma.
 - Seslendirmede LaTeX okunmaz: `narration` alanı düz Türkçe olmalı; yine de
   `src/lib/speech/mathToSpeech.ts` kalan sembolleri Türkçeye çevirir (x² → "iksin karesi").
 
+- Model güvenlik nedeniyle reddederse başka modele geçilmez (`fallbacks` kullanma).
+- Demo çözücü yalnızca saf işlem/denklem kalıplarını çözer; sözel problemi "kapsam dışı" saymalıdır.
+  Yeni kalıp eklerken `tests/questionBank.test.ts` 0 yanlış cevabı korumalıdır.
+- Anlatımda ezber dil ("karşıya at") yok; işlemin nedeni (eşitliğin dengesi vb.) anlatılır.
+- Fotoğrafta birden fazla soru → `status: "multiple"`; eksik/kesik bilgi → `unreadable` (tahmin yok).
+
 ## Kod kuralları
 - API anahtarları yalnızca sunucuda (`src/lib/server/config.ts`). İstemci bileşenlerinde
   `process.env` gizli değişkenlerine erişme; `NEXT_PUBLIC_` önekiyle anahtar tanımlama.
-- Yeni API ucu: `src/lib/server/handler.ts` içindeki `guardedJsonRoute` ile sar (hız sınırı,
-  günlük limit, gövde boyutu, Zod girdi doğrulaması, Türkçe hata mesajları).
+- Yeni API ucu: `src/lib/server/handler.ts` içindeki `guardedJsonRoute` ile sar (aile PIN'i, kalıcı hız
+  sınırı/kota/harcama sınırı, gövde boyutu, Zod girdi doğrulaması, Türkçe hata mesajları).
+- Hata kaydı için yalnızca `logError` (`src/lib/server/log.ts`); istek gövdesi, soru metni, görsel loglanmaz.
+- Öğrenci/istemci metni isteme yalnızca `sanitizeUserText` ile ve `<ogrenci_sorusu>` etiketi içinde girer.
+- YZ servis fonksiyonları test için `ServiceDeps` ile sahte sağlayıcı alır; testlerde gerçek ağ çağrısı yok.
 - Saf mantık (`lib/math`, `lib/speech`, `lib/stats`, `lib/demo`) tarayıcı API'si kullanmaz ve test edilir.
 - Matematik hesapları kesin rasyonel aritmetikle (`lib/math/rational.ts`, BigInt) yapılır; kayan nokta yok.
 - Erişilebilirlik: butonlarda `aria-label`, odak halkası, en az 44 px dokunma hedefi, AA kontrast.

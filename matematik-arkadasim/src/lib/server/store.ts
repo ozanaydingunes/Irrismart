@@ -75,7 +75,11 @@ const g = globalThis as unknown as { __mathStore?: CounterStore };
 export function getStore(): CounterStore {
   if (!g.__mathStore) {
     const { store } = getConfig();
+    const cfg = getConfig();
     g.__mathStore = store.upstashUrl && store.upstashToken ? new UpstashStore(store.upstashUrl, store.upstashToken) : new MemoryStore();
+    if (!g.__mathStore.persistent && cfg.isProduction && cfg.provider !== "demo") {
+      console.warn("[quota] UYARI: Kalıcı sayaç deposu (Upstash) yapılandırılmamış; kota ve harcama sınırları sunucusuz ortamda güvenilir değildir.");
+    }
   }
   return g.__mathStore;
 }

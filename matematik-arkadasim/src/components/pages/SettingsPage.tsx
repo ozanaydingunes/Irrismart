@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Play, ShieldCheck, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ModeSelector } from "@/components/lesson/ModeSelector";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -223,6 +224,9 @@ export function SettingsPage() {
             {status && status.dailyLimitPerClient > 0 && <li>Günlük yapay zekâ soru sınırı: {status.dailyLimitPerClient}</li>}
           </ul>
           <div className="mt-2 flex flex-wrap gap-2">
+            <Button asChild variant="ghost">
+              <Link href="/gizlilik">Gizlilik bilgilendirmesi</Link>
+            </Button>
             <Button variant="outline" onClick={doExport}>
               <Download /> Verilerimi indir
             </Button>
