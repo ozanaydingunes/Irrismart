@@ -50,7 +50,7 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
     <section
       aria-label="Akıllı tahta"
       data-paused={paused ? "true" : "false"}
-      className={cn("board-surface relative overflow-hidden rounded-3xl border-2 border-border p-3 shadow-card sm:p-5", paused && "board-paused")}
+      className={cn("board-surface relative min-w-0 overflow-hidden rounded-3xl border-2 border-border p-2 shadow-card sm:p-5", paused && "board-paused")}
     >
       <ol className="flex flex-col gap-3">
         {steps.slice(0, visibleUntil + 1).map((step, i) => {
@@ -62,8 +62,8 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
               ref={current ? currentRef : undefined}
               aria-current={current ? "step" : undefined}
               className={cn(
-                "rounded-2xl border-2 p-3 transition-all duration-300 sm:p-4",
-                current ? "border-primary bg-card shadow-card" : "border-transparent bg-card/55 opacity-80 hover:opacity-100",
+                "scroll-mt-20 scroll-mb-64 rounded-2xl border-2 p-3 transition-all duration-300 sm:p-4 md:scroll-mb-8",
+                current ? "border-primary bg-card shadow-card" : "border-transparent bg-card/70 hover:bg-card",
               )}
             >
               <button
@@ -86,7 +86,13 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
                     {step.title}
                     {current && speaking && <Volume2 className="size-4 text-primary" aria-label="Seslendiriliyor" />}
                   </span>
-                  {!current && <span className="line-clamp-1 text-sm text-muted-foreground">{step.explanation}</span>}
+                  {!current && !hiddenSteps?.has(i) && step.latex ? (
+                    <span className="mt-1 block overflow-x-auto text-board-foreground">
+                      <MathTex latex={step.latex} />
+                    </span>
+                  ) : !current ? (
+                    <span className="line-clamp-1 text-sm text-muted-foreground">{step.explanation}</span>
+                  ) : null}
                 </span>
               </button>
 
@@ -100,8 +106,18 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
                   ) : (
                     <>
                       {step.latex && (
-                        <div key={`l${playToken}`} className="overflow-x-auto rounded-xl px-1 py-2 text-center text-board-foreground">
-                          <MathTex latex={step.latex} display highlights={step.highlightedElements} animate className="katex-host-lg" />
+                        <div key={`l${playToken}`} className="flex flex-wrap items-center justify-center gap-x-2 overflow-x-auto rounded-xl px-1 py-2 text-center text-board-foreground">
+                          {/* Uzun işlem zincirleri "⇒" işaretlerinden alt alta yazılır (telefonda yatay kaydırma gerekmesin) */}
+                          {step.latex.split(/\\Rightarrow/).map((part, k) => (
+                            <MathTex
+                              key={k}
+                              latex={(k > 0 ? "\\Rightarrow " : "") + part.trim()}
+                              display
+                              highlights={step.highlightedElements}
+                              animate
+                              className="katex-host-lg"
+                            />
+                          ))}
                         </div>
                       )}
                       {step.highlightedElements.some((h) => h.reason) && (

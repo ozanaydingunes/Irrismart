@@ -61,7 +61,7 @@ OPENAI_MODEL=gpt-4.1
 - Claude entegrasyonu resmî `@anthropic-ai/sdk` ile yapılır: akış (streaming), sistem istemi önbelleği
   (prompt caching), istek başına 100 sn süre bütçesi ve geçici hatalarda en fazla 1 yeniden deneme.
   Model güvenlik nedeniyle reddederse **başka modele geçilmez**.
-- API anahtarını nasıl güvenle ekleyeceğin ve Vercel'de yayınlama: **`DEPLOYMENT_GUIDE.md`**.
+- Teknik bilgi gerektirmeyen adım adım kurulum: **`KURULUM_REHBERI.md`**. Ayrıntılı yayınlama: **`DEPLOYMENT_GUIDE.md`**.
 - Yeni sağlayıcı eklemek için `src/lib/ai/provider.ts` içindeki `AIProvider` arayüzünü uygulayıp
   `src/lib/ai/service.ts` → `getProvider` içine eklemek yeterlidir.
 
@@ -121,7 +121,7 @@ npm run typecheck   # TypeScript
 npm run lint        # ESLint
 npm test            # Vitest: 304 birim/entegrasyon testi (117 soruluk doğruluk kümesi dahil)
 npm run build
-npm run test:e2e    # Playwright: 18 uçtan uca senaryo (demo + test sağlayıcısı/PIN; ekran görüntüleri e2e/screens/)
+npm run test:e2e    # Playwright: 27 uçtan uca senaryo, 7 ekran boyutu (ekran görüntüleri e2e/screens/)
 npm run check       # typecheck + lint + test + build
 npm run eval:ai     # GERÇEK YZ doğruluk ölçümü: önce yalnızca tahmini maliyet; AI_EVAL_CONFIRM=1 ile çalışır
 ```

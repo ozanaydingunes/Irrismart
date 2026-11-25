@@ -15,7 +15,9 @@
     "icons": "node scripts/generate-icons.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "eval:ai": "RUN_AI_EVAL=1 vitest run tests/ai-eval.test.ts --silent=false",
-    "audit": "npm audit --omit=dev && npm audit"
+    "audit": "npm audit --omit=dev && npm audit",
+    "api:test": "RUN_AI_EVAL=1 AI_EVAL_CONFIRM=1 AI_EVAL_LIMIT=1 vitest run tests/ai-eval.test.ts --silent=false",
+    "screenshots": "node e2e/screenshots.mjs"
   },
   "engines": {
     "node": ">=20.9"

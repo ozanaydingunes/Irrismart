@@ -139,3 +139,59 @@ Ayrıntı: `DEPLOYMENT_GUIDE.md`.
 5. Upstash ve Vercel hesaplarını oluşturup yayınla (ücretli plan gerekip gerekmediğine sen karar ver).
 6. Uygulamayı başka ailelere açacaksan gizlilik metni ve veli onayı süreçlerini hukuki açıdan değerlendir.
 7. Bu dalı ana dala birleştirmek istersen bir Pull Request oluşturmamı isteyebilirsin (izinsiz oluşturulmadı).
+
+
+---
+
+# Ek: Son tasarım iyileştirmesi (25.11.2026)
+
+## Yapılanlar
+| Alan | Değişiklik |
+|---|---|
+| Alt menü çakışması | İçerik alt boşluğu artık `menü yüksekliği + safe-area-inset-bottom + 1,5 rem`; "Diğer" menüsü ev çubuğunun üstünde açılıyor; üst çubukta çentik için `safe-area-inset-top` |
+| Odak çerçevesi | Alt menüde odak halkası içeride çiziliyor (ekran kenarından taşmıyor), klavyeyle görünür |
+| Yatay taşma | `overflow-x: clip` + ders ızgarasında `min-w-0`; oynatıcı düğmeleri dar ekranda satır kırabiliyor |
+| Logo kontrastı | Degrade koyulaştırıldı (beyaz çizgi kontrastı ≈3,6:1 → ≥4,7:1); PWA ikonları yeniden üretildi |
+| Ana ekran | Kompakt karşılama kartı + özgün "Pi Hoca" maskotu (SVG), belirgin "Fotoğraf çek", yan yana "Soru yükle / Soru yaz", "Sesle sor", "Soru defterim / Gelişimim" kısayolları; üst çubukta logo + ayarlar; sahte istatistik yok |
+| Demo uyarısı | İşlem düğmelerinin üstünde, hiçbir menünün arkasında değil (testle doğrulandı) |
+| Sesli ders | Tahta merkezde; verilenler/istenen katlanabilir özet; mod seçimi katlanabilir; önceki adımlar formülleriyle okunur kalıyor; oynatıcıda belirgin **Anlamadım** ve **Tekrar dinle**; telefonda hız/ses ayarları katlanır; uzun formüller "⇒" noktalarından alt satıra geçebiliyor |
+| Ses | Öğretmene yeni soru sorulunca önceki anlatım ve önceki yanıt susuyor |
+| Kurulum | Sade, adım adım `KURULUM_REHBERI.md`; `npm run api:test` (1 soru, ücretli, ~0,05 USD) |
+
+## Bu turda bulunup düzeltilen hatalar
+1. **Duraklatılmışken adım değiştirilince formül ve çizim görünmez kalıyordu** (önceki turda eklenen "duraklatınca animasyon dursun" özelliğinin yan etkisi; animasyon ilk karede donuyordu). Artık animasyon yalnızca o adım oynarken duraklatılırsa donuyor. Yeni e2e testi opaklık ve kırpmayı kontrol ediyor.
+2. **320 px genişlikte ders ekranı sağdan kesiliyordu** (oynatıcı düğmeleri ızgarayı genişletiyordu). İlk taşma testi `overflow-x: clip` yüzünden bunu göremiyordu; test artık ekran dışına taşan görünür öğeleri tek tek arıyor.
+3. 320 px'de oynatıcı tahtanın yarısını kapatıyordu → kompakt oynatıcı.
+4. Demo açıklamasında değişken adı cümle başında büyük harfe çevriliyordu ("X terimini").
+
+## Bu turun gerçek test sonuçları
+| Kontrol | Sonuç |
+|---|---|
+| Typecheck | ✅ |
+| Lint | ✅ |
+| Birim testleri | ✅ 304 geçti, 1 atlandı (ücretli gerçek YZ testi) |
+| Uçtan uca (Playwright/Chromium) | ✅ **27/27** |
+| Build | ✅ |
+| `npm audit` | ✅ 0 açık |
+| Ekran boyutu matrisi | ✅ 320×568, 360×800, 375×667, 390×844, 430×932, tablet 820×1180, masaüstü 1440×900 — her birinde ana ekran, soru yükleme, sesli ders, soru defteri, ayarlar: ekran dışına taşan öğe yok, alt menü son içeriği kapatmıyor, demo uyarısı açıkta, aktif adım oynatıcının altında kalmıyor |
+| Gerçek YZ API | ⛔ Yapılmadı (anahtar yok) |
+| Gerçek telefon (ses, kamera) | ⛔ Yapılmadı (manuel liste 7. bölümde) |
+
+Güncel görüntüler: `docs/ekran-goruntuleri/` (ana ekran ve sesli ders, 390×844 ve 320×568, koyu tema).
+Tüm ölçülerde görüntüler `npm run test:e2e` ile `e2e/screens/` klasörüne üretilir.
+
+## Gerçek kullanım için yapman gerekenler (sırayla)
+1. **Anthropic hesabı aç**, Billing'den küçük bir bakiye yükle, **Limits**'ten aylık harcama sınırı koy (ör. 10 USD).
+2. **API anahtarı oluştur** (API Keys → Create Key). Anahtarı hiçbir yere yazma; 4. adımda doğrudan Vercel'e yapıştıracaksın.
+3. **Vercel'de projeyi oluştur:** GitHub'daki `irrismart` deposunu içe aktar, **Root Directory = `matematik-arkadasim`**.
+4. **Ortam değişkenlerini gir:** `AI_PROVIDER=anthropic`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL=claude-sonnet-5-5`, `APP_ACCESS_PIN`, `APP_SESSION_SECRET` (32+ karakter rastgele), `DAILY_BUDGET_USD=1`.
+5. **Upstash Redis ekle** (Vercel → Storage → Upstash, ücretsiz) ve projeye bağla.
+6. **Deploy** et. Açılan adreste **DEMO** etiketi görünmemeli.
+7. **Bağlantıyı test et:** PIN'i gir, `3/4 + 1/6 işleminin sonucu kaçtır?` yaz → rozet "Yapay zekâ çözümü", sonuç 11/12 olmalı. Sonra kitaptan bir soru fotoğrafı çek.
+8. **Telefona ekle:** iPhone'da Safari → Paylaş → Ana Ekrana Ekle; Android'de Chrome → ⋮ → Ana ekrana ekle. Telefonun ayarlarından Türkçe metin okuma sesini indir.
+9. **Öğrenciyle bir hafta dene:** 7. bölümdeki ses (S1–S12) ve fotoğraf senaryolarını gözlemle; yanlış çözülen soruları not et.
+10. İstersen bilgisayarında `npm run eval:ai` ile önce maliyet tahminini gör, uygun bulursan 117 soruluk doğruluk ölçümünü çalıştır (Sonnet ile ~6 USD).
+
+Ayrıntılı ve resimsiz sade anlatım: `KURULUM_REHBERI.md`. Teknik ayrıntılar: `DEPLOYMENT_GUIDE.md`.
+
+**Bu aşamadan sonra yeni özellik geliştirilmedi.** Öncelik: gerçek API bağlantısı ve öğrenci kullanım testleri.

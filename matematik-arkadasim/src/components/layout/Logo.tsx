@@ -9,8 +9,8 @@ export function Logo({ className }: { className?: string }) {
     <svg viewBox="0 0 64 64" className={className} aria-hidden>
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8b6cf0" />
-          <stop offset="1" stopColor="#5b8def" />
+          <stop offset="0" stopColor="#6d4ed8" />
+          <stop offset="1" stopColor="#3f6fd8" />
         </linearGradient>
       </defs>
       <rect x="2" y="2" width="60" height="60" rx="18" fill={`url(#${gid})`} />

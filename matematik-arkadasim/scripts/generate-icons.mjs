@@ -10,8 +10,8 @@ const svg = readFileSync(dir + "icon.svg", "utf8");
 const targets = [
   { file: "icon-192.png", size: 192, pad: 0, bg: "transparent" },
   { file: "icon-512.png", size: 512, pad: 0, bg: "transparent" },
-  { file: "maskable-512.png", size: 512, pad: 0.12, bg: "#7a72ef" },
-  { file: "apple-touch-icon.png", size: 180, pad: 0.06, bg: "#7a72ef" },
+  { file: "maskable-512.png", size: 512, pad: 0.12, bg: "#5a5fd8" },
+  { file: "apple-touch-icon.png", size: 180, pad: 0.06, bg: "#5a5fd8" },
 ];
 
 const browser = await chromium.launch();

@@ -3,6 +3,7 @@
 import { ArrowRight, BookMarked, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { Mascot } from "@/components/home/Mascot";
 import { QuickActions } from "@/components/home/QuickActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,22 +42,27 @@ export function HomePage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <p className="text-base font-semibold text-muted-foreground">
-          {hello}
-          {settings.nickname ? `, ${settings.nickname}` : ""}! 👋
-        </p>
-        <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">Hangi soruyu birlikte çözelim?</h1>
-      </div>
-
-      <QuickActions />
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 md:max-w-2xl">
+      {/* Kompakt karşılama kartı + maskot */}
+      <section className="flex items-center gap-3 overflow-hidden rounded-3xl bg-gradient-to-br from-accent to-secondary p-4 sm:p-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-accent-foreground">
+            {hello}
+            {settings.nickname ? `, ${settings.nickname}` : ""}! 👋
+          </p>
+          <h1 className="text-xl font-extrabold leading-tight sm:text-2xl">Hangi soruyu birlikte çözelim?</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Ben Pi Hoca. Tahtada adım adım, sesli anlatırım.</p>
+        </div>
+        <Mascot className="size-20 shrink-0 sm:size-24" />
+      </section>
 
       {status?.mode === "demo" && (
-        <p className="rounded-2xl border-2 border-warning/50 bg-warning/10 p-3 text-sm">
+        <p className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm leading-snug">
           <b className="text-warning-strong">Demo modu:</b> Yapay zekâ bağlı değil. Hazır örnekler ve basit işlemler (kesir, denklem, yüzde) kural tabanlı çözücüyle gösterilir; fotoğraf okunmaz.
         </p>
       )}
+
+      <QuickActions />
 
       {stats && stats.dueReviews > 0 && (
         <Button asChild variant="secondary" size="lg" className="justify-between">

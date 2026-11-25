@@ -1,7 +1,7 @@
 "use client";
 
 import { BookOpen, HelpCircle, Lightbulb, Loader2, MessageCircleQuestion, RefreshCcw, Send, Shuffle, Sparkles, Undo2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MicButton } from "@/components/common/MicButton";
 import { MathTex } from "@/components/math/MathTex";
 import { Visual } from "@/components/board/visuals";
@@ -38,10 +38,12 @@ interface Props {
   onTeacherReply: (msg: ChatMessage) => void;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  /** Oynatıcıdaki "Anlamadım" gibi dışarıdan gelen istek (nonce her basışta değişir) */
+  request?: { action: TutorAction; label: string; nonce: number };
 }
 
 /** Etkileşimli özel ders: hazır düğmeler + yazılı/sesli serbest soru. */
-export function TutorPanel({ solution, stepIndex, onBeforeAsk, onPrevStep, onTeacherReply, messages, setMessages }: Props) {
+export function TutorPanel({ solution, stepIndex, onBeforeAsk, onPrevStep, onTeacherReply, messages, setMessages, request }: Props) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +67,19 @@ export function TutorPanel({ solution, stepIndex, onBeforeAsk, onPrevStep, onTea
     onTeacherReply({ ...msg, text: res.reply.narration });
   }
 
+  const askRef = useRef(ask);
+  useEffect(() => {
+    askRef.current = ask;
+  });
+  const lastNonce = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!request || request.nonce === lastNonce.current) return;
+    lastNonce.current = request.nonce;
+    void askRef.current(request.action, request.label);
+  }, [request]);
+
   return (
-    <Card className="p-4">
+    <Card className="scroll-mt-20 p-4" id="ogretmene-sor">
       <h2 className="mb-1 text-lg font-bold">Öğretmenine sor</h2>
       <p className="mb-3 text-sm text-muted-foreground">Anlatımı istediğin an durdurup soru sorabilirsin. Öğretmen bulunduğun adımı ({stepIndex + 1}. adım) dikkate alır.</p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">

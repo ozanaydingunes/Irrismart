@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, WifiOff } from "lucide-react";
+import { Menu, Settings, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,14 +70,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobil üst çubuk */}
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-background/90 px-4 py-2 backdrop-blur md:hidden">
-          <Link href="/" className="flex items-center gap-2" aria-label="Matematik Arkadaşım ana sayfa">
-            <Logo className="size-8" />
-            <span className="font-extrabold">Matematik Arkadaşım</span>
+        <header className="safe-top sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border bg-background/95 px-3 pb-1.5 backdrop-blur md:hidden">
+          <Link href="/" className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl px-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-ring/50" aria-label="Matematik Arkadaşım ana sayfa">
+            <Logo className="size-8 shrink-0" />
+            <span className="truncate text-[15px] font-extrabold max-[359px]:hidden">Matematik Arkadaşım</span>
+            <span className="hidden text-[15px] font-extrabold max-[359px]:inline">Mat. Arkadaşım</span>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             {status?.mode === "demo" && <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[11px] font-bold text-warning-strong">DEMO</span>}
-            <ThemeToggle compact />
+            <Link
+              href="/ayarlar"
+              aria-label="Ayarlar"
+              aria-current={pathname.startsWith("/ayarlar") ? "page" : undefined}
+              className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-ring/50"
+            >
+              <Settings className="size-5" />
+            </Link>
           </div>
         </header>
 
@@ -87,7 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        <main id="icerik" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-4 sm:px-6 md:pb-10 md:pt-8">
+        <main id="icerik" className="main-safe mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pt-4 sm:px-6 md:pt-8">
           {children}
         </main>
       </div>
@@ -100,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 href={href}
                 aria-current={isActive(href) ? "page" : undefined}
-                className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", isActive(href) ? "text-primary" : "text-muted-foreground")}
+                className={cn("nav-item flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", isActive(href) ? "text-primary" : "text-muted-foreground")}
               >
                 <span className={cn("flex h-8 w-14 items-center justify-center rounded-full transition-colors", isActive(href) && "bg-accent")}>
                   <Icon className="size-6" />
@@ -114,7 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <DialogTrigger asChild>
                 <button
                   type="button"
-                  className={cn("flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", moreActive ? "text-primary" : "text-muted-foreground")}
+                  className={cn("nav-item flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", moreActive ? "text-primary" : "text-muted-foreground")}
                   aria-label="Diğer sayfalar"
                 >
                   <span className={cn("flex h-8 w-14 items-center justify-center rounded-full", moreActive && "bg-accent")}>
@@ -123,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   Diğer
                 </button>
               </DialogTrigger>
-              <DialogContent className="top-auto bottom-4 translate-y-0 data-[state=open]:animate-fade-in">
+              <DialogContent className="sheet-bottom top-auto translate-y-0 data-[state=open]:animate-fade-in">
                 <DialogTitle>Diğer</DialogTitle>
                 <ul className="flex flex-col gap-2">
                   {NAV_ITEMS.filter((n) => !(MOBILE_PRIMARY as readonly string[]).includes(n.href)).map(({ href, label, icon: Icon }) => (

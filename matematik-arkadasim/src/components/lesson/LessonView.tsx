@@ -16,7 +16,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SmartBoard } from "@/components/board/SmartBoard";
 import { MathTex } from "@/components/math/MathTex";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ import { useNarration } from "@/hooks/useNarration";
 import { useSettings } from "@/hooks/useSettings";
 import * as api from "@/lib/client/api";
 import { answersEquivalent } from "@/lib/math/answer";
-import type { LearningMode, SolutionStep, SolveResult } from "@/lib/schema/solution";
+import type { LearningMode, SolutionStep, SolveResult, TutorAction } from "@/lib/schema/solution";
 import { nextReviewDate } from "@/lib/stats/stats";
 import { newId, recordAnswer, recordLesson, saveEntry, updateEntry, type EntryStatus, type NotebookEntry } from "@/lib/storage/db";
 import { cn } from "@/lib/utils";
@@ -61,6 +61,13 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
   const [selfAssessed, setSelfAssessed] = useState<null | "correct" | "wrong" | "review">(null);
   // Aynı ders için gelişim paneline yalnızca bir kez "doğru/yanlış" yazılır (tekrar tıklama istatistiği şişirmesin)
   const answerRecorded = useRef(false);
+  const [tutorRequest, setTutorRequest] = useState<{ action: TutorAction; label: string; nonce: number } | undefined>();
+  // Geniş ekranda özet açık, telefonda kapalı başlar (yalnızca tarayıcıda hesaplanır)
+  const wideScreen = useSyncExternalStore(
+    () => () => {},
+    () => window.matchMedia("(min-width: 1024px)").matches,
+    () => false,
+  );
   const lessonRecorded = useRef(false);
 
   const waitRef = useRef<(i: number) => boolean>(() => false);
@@ -74,6 +81,10 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
   const narrations = useMemo(() => steps.map((s) => s.narration), [steps]);
   const { controller, state, engineLabel, availability, speakAside, stopAside, asideSpeaking } = useNarration(narrations, { shouldWaitAfterStep: shouldWait });
   const current = Math.min(state.stepIndex, steps.length - 1);
+  // Tahta animasyonları yalnızca BU adım seslendirilirken duraklatıldıysa donar. Duraklatılmış hâldeyken
+  // başka adıma geçilirse (playToken değişir) yeni adım normal şekilde çizilir; aksi hâlde formül görünmez kalırdı.
+  const [playedToken, setPlayedToken] = useState(-1);
+  if (state.status === "playing" && playedToken !== state.playToken) setPlayedToken(state.playToken);
 
   // Ulaşılan en ileri adım (render sırasında türetilen durum)
   if (current > maxReached) setMaxReached(current);
@@ -229,7 +240,15 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
             </div>
           )}
           {wasFromImage && <QuestionConfirm question={solution.question} note={solution.readingNote} onCorrect={(t) => onSolveText(t, mode)} />}
-          <ModeSelector value={mode} onChange={changeMode} compact />
+          <details className="group [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-xl text-sm font-semibold text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/40">
+              Öğrenme şekli: <span className="text-primary">{MODE_INFO[mode].title}</span>
+              <span className="group-open:hidden">· değiştir</span>
+            </summary>
+            <div className="mt-2">
+              <ModeSelector value={mode} onChange={changeMode} compact />
+            </div>
+          </details>
         </CardContent>
       </Card>
 
@@ -256,36 +275,45 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
         />
       ) : (
         <>
-          {/* Verilenler / İstenen / Strateji */}
-          <div className="grid gap-3 md:grid-cols-3">
-            <InfoCard icon={<ListChecks className="size-5" />} title="Verilenler">
-              {solution.givenInformation.length ? (
-                <ul className="list-disc space-y-1 pl-5">
-                  {solution.givenInformation.map((g, i) => (
-                    <li key={i}>{g}</li>
-                  ))}
-                </ul>
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
-            </InfoCard>
-            <InfoCard icon={<Target className="size-5" />} title="İstenen">
-              {solution.requestedInformation}
-            </InfoCard>
-            <InfoCard icon={<Lightbulb className="size-5" />} title="Çözüm yolu">
-              {solution.solutionStrategy}
-            </InfoCard>
-          </div>
+          {/* Verilenler / İstenen / Strateji: mobilde tahtayı aşağı itmesin diye katlanabilir özet */}
+          <details className="group rounded-3xl border border-border bg-card shadow-card [&_summary::-webkit-details-marker]:hidden" open={wideScreen}>
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-3xl px-4 py-2 font-bold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-ring/40">
+              <span className="flex items-center gap-2">
+                <ListChecks className="size-5 text-primary" /> Verilenler · İstenen · Çözüm yolu
+              </span>
+              <span className="text-sm font-medium text-muted-foreground group-open:hidden">Göster</span>
+              <span className="hidden text-sm font-medium text-muted-foreground group-open:inline">Gizle</span>
+            </summary>
+            <div className="grid gap-3 px-4 pb-4 md:grid-cols-3">
+              <InfoCard icon={<ListChecks className="size-5" />} title="Verilenler">
+                {solution.givenInformation.length ? (
+                  <ul className="list-disc space-y-1 pl-5">
+                    {solution.givenInformation.map((g, i) => (
+                      <li key={i}>{g}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </InfoCard>
+              <InfoCard icon={<Target className="size-5" />} title="İstenen">
+                {solution.requestedInformation}
+              </InfoCard>
+              <InfoCard icon={<Lightbulb className="size-5" />} title="Çözüm yolu">
+                {solution.solutionStrategy}
+              </InfoCard>
+            </div>
+          </details>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <div className="flex min-w-0 flex-col gap-3">
               <SmartBoard
                 steps={steps}
                 currentIndex={current}
                 visibleUntil={Math.max(maxReached, current)}
                 playToken={state.playToken}
                 speaking={state.status === "playing"}
-                paused={state.status !== "playing"}
+                paused={state.status === "paused" && playedToken === state.playToken}
                 chunkIndex={state.chunkIndex}
                 segment={hiddenSteps.has(current) ? undefined : controller.getSegment(current)}
                 hiddenSteps={hiddenSteps}
@@ -341,6 +369,10 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
                   stopAside();
                   if (mode === "hint") reveal(current);
                 }}
+                onDontUnderstand={() => {
+                  setTutorRequest({ action: "dont_understand", label: "Anlamadım", nonce: Date.now() });
+                  document.getElementById("ogretmene-sor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
               />
               {asideSpeaking && (
                 <Button variant="outline" size="sm" onClick={stopAside} className="self-start">
@@ -349,13 +381,18 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
               )}
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-4">
               <TutorPanel
                 solution={solution}
                 stepIndex={current}
                 messages={messages}
                 setMessages={setMessages}
-                onBeforeAsk={() => controller.pause()}
+                onBeforeAsk={() => {
+                  // Yeni soru sorulunca önceki anlatım ve önceki yanıt susar
+                  controller.pause();
+                  stopAside();
+                }}
+                request={tutorRequest}
                 onPrevStep={() => controller.prev()}
                 onTeacherReply={(m) => speakAside(m.text)}
               />

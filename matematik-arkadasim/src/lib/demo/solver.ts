@@ -55,7 +55,8 @@ export function stripQuestionWords(text: string): string {
 let stepCounter = 0;
 function step(partial: Omit<SolutionStep, "stepId" | "visualInstructions" | "highlightedElements"> & Partial<SolutionStep>): SolutionStep {
   stepCounter++;
-  const cap = (t: string) => t.charAt(0).toLocaleUpperCase("tr-TR") + t.slice(1);
+  // Cümle başını büyüt; ama "x terimini" gibi tek harfli değişken adlarını büyütme
+  const cap = (t: string) => (/^[a-z](\s|$)/.test(t) ? t : t.charAt(0).toLocaleUpperCase("tr-TR") + t.slice(1));
   return {
     stepId: String(stepCounter),
     visualInstructions: [],
