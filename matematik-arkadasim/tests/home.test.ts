@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueueFullError, SingleFlightQueue } from "@/lib/ai/queue";
-import { AIError, type AIProvider, type CompletionRequest, type CompletionResult } from "@/lib/ai/provider";
+import { AIError, type AIProvider, type CompletionResult } from "@/lib/ai/provider";
 import { solveQuestion } from "@/lib/ai/service";
 import { DEMO_SAMPLES } from "@/lib/demo/samples";
 import { getConfig } from "@/lib/server/config";

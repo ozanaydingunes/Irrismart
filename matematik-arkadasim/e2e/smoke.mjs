@@ -2,6 +2,9 @@
 // Kullanım: npm run test:e2e   (BASE_URL verilirse sunucu başlatılmaz)
 // Ekran görüntüleri: e2e/screens/
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chromium, devices } from "playwright";
@@ -11,6 +14,7 @@ const OUT = fileURLToPath(new URL("./screens", import.meta.url));
 mkdirSync(OUT, { recursive: true });
 const PORT = 3217;
 const MOCK_PORT = 3218;
+const SYNC_PORT = 3219;
 const servers = [];
 
 async function startServer(port, env) {
@@ -40,6 +44,12 @@ let base = process.env.BASE_URL ?? (await startServer(PORT, { AI_PROVIDER: "demo
 const mockBase = process.env.BASE_URL
   ? null
   : await startServer(MOCK_PORT, { AI_PROVIDER: "mock", ALLOW_MOCK_PROVIDER: "1", APP_ACCESS_PIN: "2468", APP_SESSION_SECRET: "e2e-test-gizli-anahtar-en-az-32-karakter-uzun" });
+
+// 3) Ev sunucusu gibi: dosyaya kayıt (geçici klasör) + aile PIN'i → cihazlar arası eşitleme testi
+const syncDir = mkdtempSync(join(tmpdir(), "pihoca-esitleme-"));
+const syncBase = process.env.BASE_URL
+  ? null
+  : await startServer(SYNC_PORT, { AI_PROVIDER: "demo", COUNTER_STORE: "file", DATA_DIR: syncDir, APP_ACCESS_PIN: "1357", APP_SESSION_SECRET: "e2e-esitleme-gizli-anahtar-en-az-32-karakter" });
 
 const browser = await chromium.launch();
 const results = [];
@@ -300,7 +310,10 @@ const VIEWPORTS = [
   { name: "375x667", width: 375, height: 667, mobile: true },
   { name: "390x844", width: 390, height: 844, mobile: true },
   { name: "430x932", width: 430, height: 932, mobile: true },
-  { name: "tablet-820x1180", width: 820, height: 1180, mobile: false },
+  { name: "tablet-dikey-820x1180", width: 820, height: 1180, mobile: false, tablet: true },
+  { name: "tablet-yatay-1180x820", width: 1180, height: 820, mobile: false, tablet: true },
+  { name: "ipad-dikey-1024x1366", width: 1024, height: 1366, mobile: false, tablet: true },
+  { name: "ipad-yatay-1366x1024", width: 1366, height: 1024, mobile: false, tablet: true },
   { name: "masaustu-1440x900", width: 1440, height: 900, mobile: false },
 ];
 const PAGES = [
@@ -363,6 +376,16 @@ for (const vp of VIEWPORTS) {
         });
         expect(covered === "ok", `Demo uyarısı: ${covered}`);
       }
+      if (vp.tablet) {
+        // Tablette alt menü yerine yan menü; tahta geniş
+        const t = await p.evaluate(() => {
+          const bottom = document.querySelector('nav[aria-label="Alt menü"]');
+          const board = document.querySelector('section[aria-label="Akıllı tahta"]');
+          return { bottomVisible: !!bottom && bottom.offsetParent !== null, boardWidth: board ? board.getBoundingClientRect().width : null };
+        });
+        expect(!t.bottomVisible, "Tablette alt menü görünmemeli (yan menü kullanılır)");
+        if (pg.key === "sesli-ders") expect(t.boardWidth >= Math.min(vp.width - 140, 640), `Tahta tablette dar: ${t.boardWidth}px`);
+      }
       if (pg.key === "sesli-ders" && vp.mobile) {
         // Aktif adımın başlığı oynatıcının altında kalmamalı
         const ok = await p.evaluate(() => {
@@ -378,6 +401,55 @@ for (const vp of VIEWPORTS) {
     if (vp.mobile) {
       await p.goto(base + "/");
       await p.screenshot({ path: `${OUT}/olcu-${vp.name}-ana-sayfa-tam.png`, fullPage: true });
+    }
+  });
+}
+
+await test("Ev bilgisayarı kapalıysa açık Türkçe uyarı görünür", desktop, async (p) => {
+  await p.goto(base + "/");
+  await p.getByRole("button", { name: /Fotoğraf çek/ }).first().waitFor();
+  await p.route("**/api/status", (r) => r.abort("connectionrefused"));
+  await p.reload();
+  await p.getByText("Pi Hoca'nın bilgisayarına bağlanılamıyor").waitFor({ timeout: 20000 });
+  await p.screenshot({ path: `${OUT}/bilgisayar-kapali-uyarisi.png` });
+  await p.unroute("**/api/status");
+  await p.getByRole("button", { name: "Tekrar dene" }).click();
+  await p.getByText("Pi Hoca'nın bilgisayarına bağlanılamıyor").waitFor({ state: "detached", timeout: 15000 });
+});
+
+if (syncBase) {
+  await test("İki cihaz arası eşitleme: telefonda kaydedilen soru tablette görünür", { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }, async (phone) => {
+    const login = async (p) => {
+      await p.goto(syncBase + "/coz");
+      await p.getByLabel("Aile PIN'i").fill("1357");
+      await p.getByRole("button", { name: "Giriş" }).click();
+      await p.getByLabel("Aile PIN'i").waitFor({ state: "detached" });
+    };
+    await login(phone);
+    expect((await phone.request.post(syncBase + "/api/sync", { data: { sinceRev: 0, push: [] } })).ok(), "PIN'li eşitleme isteği başarılı olmalı");
+    await phone.goto(syncBase + "/coz?q=" + encodeURIComponent("3x - 4 = 11") + "&mode=full");
+    await phone.locator('section[aria-label="Akıllı tahta"] .katex').first().waitFor();
+    const saveBtn = phone.getByRole("button", { name: "Deftere kaydet" }).first();
+    const savedBtn = phone.getByRole("button", { name: "Defterde kayıtlı" }).first();
+    await saveBtn.or(savedBtn).first().waitFor();
+    if (await saveBtn.isVisible()) await saveBtn.click();
+    await phone.getByRole("button", { name: "Defterde kayıtlı" }).first().waitFor();
+    await phone.goto(syncBase + "/ayarlar");
+    await phone.getByRole("button", { name: "Şimdi eşitle" }).click();
+    await phone.getByText(/Eşitlendi \([1-9]\d* gönderildi/).waitFor();
+
+    const tabletCtx = await browser.newContext({ locale: "tr-TR", viewport: { width: 1180, height: 820 } });
+    const tablet = await tabletCtx.newPage();
+    try {
+      await login(tablet);
+      await tablet.goto(syncBase + "/ayarlar");
+      await tablet.getByRole("button", { name: "Şimdi eşitle" }).click();
+      await tablet.getByText(/Eşitlendi \(\d+ gönderildi, [1-9]\d* alındı/).waitFor();
+      await tablet.goto(syncBase + "/defter");
+      await tablet.getByText("3x - 4 = 11").first().waitFor();
+      await tablet.screenshot({ path: `${OUT}/esitleme-tablet-defter.png` });
+    } finally {
+      await tabletCtx.close();
     }
   });
 }
@@ -430,6 +502,7 @@ if (mockBase) {
 }
 
 await browser.close();
+rmSync(syncDir, { recursive: true, force: true });
 for (const srv of servers) {
   try {
     process.kill(-srv.pid, "SIGTERM");

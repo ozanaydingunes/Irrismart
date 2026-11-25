@@ -1,6 +1,6 @@
 import "server-only";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, resolve } from "node:path";
 import { getConfig } from "./config";
 
 /**
@@ -117,7 +117,7 @@ const g = globalThis as unknown as { __syncStore?: SyncStore };
 export function getSyncStore(): SyncStore | null {
   const { store } = getConfig();
   if (!store.useFile) return null; // sunucusuz ortamda eşitleme yok (kalıcı yerel disk yok)
-  return (g.__syncStore ??= new SyncStore(join(process.cwd(), store.dataDir, "esitleme.json")));
+  return (g.__syncStore ??= new SyncStore(resolve(process.cwd(), store.dataDir, "esitleme.json")));
 }
 /** Testler için */
 export function setSyncStore(s: SyncStore | undefined) {

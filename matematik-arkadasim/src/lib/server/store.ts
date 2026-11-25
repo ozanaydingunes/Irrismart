@@ -1,6 +1,6 @@
 import "server-only";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, resolve } from "node:path";
 import { getConfig } from "./config";
 
 /**
@@ -154,7 +154,7 @@ export function getStore(): CounterStore {
       store.upstashUrl && store.upstashToken
         ? new UpstashStore(store.upstashUrl, store.upstashToken)
         : store.useFile
-          ? new FileStore(join(process.cwd(), store.dataDir, "sayaclar.json"))
+          ? new FileStore(resolve(process.cwd(), store.dataDir, "sayaclar.json"))
           : new MemoryStore();
     if (!g.__mathStore.persistent && cfg.isProduction && cfg.provider !== "demo") {
       console.warn("[quota] UYARI: Kalıcı sayaç deposu yapılandırılmamış; kota sınırları sunucusuz ortamda güvenilir değildir.");
