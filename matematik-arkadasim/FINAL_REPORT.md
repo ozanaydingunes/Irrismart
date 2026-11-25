@@ -255,3 +255,101 @@ Ayrıntılı ve resimsiz sade anlatım: `KURULUM_REHBERI.md`. Teknik ayrıntıla
 → `npm run kurulum` → Tailscale (kendi hesabınla, HTTPS açık, nötr cihaz adı) → `tailscale serve --bg 3000`
 → `PiHoca-Baslat.bat` → her telefon/tablette Tailscale + adresi aç + ana ekrana ekle.
 İlk hafta çözümleri birlikte kontrol edin.
+
+---
+
+# Ek: Ücretsiz bulut yayını — Vercel Hobby + Cloudflare Workers AI (25.11.2026)
+
+## Yapılanlar
+- **Cloudflare Workers AI sağlayıcısı** (`src/lib/ai/cloudflare.ts`), `AI_PROVIDER=cloudflare` (varsayılan).
+  OpenAI uyumlu uç (`/accounts/{id}/ai/v1/chat/completions`), JSON modu, görsel `data:` URI olarak.
+  Anahtarlar yalnızca sunucuda (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`).
+- **Model kararı:** Cloudflare'in Mistral Small 3.1 24B sayfasında model "Vision" olarak işaretli değil;
+  API şemasında görsel alanı yok, yalnızca metin var. Bu yüzden fotoğraf için **`@cf/meta/llama-4-scout-17b-16e-instruct`**
+  seçildi: "Vision: Yes", JSON modu, sıfır veri saklama, ek lisans onayı istemiyor. Mistral, `CLOUDFLARE_LIGHT_MODEL`
+  ile yalnızca metin görevleri için kullanılabilir. Varsayılan olarak doğruluktan ödün vermemek için aynı model kullanılıyor.
+- **Ücretsiz sağlayıcı zinciri** (`src/lib/ai/freeChain.ts`):
+  - Cloudflare → ebeveynin onayladığı ücretsiz yedek **Groq** (`qwen/qwen3.8-27b`, Apache 2.0, görsel destekli).
+  - Kota dolması, geçici yoğunluk veya bağlantı hatası olursa sıradaki ücretsiz sağlayıcı denenir.
+  - Güvenlik reddi, yetki hatası ve geçersiz çıktı başka sağlayıcıya **gönderilmez**.
+  - Ücretli sağlayıcılar zincire hiç giremez; yedek listesine yazılsalar bile yok sayılır.
+- **Kapasite takibi:**
+  - Cloudflare nöronları resmî oranlarla gerçek jeton sayısından hesaplanır. 9.000/10.000 nöronda durulur (güvenlik payı).
+  - Groq için günlük 900/1.000 istek ve 180.000/200.000 jeton bütçesi var.
+  - Sayaçlar Upstash'te kalıcıdır ve 00:00 UTC'de sıfırlanır. Sağlayıcı "kota bitti" derse o gün tekrar denenmez.
+- **Soru sınırı kaldırıldı:**
+  - Günlük soru sınırı, kalan hak göstergesi ve ebeveyn sınır ucu silindi.
+  - Günlük istek sınırları varsayılan olarak kapalı.
+  - Yalnızca dakikada 20 istek (kötüye kullanım koruması) ve PIN deneme sınırı var.
+- **Tüm ücretsiz kapasite dolunca** şu mesaj çıkar: "Pi Hoca'nın bugünkü ücretsiz yapay zekâ kapasitesi doldu. Yarın tekrar devam edebiliriz!…"
+  Ayarlar'da yalnızca durum gösterilir (Kullanılabilir / Bugün doldu); kesin sayı gösterilmez, çünkü tüketim bir tahmindir.
+- **Yapay zekâ kullanımını azaltan yerel işler:**
+  - Saf işlem ve denklemler, ayrıca kurallarla üretilebilen alıştırmalar uygulamanın kesin aritmetik motoruyla çözülür.
+    Bunlar "Yerel hesaplama — yapay zekâ kullanılmadı" etiketiyle ayrıca gösterilir.
+  - Çözümler 30 gün / 300 kayıt önbellekte tutulur.
+  - Hazır öğretmen yanıtları (Anlamadım, İpucu…) aynı adım için önbellekten gelir.
+  - Tekrar dinleme yapay zekâya istek göndermez.
+- **Vercel'de güvenlik:**
+  - Aile PIN'i ve Upstash zorunlu; eksikse yapay zekâ uçları "kurulum tamamlanmamış" der.
+  - `maxDuration` 300 sn (Hobby üst sınırı).
+  - Bulutta soru defteri ve eşitleme yok; veriler cihazda kalır.
+- **Gizlilik:**
+  - Gizlilik ekranında bulutta işleme (Cloudflare/Groq), fotoğraf kırpma uyarısı ve tarayıcı ses tanımanın Google/Apple'a ses gönderebileceği açıkça yazıyor.
+  - Fotoğraf ekranında "kişisel bilgileri kırp" uyarısı var.
+  - Lisans gereği "Built with Llama" ibaresi gösteriliyor.
+- **Rehber:** `UCRETSIZ_BULUT_KURULUMU.md` (11 adım, teknik olmayan Türkçe).
+
+## Kullanım şartları ve gizlilik (resmî metinler okundu)
+| Hizmet | Bulgu | Sonuç |
+|---|---|---|
+| Cloudflare | Gizlilik politikası Cloudflare'in kendi hizmetlerinin 18 yaş altına yönelik olmadığını söylüyor; müşterinin uygulamalarına uygulanmıyor ve son kullanıcı uyumu müşterinin sorumluluğunda. Workers AI: "Zero data retention", "No training". Ücretsiz plan günde 10.000 nöron; aşılınca hata döner (4006), ücret çıkmaz. | Hesap ebeveynin; uygun |
+| Llama 4 (Meta) | Lisans sahibi yasal ehliyetli kişi olmalı. AB'de yerleşik kişilere çok kipli (multimodal) hak verilmiyor (Türkiye'yi kapsamıyor). "Built with Llama" ibaresi isteniyor. Kullanım politikası küçüklere zararlı içeriği yasaklıyor; çocukların matematik öğrenmesini yasaklamıyor. | Uygun, ibare eklendi |
+| Groq | Hesap sahibi 18+. Reşit olmayanların erişebileceği uygulamalar yasak değil; yasal uyum müşteride. Girdiler varsayılan olarak saklanmıyor, eğitimde kullanılmıyor. Ödeme yöntemi eklenmedikçe ücretsiz planda kalınıyor. | İsteğe bağlı yedek |
+| Vercel Hobby | "personal or non-commercial use"; hesap sahibi 16+. | Uygun |
+| Upstash Free | Hesap sahibi 18+, aylık 500 bin komut ücretsiz. Yalnızca özetlenmiş sayaçlar tutuluyor. | Uygun |
+| Gemini / OpenRouter / Mistral ücretsiz / Hugging Face / GitHub Models | Sırasıyla: 18 yaş altı erişim yasak; 18+ kullanım şartı; 13 yaş altı veri yasağı ve eğitimde kullanım; ücretli kredi gerekiyor; hizmet kapatıldı. | Kullanılmadı |
+
+## Bu turun gerçek test sonuçları (bu ortamda çalıştırıldı)
+- `npm run typecheck`, `npm run lint`, `npm run build`: başarılı. `npm audit`: 0 açık.
+- `npx vitest run`: **368 geçti, 1 atlandı**. Yeni `tests/cloud.test.ts` (29 test) şunları kapsıyor:
+  - Cloudflare istek biçimi, görsel girdi, JSON doğrulama ve onarım, okunamayan fotoğraf.
+  - Yanlış aritmetiğin yakalanması ve Türkçe anlatım.
+  - Güvenlik reddinin yedeğe gitmemesi; geçersiz token.
+  - Kota dolunca Groq'a geçiş; hepsi dolunca mesaj; ücretli sağlayıcının çağrılmaması.
+  - Güvenlik payı, nöron hesabı, kalıcı sayaçlar, yerel hesaplama motoru.
+  - Vercel'de PIN ve Upstash zorunluluğu, durum bilgisi.
+
+  `tests/free.test.ts` şimdi 30 soruluk "sınır yok" testini içeriyor.
+- `npm run test:e2e`: **34/34 senaryo geçti**. Yeni senaryolar, Cloudflare ve Groq'u taklit eden **sahte yerel sunucuyla** çalışıyor:
+  - PIN zorunluluğu.
+  - Fotoğraflı çözüm.
+  - Tekrar dinle ve ikinci "Anlamadım"da yeni istek gitmemesi.
+  - Kota dolunca Groq'a geçiş.
+  - Ayarlarda kapasite durumu ve kalan hak göstergesinin olmaması.
+  - Hepsi dolunca uyarı.
+  - Yerel denklem çözümü.
+
+  Ayrıca telefon/tablet ölçüleri ve PWA senaryoları da bu 34 senaryonun içinde.
+
+## Test EDİLMEYENLER (dürüst not)
+- **Gerçek Cloudflare veya Groq hesabıyla hiçbir istek yapılmadı.** Bu yüzden Llama 4 Scout'un Türkçe 7. sınıf matematik
+  doğruluğu, fotoğraf okuma başarısı, yanıt süresi ve gerçek nöron tüketimi **bilinmiyor**.
+  Ücretsiz modelin yeterince doğru çözüm üretip üretmediği ancak gerçek denemeyle anlaşılabilir.
+  Uygulamanın kesin aritmetik kontrolü yanlış hesapları yakalar ama yanlış okunan bir soruyu veya hatalı bir yöntemi yakalayamaz.
+- Günlük kapasite tahmini kaba bir hesaptır: ~4.000 giriş + ~2.000 çıkış jetonu ≈ 253 nöron/çözüm. Bu da
+  9.000 nöronla günde **yaklaşık 20–35 fotoğraflı çözüm** eder. Bu rakam ölçülmedi.
+- Groq ücretsiz planında dakikada 8.000 jeton sınırı var. Fotoğraflı uzun bir çözüm isteği bu sınıra sığmayabilir.
+- Vercel'e gerçek yayın yapılmadı (izin verilmedi). Gerçek iPhone, iPad ve Android cihazlarda test yapılmadı.
+- Kod `claude/matematik-arkadas-ai-app-xjrmfw` dalında. Vercel varsayılan olarak `main` dalını yayınlar; rehberin 9. adımında anlatılıyor.
+
+## Senin yapman gerekenler
+`UCRETSIZ_BULUT_KURULUMU.md` dosyasını sırayla izle:
+1. Cloudflare hesabını aç, Workers AI token'ını ve hesap kimliğini al.
+2. (İsteğe bağlı) Groq anahtarını al.
+3. Vercel Hobby hesabı aç ve depoyu Root Directory `matematik-arkadasim` olarak bağla.
+4. Ortam değişkenlerini ve aile PIN'ini gir.
+5. Upstash Free'yi bağla.
+6. Yayınla ve Production Branch ayarını yap.
+7. Telefon ve tabletten adresi aç, ana ekrana ekle.
+
+Hiçbir yerde kart ekleme. İlk hafta çözümleri birlikte kontrol et.
