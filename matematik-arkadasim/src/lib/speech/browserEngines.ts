@@ -46,11 +46,46 @@ export function chooseVoice(voices: SpeechSynthesisVoice[], preferredName: strin
   return pool.find((v) => v.localService) ?? pool[0];
 }
 
+/* ───── Tek ses kuralı: aynı anda yalnızca bir kaynak konuşur ───── */
+
+let activeAudio: HTMLAudioElement | null = null;
+
+/** Tüm seslendirmeyi durdurur (sayfa değişimi, yeni soru, uygulama arka plana geçince). */
+export function stopAllSpeech() {
+  if (speechSynthesisSupported()) window.speechSynthesis.cancel();
+  if (activeAudio) {
+    activeAudio.onended = null;
+    activeAudio.onerror = null;
+    activeAudio.pause();
+    activeAudio = null;
+  }
+}
+
+let unlocked = false;
+/**
+ * iOS Safari, kullanıcı dokunuşu dışında başlatılan ilk konuşmayı sessizce yok sayar.
+ * "Soruyu çöz" gibi bir dokunuş sırasında sessiz, boş bir konuşma başlatarak sesi etkinleştiririz;
+ * böylece çözüm geldiğinde anlatım otomatik başlayabilir.
+ */
+export function unlockSpeech() {
+  if (unlocked || !speechSynthesisSupported()) return;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    u.lang = "tr-TR";
+    window.speechSynthesis.speak(u);
+    unlocked = true;
+  } catch {
+    /* yoksay */
+  }
+}
+
 /** Tarayıcının Web Speech API motoru (ücretsiz, çevrimdışı çalışabilir). */
 export class WebSpeechEngine implements SpeechEngine {
   readonly kind = "webspeech" as const;
   readonly label: string;
   private watchdog: ReturnType<typeof setTimeout> | null = null;
+  private startTimer: ReturnType<typeof setTimeout> | null = null;
   private current: SpeechSynthesisUtterance | null = null;
 
   constructor(private voice: SpeechSynthesisVoice) {
@@ -58,8 +93,12 @@ export class WebSpeechEngine implements SpeechEngine {
   }
 
   speak(text: string, o: SpeakOptions) {
-    this.cancel();
+    // Önceki konuşma sürüyorsa iptal et; Android Chrome cancel()'dan hemen sonraki speak()'i
+    // bazen yutar, bu yüzden o durumda kısa bir gecikmeyle başlatılır.
     const synth = window.speechSynthesis;
+    const wasBusy = synth.speaking || synth.pending;
+    this.cancel();
+    if (activeAudio) stopAllSpeech();
     const u = new SpeechSynthesisUtterance(text);
     u.voice = this.voice;
     u.lang = this.voice.lang || "tr-TR";
@@ -82,12 +121,19 @@ export class WebSpeechEngine implements SpeechEngine {
     this.current = u; // Safari'de çöp toplayıcının olayı yutmaması için referans tut
     // Bazı tarayıcılar onend olayını hiç göndermez: güvenlik zamanlayıcısı
     this.watchdog = setTimeout(() => finish(o.onEnd), estimateDurationMs(text, o.rate) * 2.5 + 4000);
-    if (synth.paused) synth.resume();
-    synth.speak(u);
+    const start = () => {
+      this.startTimer = null;
+      if (synth.paused) synth.resume();
+      synth.speak(u);
+    };
+    if (wasBusy) this.startTimer = setTimeout(start, 80);
+    else start();
   }
 
   cancel() {
     this.clearWatchdog();
+    if (this.startTimer) clearTimeout(this.startTimer);
+    this.startTimer = null;
     if (this.current) {
       this.current.onend = null;
       this.current.onerror = null;
@@ -121,7 +167,9 @@ export class ServerTtsEngine implements SpeechEngine {
     this.abort = ac;
     const play = (url: string) => {
       if (ac.signal.aborted) return;
+      stopAllSpeech(); // tarayıcı sesiyle üst üste binmesin
       const audio = new Audio(url);
+      activeAudio = audio;
       audio.playbackRate = o.rate;
       audio.onended = () => o.onEnd();
       audio.onerror = () => o.onError("Ses dosyası oynatılamadı.");
@@ -161,6 +209,7 @@ export class ServerTtsEngine implements SpeechEngine {
       this.audio.onended = null;
       this.audio.onerror = null;
       this.audio.pause();
+      if (activeAudio === this.audio) activeAudio = null;
       this.audio = null;
     }
   }

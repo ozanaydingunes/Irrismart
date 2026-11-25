@@ -24,6 +24,7 @@ import { recordSpend } from "@/lib/server/quota";
 import { getStore } from "@/lib/server/store";
 import { findTopic } from "@/lib/topics";
 import { AnthropicProvider } from "./anthropic";
+import { MockProvider } from "./mock";
 import { parseWithSchema } from "./json";
 import { OpenAIProvider } from "./openai";
 import { estimateCostUsd } from "./pricing";
@@ -45,6 +46,7 @@ const REQUEST_BUDGET_MS = 100_000;
 export function getProvider(cfg: ServerConfig = getConfig()): AIProvider | null {
   if (cfg.provider === "anthropic") return new AnthropicProvider(cfg.anthropic.apiKey, cfg.anthropic.model, cfg.anthropic.lightModel, cfg.anthropic.effort);
   if (cfg.provider === "openai") return new OpenAIProvider(cfg.openai.apiKey, cfg.openai.model, cfg.openai.lightModel, cfg.openai.baseUrl);
+  if (cfg.provider === "mock") return new MockProvider();
   return null;
 }
 

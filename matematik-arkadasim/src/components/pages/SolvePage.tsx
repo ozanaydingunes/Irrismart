@@ -1,16 +1,18 @@
 "use client";
 
-import { ArrowLeft, Camera, Loader2, RefreshCw, WifiOff } from "lucide-react";
+import { ArrowLeft, Camera, ListChecks, Loader2, RefreshCw, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PinGate } from "@/components/common/PinGate";
 import { LessonView } from "@/components/lesson/LessonView";
 import { QuestionInput, type QuestionSubmit } from "@/components/question/QuestionInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOnline } from "@/hooks/useOnline";
 import { useSettings } from "@/hooks/useSettings";
-import { useStatus } from "@/hooks/useStatus";
+import { refreshStatus, useStatus } from "@/hooks/useStatus";
+import { stopAllSpeech, unlockSpeech } from "@/lib/speech/browserEngines";
 import * as api from "@/lib/client/api";
 import type { LearningMode, SolveResult } from "@/lib/schema/solution";
 import { getEntry, type NotebookEntry } from "@/lib/storage/db";
@@ -19,11 +21,15 @@ type Phase =
   | { kind: "input" }
   | { kind: "loading"; label: string }
   | { kind: "error"; message: string; code: string; retry?: QuestionSubmit }
+  | { kind: "multiple"; message: string; questions: { label: string; text: string }[]; q: QuestionSubmit }
+  | { kind: "pin"; retry?: QuestionSubmit }
   | { kind: "lesson"; result: SolveResult; mode: LearningMode; image?: string; entry?: NotebookEntry; key: number };
 
 const LOADING_LINES = ["Soruyu dikkatle okuyorum…", "Verilenleri ve isteneni ayırıyorum…", "Çözüm adımlarını hazırlıyorum…", "Sonucu kontrol ediyorum…", "Tahtayı hazırlıyorum…"];
 
 export const PENDING_KEY = "matematik:pending-lesson";
+/** Ana sayfada seçilen fotoğraf bu anahtarla Soru Çöz sayfasına aktarılır (yalnızca sekme oturumu boyunca). */
+export const PENDING_IMAGE_KEY = "matematik:pending-image";
 
 export function SolvePage() {
   const params = useSearchParams();
@@ -42,9 +48,20 @@ export function SolvePage() {
   }, [phase.kind]);
 
   const solve = useCallback(async (q: QuestionSubmit) => {
+    stopAllSpeech(); // önceki anlatımı iptal et
+    unlockSpeech(); // iOS Safari: sesi kullanıcı dokunuşu sırasında etkinleştir
     setPhase({ kind: "loading", label: q.image ? "Fotoğrafı inceliyorum…" : "Soruyu inceliyorum…" });
     setLine(0);
-    const res = await api.solve({ text: q.text || undefined, image: q.image, mode: q.mode });
+    const res = await api.solve({ text: q.text || undefined, image: q.image, mode: q.mode, selectedQuestion: q.selectedQuestion });
+    if (!res.ok && res.code === "AUTH_REQUIRED") {
+      await refreshStatus();
+      setPhase({ kind: "pin", retry: q });
+      return;
+    }
+    if (!res.ok && res.code === "MULTIPLE" && "questions" in res && res.questions?.length) {
+      setPhase({ kind: "multiple", message: res.message, questions: res.questions, q });
+      return;
+    }
     if (res.ok) {
       setPhase({ kind: "lesson", result: res as SolveResult, mode: q.mode, image: q.image, key: Date.now() });
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -57,7 +74,7 @@ export function SolvePage() {
   // URL parametreleri: ?q=…&mode=… | ?entry=ID | ?practice=konu | ?pending=1
   useEffect(() => {
     const sig = params.toString();
-    if (!sig || handled.current === sig) return;
+    if (!sig || handled.current === sig || (params.has("yontem") && [...params.keys()].length === 1)) return;
     handled.current = sig;
     const mode = (params.get("mode") as LearningMode) || settings.defaultMode;
     const q = params.get("q");
@@ -116,6 +133,45 @@ export function SolvePage() {
         )}
       </div>
 
+      {phase.kind === "pin" && (
+        <PinGate
+          onDone={() => {
+            if (phase.retry) void solve(phase.retry);
+            else setPhase({ kind: "input" });
+          }}
+        />
+      )}
+
+      {phase.kind === "input" && status?.accessRequired && !status.authenticated && <PinGate />}
+
+      {phase.kind === "multiple" && (
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-5">
+            <h2 className="flex items-center gap-2 text-lg font-bold">
+              <ListChecks className="size-5 text-primary" /> {phase.message}
+            </h2>
+            <p className="text-sm text-muted-foreground">Hangi soruyu çözmek istediğine dokun. Metinde okuma hatası varsa soruyu “Yaz” bölümünden kendin de yazabilirsin.</p>
+            <ul className="flex flex-col gap-2">
+              {phase.questions.map((qq) => (
+                <li key={qq.label + qq.text}>
+                  <button
+                    type="button"
+                    onClick={() => solve({ ...phase.q, selectedQuestion: qq.text })}
+                    className="w-full rounded-2xl border-2 border-border bg-card p-4 text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/30"
+                  >
+                    <span className="block text-sm font-bold text-primary">{qq.label}</span>
+                    <span className="block text-base">{qq.text}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <Button variant="outline" onClick={reset} className="self-start">
+              <ArrowLeft /> Başka fotoğraf çek
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {phase.kind === "input" && (
         <>
           {!online && (
@@ -127,7 +183,7 @@ export function SolvePage() {
             </Card>
           )}
           <p className="text-muted-foreground">Sorunu fotoğrafla, yaz ya da sesle söyle. Öğretmenin tahtada adım adım anlatsın.</p>
-          <QuestionInput onSubmit={solve} busy={false} demo={status?.mode === "demo"} />
+          <QuestionInput onSubmit={solve} busy={false} demo={status?.mode === "demo"} initialMethod={params.get("yontem")} pendingImageKey={PENDING_IMAGE_KEY} />
         </>
       )}
 
@@ -177,6 +233,7 @@ export function SolvePage() {
           imageDataUrl={phase.image}
           existingEntry={phase.entry}
           onSolveText={(text, mode) => solve({ text, mode })}
+          wasFromImage={!!phase.image}
           onNewQuestion={reset}
         />
       )}

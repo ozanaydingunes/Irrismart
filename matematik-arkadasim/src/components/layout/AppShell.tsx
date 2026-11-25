@@ -1,13 +1,16 @@
 "use client";
 
-import { WifiOff } from "lucide-react";
+import { Menu, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { stopAllSpeech } from "@/lib/speech/browserEngines";
 import { useOnline } from "@/hooks/useOnline";
 import { useStatus } from "@/hooks/useStatus";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
-import { NAV_ITEMS } from "./nav";
+import { MOBILE_PRIMARY, NAV_ITEMS } from "./nav";
 import { StudyTimer } from "./StudyTimer";
 import { ThemeSync } from "./ThemeSync";
 import { ThemeToggle } from "./ThemeToggle";
@@ -16,7 +19,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const online = useOnline();
   const status = useStatus();
+  const [moreOpen, setMoreOpen] = useState(false);
+  // Sayfa değişince seslendirmeyi durdur
+  useEffect(() => {
+    stopAllSpeech();
+  }, [pathname]);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const moreActive = ["/konular", "/gelisim", "/ayarlar"].some((h) => pathname.startsWith(h));
 
   return (
     <div className="flex min-h-dvh">
@@ -83,23 +92,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Mobil alt navigasyon */}
+      {/* Mobil alt navigasyon: 3 temel sayfa + "Diğer" menüsü */}
       <nav aria-label="Alt menü" className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <ul className="grid grid-cols-6">
-          {NAV_ITEMS.map(({ href, short, icon: Icon }) => (
+        <ul className="grid grid-cols-4">
+          {NAV_ITEMS.filter((n) => (MOBILE_PRIMARY as readonly string[]).includes(n.href)).map(({ href, short, icon: Icon }) => (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={isActive(href) ? "page" : undefined}
-                className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 px-0.5 text-[10.5px] font-semibold leading-tight", isActive(href) ? "text-primary" : "text-muted-foreground")}
+                className={cn("flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", isActive(href) ? "text-primary" : "text-muted-foreground")}
               >
-                <span className={cn("flex h-8 w-12 items-center justify-center rounded-full transition-colors", isActive(href) && "bg-accent")}>
-                  <Icon className="size-5" />
+                <span className={cn("flex h-8 w-14 items-center justify-center rounded-full transition-colors", isActive(href) && "bg-accent")}>
+                  <Icon className="size-6" />
                 </span>
                 {short}
               </Link>
             </li>
           ))}
+          <li>
+            <Dialog open={moreOpen} onOpenChange={setMoreOpen}>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className={cn("flex min-h-16 w-full flex-col items-center justify-center gap-0.5 px-1 text-xs font-semibold", moreActive ? "text-primary" : "text-muted-foreground")}
+                  aria-label="Diğer sayfalar"
+                >
+                  <span className={cn("flex h-8 w-14 items-center justify-center rounded-full", moreActive && "bg-accent")}>
+                    <Menu className="size-6" />
+                  </span>
+                  Diğer
+                </button>
+              </DialogTrigger>
+              <DialogContent className="top-auto bottom-4 translate-y-0 data-[state=open]:animate-fade-in">
+                <DialogTitle>Diğer</DialogTitle>
+                <ul className="flex flex-col gap-2">
+                  {NAV_ITEMS.filter((n) => !(MOBILE_PRIMARY as readonly string[]).includes(n.href)).map(({ href, label, icon: Icon }) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={() => setMoreOpen(false)}
+                        aria-current={isActive(href) ? "page" : undefined}
+                        className={cn("flex min-h-14 items-center gap-3 rounded-2xl px-4 text-base font-semibold", isActive(href) ? "bg-primary text-primary-foreground" : "bg-muted/60 hover:bg-muted")}
+                      >
+                        <Icon className="size-5" /> {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </DialogContent>
+            </Dialog>
+          </li>
         </ul>
       </nav>
       <StudyTimer />

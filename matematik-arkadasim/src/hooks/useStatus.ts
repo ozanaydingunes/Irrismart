@@ -23,14 +23,27 @@ function fetchStatus(): Promise<StatusResponse | null> {
   return inflight;
 }
 
-/** Sunucunun YZ durumu (gerçek / demo). Çevrimdışıyken null. */
+const listeners = new Set<(s: StatusResponse | null) => void>();
+
+/** PIN girişi gibi durum değişikliklerinden sonra durumu yeniden yükler. */
+export async function refreshStatus() {
+  cached = null;
+  const s = await fetchStatus();
+  listeners.forEach((l) => l(s));
+  return s;
+}
+
+/** Sunucunun YZ durumu (gerçek / demo, PIN). Çevrimdışıyken null. */
 export function useStatus() {
   const [status, setStatus] = useState<StatusResponse | null>(cached);
   useEffect(() => {
     let alive = true;
-    fetchStatus().then((s) => alive && setStatus(s));
+    const l = (s: StatusResponse | null) => alive && setStatus(s);
+    listeners.add(l);
+    fetchStatus().then(l);
     return () => {
       alive = false;
+      listeners.delete(l);
     };
   }, []);
   return status;

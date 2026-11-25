@@ -42,9 +42,11 @@ interface Props {
   existingEntry?: NotebookEntry;
   onSolveText: (text: string, mode: LearningMode) => void;
   onNewQuestion: () => void;
+  /** Soru fotoğraftan okunduysa öğrenciye okunan metni doğrulatırız */
+  wasFromImage?: boolean;
 }
 
-export function LessonView({ result, initialMode, imageDataUrl, existingEntry, onSolveText, onNewQuestion }: Props) {
+export function LessonView({ result, initialMode, imageDataUrl, existingEntry, onSolveText, onNewQuestion, wasFromImage }: Props) {
   const { solution, source, issues } = result;
   const steps = solution.steps;
   const topicId = solution.topicId ?? "diger";
@@ -57,6 +59,8 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
   const [entry, setEntry] = useState<NotebookEntry | undefined>(existingEntry);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selfAssessed, setSelfAssessed] = useState<null | "correct" | "wrong" | "review">(null);
+  // Aynı ders için gelişim paneline yalnızca bir kez "doğru/yanlış" yazılır (tekrar tıklama istatistiği şişirmesin)
+  const answerRecorded = useRef(false);
   const lessonRecorded = useRef(false);
 
   const waitRef = useRef<(i: number) => boolean>(() => false);
@@ -144,7 +148,10 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
 
   async function assess(kind: "correct" | "wrong" | "review") {
     setSelfAssessed(kind);
-    if (kind !== "review") await recordAnswer({ topicId, correct: kind === "correct", scope: "final", mode, entryId: entry?.id });
+    if (kind !== "review" && !answerRecorded.current) {
+      answerRecorded.current = true;
+      await recordAnswer({ topicId, correct: kind === "correct", scope: "final", mode, entryId: entry?.id });
+    }
     const status: EntryStatus = kind === "correct" ? "solved" : kind === "wrong" ? "wrong" : "review";
     await persist({
       status,
@@ -178,7 +185,9 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{solution.topic}</Badge>
             <Badge variant="secondary">Zorluk: {solution.difficulty}</Badge>
-            {source === "demo" ? (
+            {result.provider.startsWith("TEST") ? (
+              <Badge variant="warning">TEST SAĞLAYICISI — gerçek yapay zekâ değil</Badge>
+            ) : source === "demo" ? (
               <Badge variant="warning">DEMO — yapay zekâ çözümü değil</Badge>
             ) : (
               <Badge variant="success">
@@ -219,6 +228,7 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
               </div>
             </div>
           )}
+          {wasFromImage && <QuestionConfirm question={solution.question} note={solution.readingNote} onCorrect={(t) => onSolveText(t, mode)} />}
           <ModeSelector value={mode} onChange={changeMode} compact />
         </CardContent>
       </Card>
@@ -228,9 +238,16 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
         <ExamGate
           result={result}
           onDone={async (correct) => {
-            if (correct !== null) {
+            if (correct !== null && !answerRecorded.current) {
+              answerRecorded.current = true;
               await recordAnswer({ topicId, correct, scope: "final", mode: "exam", entryId: entry?.id });
-              await persist({ status: correct ? "solved" : "wrong", lastResult: correct ? "correct" : "wrong", nextReviewAt: correct ? undefined : nextReviewDate(false, 0) });
+              const reviews = (entry?.reviewCount ?? 0) + (existingEntry ? 1 : 0);
+              await persist({
+                status: correct ? "solved" : "wrong",
+                lastResult: correct ? "correct" : "wrong",
+                reviewCount: reviews,
+                nextReviewAt: correct && !existingEntry ? undefined : nextReviewDate(correct, reviews),
+              });
               setSelfAssessed(correct ? "correct" : "wrong");
             }
             setExamDone(true);
@@ -268,6 +285,7 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
                 visibleUntil={Math.max(maxReached, current)}
                 playToken={state.playToken}
                 speaking={state.status === "playing"}
+                paused={state.status !== "playing"}
                 chunkIndex={state.chunkIndex}
                 segment={hiddenSteps.has(current) ? undefined : controller.getSegment(current)}
                 hiddenSteps={hiddenSteps}
@@ -360,6 +378,45 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
             <p className="text-center text-sm text-muted-foreground">Sonuç ve kontrol, son adıma gelince burada görünecek.</p>
           )}
         </>
+      )}
+    </div>
+  );
+}
+
+/** Fotoğraftan okunan soru metnini öğrenciye doğrulatır; yanlışsa düzeltip yeniden çözdürür. */
+function QuestionConfirm({ question, note, onCorrect }: { question: string; note?: string; onCorrect: (text: string) => void }) {
+  const [state, setState] = useState<"ask" | "ok" | "edit">("ask");
+  const [text, setText] = useState(question);
+  if (state === "ok") return null;
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border-2 border-primary/40 bg-accent/40 p-3" role="region" aria-label="Okunan soruyu doğrula">
+      <p className="text-sm font-semibold">Fotoğraftan yukarıdaki soruyu okudum. Doğru okumuş muyum?</p>
+      {note && <p className="text-sm text-muted-foreground">Not: {note}</p>}
+      {state === "ask" ? (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="success" onClick={() => setState("ok")}>
+            <Check /> Evet, doğru
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setState("edit")}>
+            Hayır, düzelteceğim
+          </Button>
+        </div>
+      ) : (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (text.trim()) onCorrect(text.trim());
+          }}
+        >
+          <label htmlFor="fix-q" className="text-sm font-semibold">
+            Soruyu doğru hâliyle yaz:
+          </label>
+          <textarea id="fix-q" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3} className="rounded-2xl border-2 border-input bg-background p-3 text-base" />
+          <Button size="sm" type="submit" className="self-start" disabled={!text.trim()}>
+            Düzeltilmiş soruyu çöz
+          </Button>
+        </form>
       )}
     </div>
   );

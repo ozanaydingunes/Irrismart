@@ -5,7 +5,7 @@ import "server-only";
  * tarayıcıya hiçbir zaman gönderilmez.
  */
 
-export type ProviderName = "anthropic" | "openai" | "demo";
+export type ProviderName = "anthropic" | "openai" | "demo" | "mock";
 type Effort = "low" | "medium" | "high";
 
 function num(name: string, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER): number {
@@ -42,6 +42,8 @@ export function getConfig(): ServerConfig {
   let provider: ProviderName = "demo";
   if (requested === "openai") provider = openaiKey ? "openai" : "demo";
   else if (requested === "demo") provider = "demo";
+  // Yalnızca otomatik testler: iki ayrı bayrak birlikte gerekir
+  else if (requested === "mock" && process.env.ALLOW_MOCK_PROVIDER === "1") provider = "mock";
   else if (requested === "anthropic") provider = anthropicKey ? "anthropic" : "demo";
   else if (requested === "") provider = anthropicKey ? "anthropic" : openaiKey ? "openai" : "demo";
 

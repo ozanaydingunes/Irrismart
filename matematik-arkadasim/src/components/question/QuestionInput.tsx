@@ -1,10 +1,10 @@
 "use client";
 
 import { Camera, ImagePlus, Keyboard, Loader2, Mic, Send, Sparkles, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConsentDialog } from "@/components/common/ConsentDialog";
 import { MicButton } from "@/components/common/MicButton";
-import { ModeSelector } from "@/components/lesson/ModeSelector";
+import { MODE_INFO, ModeSelector } from "@/components/lesson/ModeSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,11 +21,22 @@ export interface QuestionSubmit {
   text: string;
   image?: string;
   mode: LearningMode;
+  /** Fotoğrafta birden fazla soru varsa seçilen soru */
+  selectedQuestion?: string;
 }
 
-export function QuestionInput({ onSubmit, busy, demo }: { onSubmit: (q: QuestionSubmit) => void; busy: boolean; demo: boolean }) {
+interface Props {
+  onSubmit: (q: QuestionSubmit) => void;
+  busy: boolean;
+  demo: boolean;
+  /** Ana sayfadan gelinen yöntem: "yaz" | "foto" */
+  initialMethod?: string | null;
+  pendingImageKey?: string;
+}
+
+export function QuestionInput({ onSubmit, busy, demo, initialMethod, pendingImageKey }: Props) {
   const [settings, save] = useSettings();
-  const [tab, setTab] = useState("photo");
+  const [tab, setTab] = useState(initialMethod === "yaz" ? "text" : initialMethod === "ses" ? "voice" : "photo");
   const [text, setText] = useState("");
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
@@ -37,6 +48,26 @@ export function QuestionInput({ onSubmit, busy, demo }: { onSubmit: (q: Question
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const onImageChange = useCallback((url: string) => setImageData(url), []);
+
+  // Ana sayfada seçilen fotoğrafı al (sessionStorage; alındıktan sonra hemen silinir)
+  useEffect(() => {
+    if (!pendingImageKey) return;
+    let url: string | null = null;
+    try {
+      url = sessionStorage.getItem(pendingImageKey);
+      sessionStorage.removeItem(pendingImageKey);
+    } catch {
+      /* yoksay */
+    }
+    if (!url) return;
+    const im = new Image();
+    im.onload = () => setImg(im);
+    im.src = url;
+  }, [pendingImageKey]);
+
+  useEffect(() => {
+    if (initialMethod === "yaz") textRef.current?.focus();
+  }, [initialMethod]);
 
   async function handleFile(file: File | undefined) {
     setError(null);
@@ -178,8 +209,17 @@ export function QuestionInput({ onSubmit, busy, demo }: { onSubmit: (q: Question
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 sm:p-5">
-          <h2 className="font-bold">Nasıl öğrenmek istersin?</h2>
-          <ModeSelector value={mode} onChange={setMode} />
+          <details className="group rounded-2xl border border-border p-3 [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 font-semibold">
+              <span>
+                Öğrenme şekli: <span className="text-primary">{MODE_INFO[mode].title}</span>
+              </span>
+              <span className="text-sm font-medium text-muted-foreground group-open:hidden">Değiştir</span>
+            </summary>
+            <div className="mt-3">
+              <ModeSelector value={mode} onChange={setMode} />
+            </div>
+          </details>
           <Button size="lg" onClick={submit} disabled={!canSubmit} className="w-full sm:w-auto sm:self-end">
             {busy ? <Loader2 className="animate-spin" /> : <Send />}
             {busy ? "Öğretmen soruyu inceliyor…" : "Soruyu çöz"}

@@ -10,28 +10,35 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const OUT = fileURLToPath(new URL("./screens", import.meta.url));
 mkdirSync(OUT, { recursive: true });
 const PORT = 3217;
-let base = process.env.BASE_URL;
-let server;
+const MOCK_PORT = 3218;
+const servers = [];
 
-if (!base) {
-  base = `http://localhost:${PORT}`;
-  // Testler her zaman demo modunda çalışır (gerçek API anahtarı kullanılmaz)
-  server = spawn("npx", ["next", "start", "-p", String(PORT)], {
+async function startServer(port, env) {
+  const srv = spawn("npx", ["next", "start", "-p", String(port)], {
     cwd: root,
-    env: { ...process.env, AI_PROVIDER: "demo", ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "" },
+    // Gerçek API anahtarları testlere asla verilmez
+    env: { ...process.env, ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "", ...env },
     stdio: "ignore",
     detached: true, // süreç grubu: next-server alt süreciyle birlikte kapatılır
   });
+  servers.push(srv);
+  const url = `http://localhost:${port}`;
   for (let i = 0; i < 60; i++) {
     try {
-      const r = await fetch(`${base}/api/status`);
-      if (r.ok) break;
+      if ((await fetch(`${url}/api/status`)).ok) break;
     } catch {
       /* bekle */
     }
     await new Promise((r) => setTimeout(r, 500));
   }
+  return url;
 }
+
+// 1) Demo modu  2) Test sağlayıcısı + aile PIN'i (fotoğraf akışları ve erişim kontrolü için)
+let base = process.env.BASE_URL ?? (await startServer(PORT, { AI_PROVIDER: "demo" }));
+const mockBase = process.env.BASE_URL
+  ? null
+  : await startServer(MOCK_PORT, { AI_PROVIDER: "mock", ALLOW_MOCK_PROVIDER: "1", APP_ACCESS_PIN: "2468", APP_SESSION_SECRET: "e2e-test-gizli-anahtar-en-az-32-karakter-uzun" });
 
 const browser = await chromium.launch();
 const results = [];
@@ -62,7 +69,7 @@ const desktop = { viewport: { width: 1280, height: 900 } };
 
 await test("Tüm sayfalar açılıyor ve Türkçe başlıklar görünüyor", desktop, async (p) => {
   for (const [path, heading] of [
-    ["/", "Matematik Arkadaşın burada."],
+    ["/", "Hangi soruyu birlikte çözelim?"],
     ["/coz", "Soru Çöz"],
     ["/konular", "Konular"],
     ["/defter", "Soru Defterim"],
@@ -76,9 +83,40 @@ await test("Tüm sayfalar açılıyor ve Türkçe başlıklar görünüyor", des
   await p.screenshot({ path: `${OUT}/ana-sayfa-masaustu.png`, fullPage: true });
 });
 
+await test("Ana ekranda üç temel işlem öncelikli (Fotoğraf çek, Soru yükle, Soru yaz)", { ...devices["iPhone 13"] }, async (p) => {
+  await p.goto(base + "/");
+  for (const name of ["Fotoğraf çek", /Soru yükle/, "Soru yaz"]) await p.getByRole("button", { name }).first().waitFor();
+  // Alt menü sade: 3 sayfa + Diğer
+  const items = await p.getByRole("navigation", { name: "Alt menü" }).locator("li").count();
+  expect(items === 4, `Alt menüde 4 öğe olmalı, var: ${items}`);
+  await p.getByRole("button", { name: "Diğer sayfalar" }).click();
+  await p.getByRole("link", { name: "Konular" }).waitFor();
+  await p.keyboard.press("Escape");
+  await p.screenshot({ path: `${OUT}/ana-sayfa-mobil.png`, fullPage: true });
+  await p.getByRole("button", { name: "Soru yaz" }).click();
+  await p.waitForURL(/yontem=yaz/);
+  await p.getByLabel("Sorunu yaz").waitFor();
+  // Küçük ekranda dokunma hedefleri en az 44 px
+  const small = await p.evaluate(() =>
+    [...document.querySelectorAll("main button, nav a, nav button")]
+      .filter((el) => el.offsetParent !== null)
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && (r.height < 40 || r.width < 40)).length,
+  );
+  expect(small === 0, `${small} adet 40 px'den küçük dokunma hedefi var`);
+});
+
+await test("Güvenlik başlıkları (CSP, nosniff, çerçeve yasağı)", desktop, async (p) => {
+  const r = await p.request.get(base + "/");
+  const h = r.headers();
+  expect(/default-src 'self'/.test(h["content-security-policy"] ?? ""), "CSP yok");
+  expect(/frame-ancestors 'none'/.test(h["content-security-policy"] ?? ""), "frame-ancestors yok");
+  expect(h["x-content-type-options"] === "nosniff", "nosniff yok");
+});
+
 await test("Demo modu açıkça etiketleniyor", desktop, async (p) => {
   await p.goto(base + "/");
-  await p.getByText("Demo modundasın").waitFor();
+  await p.getByText("Demo modu:").waitFor();
   await p.getByText("DEMO MODU — yapay zekâ bağlı değil").waitFor();
 });
 
@@ -225,12 +263,59 @@ await test("PWA: manifest ve service worker erişilebilir", desktop, async (p) =
   expect(registered, "Service worker kaydedilmeli");
 });
 
+if (mockBase) {
+  await test("Aile PIN'i: PIN'siz yapay zekâ isteği reddedilir, yanlış PIN kabul edilmez", desktop, async (p) => {
+    const r = await p.request.post(mockBase + "/api/solve", { data: { text: "2x+5=15", mode: "full" } });
+    expect(r.status() === 401, `PIN'siz istek 401 olmalı, gelen ${r.status()}`);
+    await p.goto(mockBase + "/coz");
+    await p.getByLabel("Aile PIN'i").fill("1111");
+    await p.getByRole("button", { name: "Giriş" }).click();
+    await p.getByText("PIN yanlış").waitFor();
+    await p.getByLabel("Aile PIN'i").fill("2468");
+    await p.getByRole("button", { name: "Giriş" }).click();
+    await p.getByLabel("Aile PIN'i").waitFor({ state: "detached" });
+    const cookies = await p.context().cookies();
+    const auth = cookies.find((c) => c.name === "ma_auth");
+    expect(auth && auth.httpOnly && auth.sameSite === "Strict", "Erişim çerezi HttpOnly + SameSite=Strict olmalı");
+  });
+
+  await test("Fotoğrafta iki soru: öğrenciye hangisini çözeceği sorulur, okunan soru doğrulatılır", desktop, async (p) => {
+    await p.goto(mockBase + "/coz");
+    await p.getByLabel("Aile PIN'i").fill("2468");
+    await p.getByRole("button", { name: "Giriş" }).click();
+    await p.getByLabel("Aile PIN'i").waitFor({ state: "detached" });
+    // 2x2 beyaz PNG
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVR42mP8z8DwnwEJMOIAAP0gAgEnU0Y1AAAAAElFTkSuQmCC", "base64");
+    await p.locator('input[aria-label="Galeriden fotoğraf seç"]').setInputFiles({ name: "soru.png", mimeType: "image/png", buffer: png });
+    await p.getByText("Önizleme").waitFor();
+    await p.getByRole("button", { name: "Soruyu çöz" }).click();
+    await p.getByText("Fotoğrafta iki soru görüyorum").waitFor();
+    await p.screenshot({ path: `${OUT}/coklu-soru-secimi.png`, fullPage: true });
+    await p.getByRole("button", { name: /1\. soru/ }).click();
+    await p.getByText("Doğru okumuş muyum?").waitFor();
+    await p.getByText("TEST SAĞLAYICISI").first().waitFor();
+    await p.getByRole("button", { name: "Hayır, düzelteceğim" }).click();
+    await p.getByLabel("Soruyu doğru hâliyle yaz:").waitFor();
+  });
+
+  await test("Sorunun bir kısmı kesikse çözüm uydurulmaz", desktop, async (p) => {
+    const ctx = p.context();
+    await p.goto(mockBase + "/coz");
+    await p.getByLabel("Aile PIN'i").fill("2468");
+    await p.getByRole("button", { name: "Giriş" }).click();
+    await p.getByLabel("Aile PIN'i").waitFor({ state: "detached" });
+    const r = await ctx.request.post(mockBase + "/api/solve", { data: { text: "[test:unreadable] yarım soru", mode: "full" } });
+    const j = await r.json();
+    expect(j.ok === false && j.code === "UNREADABLE", "Kesik soruda UNREADABLE dönmeli");
+  });
+}
+
 await browser.close();
-if (server) {
+for (const srv of servers) {
   try {
-    process.kill(-server.pid, "SIGTERM");
+    process.kill(-srv.pid, "SIGTERM");
   } catch {
-    server.kill();
+    srv.kill();
   }
 }
 

@@ -38,7 +38,7 @@ export function PlayerControls({ controller, state, rate, onRate, voiceOn, onTog
         </Button>
         <Button
           size="icon-lg"
-          className={cn("rounded-full", playing && "animate-pulse-ring")}
+          className={cn("rounded-full", playing && "ring-4 ring-primary/25")}
           onClick={() => {
             if (!playing) beforePlay?.();
             controller.toggle();
@@ -78,7 +78,7 @@ export function PlayerControls({ controller, state, rate, onRate, voiceOn, onTog
               role="radio"
               aria-checked={rate === r}
               onClick={() => onRate(r)}
-              className={cn("min-h-9 rounded-xl px-2.5 text-sm font-bold transition-colors", rate === r ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}
+              className={cn("min-h-11 min-w-11 rounded-xl px-2.5 text-sm font-bold transition-colors", rate === r ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70")}
             >
               {String(r).replace(".", ",")}x
             </button>

@@ -120,6 +120,12 @@
     overflow-y: hidden;
     padding: 0.25rem 0;
   }
+  /* Anlatım duraklatılınca tahtadaki yazma/çizim animasyonları da durur; devam edince kaldığı yerden sürer */
+  .board-paused *,
+  .board-paused *::before,
+  .board-paused *::after {
+    animation-play-state: paused !important;
+  }
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }

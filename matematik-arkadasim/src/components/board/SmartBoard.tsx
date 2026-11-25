@@ -26,6 +26,8 @@ interface Props {
   visibleUntil: number;
   playToken: number;
   speaking: boolean;
+  /** Anlatım duraklatıldıysa tahta animasyonları da duraklar */
+  paused?: boolean;
   chunkIndex: number;
   segment?: NarrationSegment;
   /** Gizli (henüz açılmamış) adımlar: ipucu / birlikte çözme modlarında */
@@ -37,7 +39,7 @@ interface Props {
 /**
  * Akıllı matematik tahtası: adımlar sırayla, animasyonla yazılır; konuşulan adım ve cümle vurgulanır.
  */
-export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speaking, chunkIndex, segment, hiddenSteps, onSelectStep, renderStepExtra }: Props) {
+export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speaking, paused, chunkIndex, segment, hiddenSteps, onSelectStep, renderStepExtra }: Props) {
   const currentRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -45,7 +47,11 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
   }, [currentIndex, playToken]);
 
   return (
-    <section aria-label="Akıllı tahta" className="board-surface relative overflow-hidden rounded-3xl border-2 border-border p-3 shadow-card sm:p-5">
+    <section
+      aria-label="Akıllı tahta"
+      data-paused={paused ? "true" : "false"}
+      className={cn("board-surface relative overflow-hidden rounded-3xl border-2 border-border p-3 shadow-card sm:p-5", paused && "board-paused")}
+    >
       <ol className="flex flex-col gap-3">
         {steps.slice(0, visibleUntil + 1).map((step, i) => {
           const current = i === currentIndex;
@@ -70,7 +76,7 @@ export function SmartBoard({ steps, currentIndex, visibleUntil, playToken, speak
                   className={cn(
                     "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold",
                     current ? "bg-primary text-primary-foreground" : i < currentIndex ? "bg-success/20 text-success-strong" : "bg-muted text-muted-foreground",
-                    current && speaking && "animate-pulse-ring",
+                    current && speaking && "ring-4 ring-primary/30",
                   )}
                 >
                   {i < currentIndex ? <CheckCircle2 className="size-5" aria-hidden /> : i + 1}
