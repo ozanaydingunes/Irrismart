@@ -1,10 +1,10 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import type { z } from "zod";
-import { AUTH_COOKIE, cookieHeader, isValidSessionId, newSessionId, parseCookies, SESSION_COOKIE, verifyAuthToken } from "./auth";
+import { AUTH_COOKIE, cookieHeader, isValidSessionId, newSessionId, parseCookies, requestIsHttps, SESSION_COOKIE, verifyAuthToken } from "./auth";
 import { getConfig } from "./config";
 import { logError } from "./log";
-import { checkAndConsume } from "./quota";
+import { checkAndConsume, dailyQuestionLimit, questionAllowed, recordQuestion } from "./quota";
 import { clientKey } from "./rateLimit";
 import { getStore } from "./store";
 
@@ -23,6 +23,7 @@ export interface RequestIdentity {
   ip: string;
   isNewSession: boolean;
   authenticated: boolean;
+  https: boolean;
 }
 
 export function identify(req: Request): RequestIdentity {
@@ -34,6 +35,7 @@ export function identify(req: Request): RequestIdentity {
     sessionId: valid ? sid : newSessionId(),
     ip: clientKey(req.headers),
     isNewSession: !valid,
+    https: requestIsHttps(req),
     authenticated: !cfg.access.pin || verifyAuthToken(cfg.access.sessionSecret, cookies[AUTH_COOKIE]),
   };
 }
@@ -44,7 +46,7 @@ export function accessMisconfigured(): boolean {
 }
 
 function withSession(res: Response, id: RequestIdentity): Response {
-  if (id.isNewSession) res.headers.append("set-cookie", cookieHeader(SESSION_COOKIE, id.sessionId, 365 * 86400, getConfig().isProduction));
+  if (id.isNewSession) res.headers.append("set-cookie", cookieHeader(SESSION_COOKIE, id.sessionId, 365 * 86400, id.https));
   return res;
 }
 
@@ -53,6 +55,8 @@ export interface GuardOptions<S extends z.ZodTypeAny> {
   maxBodyBytes: number;
   /** Bu istek yapay zekâ kotasından düşülsün mü? (demo/yerel yanıtlar düşülmez) */
   countsTowardQuota: (input: z.infer<S>) => boolean;
+  /** Yeni soru mu? (günlük soru sınırına tabi; hak yalnızca başarılı çözümde düşer) */
+  countsAsQuestion?: (input: z.infer<S>) => boolean;
   handle: (input: z.infer<S>, meta: { remainingToday?: number; identity: RequestIdentity }) => Promise<Response | Record<string, unknown>>;
 }
 
@@ -112,9 +116,36 @@ export async function guardedJsonRoute<S extends z.ZodTypeAny>(req: Request, opt
     remainingToday = d.remainingToday;
   }
 
+  const isQuestion = opts.countsTowardQuota(input) && !!opts.countsAsQuestion?.(input);
+  let questionInfo: { used: number; limit: number } | undefined;
+  if (isQuestion) {
+    try {
+      const limit = await dailyQuestionLimit(getStore(), cfg.limits.dailyQuestions);
+      const q = await questionAllowed(getStore(), limit);
+      if (!q.allowed) {
+        return withSession(
+          jsonError(429, "DAILY_LIMIT", `Bugünkü ${q.limit} soru hakkın doldu. Yarın Pi Hoca seni yine bekliyor! Bu sırada Soru Defterim'deki soruları tekrar edebilirsin.`, {
+            questionsUsed: q.used,
+            questionLimit: q.limit,
+          }),
+          id,
+        );
+      }
+      questionInfo = { used: q.used, limit: q.limit };
+    } catch (e) {
+      logError("quota", e);
+      return jsonError(503, "AI_ERROR", "Günlük soru sınırı şu an kontrol edilemedi. Biraz sonra tekrar dene.");
+    }
+  }
+
   try {
     const result = await opts.handle(input, { remainingToday, identity: id });
     if (result instanceof Response) return withSession(result, id);
+    if (isQuestion && questionInfo && (result as { ok?: boolean }).ok === true) {
+      const used = await recordQuestion(getStore()).catch(() => questionInfo!.used + 1);
+      (result as Record<string, unknown>).questionsUsed = used;
+      (result as Record<string, unknown>).questionLimit = questionInfo.limit;
+    }
     return withSession(NextResponse.json({ ...result, remainingToday }, { headers: { "cache-control": "no-store" } }), id);
   } catch (e) {
     logError("api", e);

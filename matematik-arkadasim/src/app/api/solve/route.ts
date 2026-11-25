@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     schema: solveRequestSchema,
     maxBodyBytes: Math.ceil(cfg.limits.maxImageBytes * 1.4) + 20_000,
     countsTowardQuota: () => cfg.provider !== "demo",
+    countsAsQuestion: () => true,
     handle: async (input) => {
       let image;
       if (input.image) {

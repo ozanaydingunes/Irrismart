@@ -13,6 +13,8 @@ export const MODEL_PRICES: Record<string, { input: number; output: number }> = {
 export const UNKNOWN_MODEL_PRICE = { input: 10, output: 40 };
 
 export function priceFor(model: string): { input: number; output: number } {
+  // Yerel Ollama modelleri ücretsizdir (yalnızca evdeki bilgisayarın elektriği)
+  if (model.startsWith("ollama:") || model === "mock") return { input: 0, output: 0 };
   const known = MODEL_PRICES[model];
   if (known) return known;
   const i = Number(process.env.MODEL_PRICE_INPUT);

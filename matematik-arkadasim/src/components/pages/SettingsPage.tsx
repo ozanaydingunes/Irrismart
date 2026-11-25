@@ -3,6 +3,7 @@
 import { Download, Play, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { ParentSettings } from "@/components/common/ParentSettings";
 import { ModeSelector } from "@/components/lesson/ModeSelector";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -199,6 +200,8 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
+      <ParentSettings status={status} />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -219,7 +222,11 @@ export function SettingsPage() {
           </div>
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             <li>Ses kayıtları hiçbir zaman saklanmaz; yalnızca tanınan metin kullanılır.</li>
-            <li>Sorular yapay zekâ ile çözülürken yalnızca soru metni/fotoğrafı sunucu üzerinden yapay zekâ sağlayıcısına iletilir.</li>
+            <li>
+              {status?.providerKind === "ollama"
+                ? "Sorular ve fotoğraflar evdeki bilgisayarda çalışan ücretsiz yerel modelle (Ollama) çözülür; internete gönderilmez."
+                : "Sorular yapay zekâ ile çözülürken yalnızca soru metni/fotoğrafı sunucu üzerinden yapay zekâ sağlayıcısına iletilir."}
+            </li>
             <li>Yapay zekâ durumu: {status ? (status.mode === "demo" ? "Demo modu (bağlı değil)" : status.provider) : "Bilinmiyor (çevrimdışı olabilirsin)"}</li>
             {status && status.dailyLimitPerClient > 0 && <li>Günlük yapay zekâ soru sınırı: {status.dailyLimitPerClient}</li>}
           </ul>

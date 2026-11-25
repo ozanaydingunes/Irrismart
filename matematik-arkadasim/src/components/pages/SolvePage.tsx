@@ -63,6 +63,7 @@ export function SolvePage() {
       return;
     }
     if (res.ok) {
+      void refreshStatus(); // günlük soru hakkı göstergesini güncelle
       setPhase({ kind: "lesson", result: res as SolveResult, mode: q.mode, image: q.image, key: Date.now() });
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -183,6 +184,21 @@ export function SolvePage() {
             </Card>
           )}
           <p className="text-muted-foreground">Sorunu fotoğrafla, yaz ya da sesle söyle. Öğretmenin tahtada adım adım anlatsın.</p>
+          {status?.mode === "ai" && status.dailyQuestionLimit > 0 && (
+            <p className="text-sm font-semibold text-primary" aria-live="polite">
+              Bugün kalan soru hakkın: {Math.max(0, status.dailyQuestionLimit - status.questionsUsedToday)} / {status.dailyQuestionLimit}
+            </p>
+          )}
+          {status?.localModel && !status.localModel.reachable && (
+            <p className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm" role="status">
+              <b className="text-warning-strong">Pi Hoca&apos;nın bilgisayarı kapalı görünüyor.</b> Evdeki bilgisayarın açık olduğundan ve Ollama&apos;nın çalıştığından emin ol.
+            </p>
+          )}
+          {status?.localModel?.reachable && !status.localModel.modelInstalled && (
+            <p className="rounded-2xl border border-warning/50 bg-warning/10 p-3 text-sm" role="status">
+              <b className="text-warning-strong">Yapay zekâ modeli henüz indirilmemiş</b> ({status.localModel.model}). Kurulum rehberindeki model indirme adımını yapın.
+            </p>
+          )}
           <QuestionInput onSubmit={solve} busy={false} demo={status?.mode === "demo"} initialMethod={params.get("yontem")} pendingImageKey={PENDING_IMAGE_KEY} />
         </>
       )}
@@ -193,6 +209,9 @@ export function SolvePage() {
             <Loader2 className="size-12 animate-spin text-primary" />
             <p className="text-lg font-bold">{phase.label}</p>
             <p className="text-muted-foreground">{LOADING_LINES[line]}</p>
+            {status?.providerKind === "ollama" && (
+              <p className="text-sm text-muted-foreground">Pi Hoca evdeki bilgisayarda ücretsiz çalışıyor; cevap bir iki dakika sürebilir.</p>
+            )}
           </CardContent>
         </Card>
       )}

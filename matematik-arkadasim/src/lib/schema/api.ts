@@ -55,6 +55,21 @@ export interface StatusResponse {
   /** Aile PIN'i etkin mi ve bu tarayıcı giriş yapmış mı */
   accessRequired: boolean;
   authenticated: boolean;
+  /** "ollama" (ücretsiz, yerel), "demo" veya (yalnızca açıkça izin verildiyse) ücretli sağlayıcı */
+  providerKind: string;
+  /** Ücretli yapay zekâ açık mı (varsayılan: hayır) */
+  paidAllowed: boolean;
+  /** Yerel model durumu (yalnızca Ollama için) */
+  localModel?: { reachable: boolean; modelInstalled: boolean; model: string };
+  questionsUsedToday: number;
+  /** 0 = sınırsız */
+  dailyQuestionLimit: number;
+  parentPinSet: boolean;
 }
+
+export const parentSettingsSchema = z.object({
+  pin: z.string().trim().min(1, "Ebeveyn PIN'ini yazın.").max(32),
+  dailyQuestions: z.number().int("Tam sayı girin.").min(0, "0 veya daha büyük olmalı.").max(200, "En fazla 200 olabilir."),
+});
 
 export const authRequestSchema = z.object({ pin: z.string().trim().min(1, "PIN'i yaz.").max(32) });

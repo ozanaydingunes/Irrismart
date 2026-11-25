@@ -11,7 +11,7 @@ mkdirSync(OUT, { recursive: true });
 const PORT = 3219;
 const srv = spawn("npx", ["next", "start", "-p", String(PORT)], {
   cwd: root,
-  env: { ...process.env, AI_PROVIDER: "demo", ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "" },
+  env: { ...process.env, AI_PROVIDER: "demo", ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "", COUNTER_STORE: "memory" },
   stdio: "ignore",
   detached: true,
 });

@@ -61,6 +61,21 @@ export function pinMatches(expected: string, given: string): boolean {
   return timingSafeEqual(a, b);
 }
 
+/**
+ * Çerez "Secure" işareti yalnızca bağlantı gerçekten HTTPS ise eklenir. Ev ağında düz http ile
+ * (ör. http://192.168.1.20:3000) bağlanan telefon Secure çerezleri kaydetmez; aksi hâlde PIN her seferinde
+ * yeniden sorulurdu. Vercel/ters vekil arkasında x-forwarded-proto dikkate alınır.
+ */
+export function requestIsHttps(req: Request): boolean {
+  const proto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  if (proto) return proto === "https";
+  try {
+    return new URL(req.url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function cookieHeader(name: string, value: string, maxAgeSec: number, secure: boolean): string {
   return `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSec}; HttpOnly; SameSite=Strict${secure ? "; Secure" : ""}`;
 }

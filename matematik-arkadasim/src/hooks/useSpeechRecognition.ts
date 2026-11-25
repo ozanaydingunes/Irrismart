@@ -62,6 +62,11 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
   }, []);
 
   const start = useCallback(() => {
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      // Ev ağında düz http ile açıldığında tarayıcılar mikrofonu engeller
+      setError("Sesle soru sormak için güvenli bağlantı (https) gerekiyor. Şimdilik soruyu yazabilir ya da fotoğrafını çekebilirsin.");
+      return;
+    }
     const Ctor = getCtor();
     if (!Ctor) {
       setError("Bu tarayıcı sesle soru sormayı desteklemiyor. Chrome, Edge veya Safari'yi deneyebilir ya da soruyu yazabilirsin.");

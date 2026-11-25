@@ -31,6 +31,8 @@ export interface CompletionResult {
 
 export interface AIProvider {
   readonly name: string;
+  /** Bu sağlayıcı için bir isteğin toplam süre bütçesi (yoksa varsayılan) */
+  readonly timeBudgetMs?: number;
   complete(req: CompletionRequest): Promise<CompletionResult>;
 }
 
@@ -45,6 +47,8 @@ export type AIErrorKind =
   | "truncated"
   | "bad_request"
   | "invalid_output"
+  | "unavailable" // yerel model motoruna (Ollama) ulaşılamıyor
+  | "model_missing" // yerel model indirilmemiş
   | "unknown";
 
 export class AIError extends Error {
@@ -78,6 +82,10 @@ export function userMessageFor(error: unknown): string {
         return "Bu isteğe yardımcı olamıyorum. Lütfen bir matematik sorusu gönder.";
       case "truncated":
         return "Çözüm çok uzun oldu ve yarıda kesildi. Soruyu biraz daha kısa yazmayı veya tek bir soru göndermeyi dene.";
+      case "unavailable":
+        return "Pi Hoca'nın çalıştığı ev bilgisayarına ulaşılamadı. Bilgisayarın açık olduğundan ve Ollama'nın çalıştığından emin olup tekrar dene.";
+      case "model_missing":
+        return "Pi Hoca'nın yapay zekâ modeli bilgisayara henüz indirilmemiş. Kurulum rehberindeki 'model indirme' adımını yapın.";
       case "invalid_output":
         return "Yapay zekânın çözümü doğrulamadan geçemedi. Lütfen tekrar dene.";
       default:

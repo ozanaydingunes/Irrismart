@@ -17,7 +17,8 @@ export default function Privacy() {
       </ul>
       <h2 className="text-lg font-bold">Sunucuya gidenler</h2>
       <ul className="list-disc space-y-1 pl-6">
-        <li>Soru metni veya fotoğrafı, çözüm için uygulamanın sunucusu üzerinden yapay zekâ sağlayıcısına (uygulamayı kuran kişinin seçtiği Anthropic veya OpenAI) iletilir. Sunucu bunları diske yazmaz ve günlük kayıtlarına eklemez.</li>
+        <li>Önerilen ücretsiz kurulumda soru metni ve fotoğrafı yalnızca evdeki bilgisayarda çalışan yerel modele (Ollama) gider; internete gönderilmez. Sunucu bunları diske yazmaz ve günlük kayıtlarına eklemez.</li>
+        <li>Ücretli bulut yapay zekâ servisleri varsayılan olarak kapalıdır; yalnızca ebeveyn açıkça açarsa kullanılır.</li>
         <li>Kötüye kullanımı önlemek için IP adresi ve rastgele bir oturum kimliği yalnızca <b>özetlenmiş (hash)</b> olarak sayaçlarda kısa süre tutulur.</li>
         <li>Sağlayıcıların veri saklama politikaları kendi sayfalarında açıklanır; uygulamayı kuran yetişkin bunları kontrol etmelidir.</li>
       </ul>

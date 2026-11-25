@@ -12,6 +12,7 @@ export async function POST(req: Request) {
     schema: practiceRequestSchema,
     maxBodyBytes: 10_000,
     countsTowardQuota: () => cfg.provider !== "demo",
+    countsAsQuestion: () => true,
     handle: async (input) => ({ ...(await practice(input)) }),
   });
 }

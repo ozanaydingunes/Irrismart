@@ -24,6 +24,7 @@ import { recordSpend } from "@/lib/server/quota";
 import { getStore } from "@/lib/server/store";
 import { findTopic } from "@/lib/topics";
 import { AnthropicProvider } from "./anthropic";
+import { OllamaProvider } from "./ollama";
 import { MockProvider } from "./mock";
 import { parseWithSchema } from "./json";
 import { OpenAIProvider } from "./openai";
@@ -44,6 +45,9 @@ import { AIError, userMessageFor, type AIProvider, type ChatTurn, type Completio
 const REQUEST_BUDGET_MS = 100_000;
 
 export function getProvider(cfg: ServerConfig = getConfig()): AIProvider | null {
+  if (cfg.provider === "ollama") return new OllamaProvider(cfg.ollama.baseUrl, cfg.ollama.model, cfg.ollama.lightModel, cfg.ollama.timeoutMs, cfg.ollama.authHeader);
+  // Ücretli sağlayıcılar yalnızca ALLOW_PAID_AI=1 ile (getConfig zaten denetler; burada ikinci güvence)
+  if (!cfg.paidAllowed && (cfg.provider === "anthropic" || cfg.provider === "openai")) return null;
   if (cfg.provider === "anthropic") return new AnthropicProvider(cfg.anthropic.apiKey, cfg.anthropic.model, cfg.anthropic.lightModel, cfg.anthropic.effort);
   if (cfg.provider === "openai") return new OpenAIProvider(cfg.openai.apiKey, cfg.openai.model, cfg.openai.lightModel, cfg.openai.baseUrl);
   if (cfg.provider === "mock") return new MockProvider();
@@ -81,12 +85,14 @@ async function completeValidated<T>(
   maxTokens: number,
   light = false,
 ): Promise<T> {
-  const deadline = Date.now() + REQUEST_BUDGET_MS;
+  const budget = provider.timeBudgetMs ?? REQUEST_BUDGET_MS;
+  const deadline = Date.now() + budget;
   const first = await provider.complete({ system, messages, maxTokens, light, deadline });
   await onUsage(first);
   const parsed = parseWithSchema(first.text, schema);
   if (parsed.ok) return parsed.data;
-  if (deadline - Date.now() < 20_000) throw new AIError(`invalid output: ${parsed.error}`, "invalid_output");
+  // Onarım denemesi için ilk çağrı kadar süre kalmadıysa vazgeç (yerel modelde ilk çağrı uzun sürebilir)
+  if (deadline - Date.now() < Math.max(20_000, budget * 0.4)) throw new AIError(`invalid output: ${parsed.error}`, "invalid_output");
   const retry = await provider.complete({
     system,
     messages: [

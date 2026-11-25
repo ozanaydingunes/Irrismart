@@ -23,7 +23,7 @@ async function post<T>(url: string, body: unknown, timeoutMs = 130_000): Promise
     if (!json) return { ok: false, code: "BAD_RESPONSE", message: "Sunucudan anlaşılır bir yanıt gelmedi. Lütfen tekrar dene." };
     return json as T | ApiFailure;
   } catch (e) {
-    if (e instanceof DOMException && e.name === "TimeoutError") return { ok: false, code: "TIMEOUT", message: "Yanıt çok uzun sürdü. Lütfen tekrar dene." };
+    if (e instanceof DOMException && e.name === "TimeoutError") return { ok: false, code: "TIMEOUT", message: "Yanıt çok uzun sürdü. Pi Hoca'nın bilgisayarı yavaş olabilir; biraz bekleyip tekrar dene." };
     return { ok: false, code: "NETWORK", message: "Sunucuya ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene." };
   }
 }
@@ -39,19 +39,20 @@ export async function solve(req: SolveRequest, opts: { useCache?: boolean } = {}
     const hit = await getCachedSolve(key).catch(() => null);
     if (hit) return hit;
   }
-  const res = await post<SolveResult | SolveFailure>("/api/solve", req);
+  // Yerel (ev bilgisayarındaki) model yavaş olabilir: 6 dakikaya kadar bekle
+  const res = await post<SolveResult | SolveFailure>("/api/solve", req, 360_000);
   if (res.ok && key) await putCachedSolve(key, res as SolveResult).catch(() => undefined);
   return res;
 }
 
 export function tutor(req: TutorRequest) {
-  return post<{ ok: true; source: "ai" | "demo"; reply: TutorReply } | ApiFailure>("/api/tutor", req, 100_000);
+  return post<{ ok: true; source: "ai" | "demo"; reply: TutorReply } | ApiFailure>("/api/tutor", req, 360_000);
 }
 
 export function check(req: CheckRequest) {
-  return post<{ ok: true; source: "local" | "ai" | "demo"; reply: CheckReply } | ApiFailure>("/api/check", req, 60_000);
+  return post<{ ok: true; source: "local" | "ai" | "demo"; reply: CheckReply } | ApiFailure>("/api/check", req, 180_000);
 }
 
 export function practice(req: PracticeRequest) {
-  return post<SolveResult | SolveFailure | ApiFailure>("/api/practice", req);
+  return post<SolveResult | SolveFailure | ApiFailure>("/api/practice", req, 360_000);
 }

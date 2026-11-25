@@ -17,7 +17,9 @@
     "eval:ai": "RUN_AI_EVAL=1 vitest run tests/ai-eval.test.ts --silent=false",
     "audit": "npm audit --omit=dev && npm audit",
     "api:test": "RUN_AI_EVAL=1 AI_EVAL_CONFIRM=1 AI_EVAL_LIMIT=1 vitest run tests/ai-eval.test.ts --silent=false",
-    "screenshots": "node e2e/screenshots.mjs"
+    "screenshots": "node e2e/screenshots.mjs",
+    "kurulum": "node scripts/kurulum.mjs",
+    "evde-baslat": "node scripts/evde-baslat.mjs"
   },
   "engines": {
     "node": ">=20.9"

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authRequestSchema } from "@/lib/schema/api";
-import { AUTH_COOKIE, AUTH_MAX_AGE, cookieHeader, issueAuthToken, pinMatches } from "@/lib/server/auth";
+import { AUTH_COOKIE, AUTH_MAX_AGE, cookieHeader, issueAuthToken, pinMatches, requestIsHttps } from "@/lib/server/auth";
 import { getConfig } from "@/lib/server/config";
 import { accessMisconfigured, jsonError } from "@/lib/server/handler";
 import { pinAttemptAllowed, recordPinFailure } from "@/lib/server/quota";
@@ -32,13 +32,13 @@ export async function POST(req: Request) {
     return jsonError(401, "AUTH_REQUIRED", "PIN yanlış. Tekrar dene.");
   }
   const res = NextResponse.json({ ok: true }, { headers: { "cache-control": "no-store" } });
-  res.headers.append("set-cookie", cookieHeader(AUTH_COOKIE, issueAuthToken(cfg.access.sessionSecret), AUTH_MAX_AGE, cfg.isProduction));
+  res.headers.append("set-cookie", cookieHeader(AUTH_COOKIE, issueAuthToken(cfg.access.sessionSecret), AUTH_MAX_AGE, requestIsHttps(req)));
   return res;
 }
 
 /** Çıkış: erişim çerezini siler. */
-export async function DELETE() {
+export async function DELETE(req: Request) {
   const res = NextResponse.json({ ok: true });
-  res.headers.append("set-cookie", cookieHeader(AUTH_COOKIE, "", 0, getConfig().isProduction));
+  res.headers.append("set-cookie", cookieHeader(AUTH_COOKIE, "", 0, requestIsHttps(req)));
   return res;
 }

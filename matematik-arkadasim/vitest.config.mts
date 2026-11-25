@@ -10,6 +10,8 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Testler proje klasörüne sayaç dosyası yazmasın
+    env: { COUNTER_STORE: "memory" },
     include: ["tests/**/*.test.ts"],
   },
 });

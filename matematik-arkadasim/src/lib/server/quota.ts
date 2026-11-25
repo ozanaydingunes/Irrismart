@@ -80,3 +80,44 @@ export async function recordPinFailure(store: CounterStore, ip: string, now = Da
   const win = Math.floor(now / (15 * 60_000));
   await store.incr(`pin:${hashId(ip)}:${win}`, 1, 16 * 60);
 }
+
+
+/* ───── Günlük yeni soru sınırı (aile geneli, ebeveyn değiştirebilir) ───── */
+
+const SETTING_DAILY_QUESTIONS = "ayar:gunluk-soru";
+
+/** Günlük soru sayacı ailenin saat dilimine göre gece yarısı sıfırlanır (varsayılan Türkiye). */
+export function questionDay(now = Date.now()): string {
+  const tz = process.env.APP_TIMEZONE?.trim() || "Europe/Istanbul";
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  } catch {
+    return utcDay(now);
+  }
+}
+
+/** Ebeveynin uygulamadan belirlediği sınır; yoksa ortam değişkenindeki varsayılan. 0 = sınırsız. */
+export async function dailyQuestionLimit(store: CounterStore, fallback: number): Promise<number> {
+  const raw = await store.get(SETTING_DAILY_QUESTIONS);
+  // değer +1 saklanır ki "0 = sınırsız" ile "ayarlanmamış" ayırt edilebilsin
+  return raw > 0 ? raw - 1 : fallback;
+}
+
+export async function setDailyQuestionLimit(store: CounterStore, value: number) {
+  if (!store.set) throw new Error("Bu depo ayar kaydetmeyi desteklemiyor");
+  await store.set(SETTING_DAILY_QUESTIONS, Math.round(value) + 1);
+}
+
+export async function questionsUsedToday(store: CounterStore, now = Date.now()) {
+  return store.get(`soru:${questionDay(now)}`);
+}
+
+/** Yeni soru için hak var mı? (Hak, çözüm BAŞARIYLA gelince `recordQuestion` ile düşer.) */
+export async function questionAllowed(store: CounterStore, limit: number, now = Date.now()) {
+  const used = await questionsUsedToday(store, now);
+  return { allowed: limit <= 0 || used < limit, used, limit };
+}
+
+export async function recordQuestion(store: CounterStore, now = Date.now()) {
+  return store.incr(`soru:${questionDay(now)}`, 1, 2 * 86400);
+}

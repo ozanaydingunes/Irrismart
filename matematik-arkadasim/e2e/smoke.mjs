@@ -17,7 +17,8 @@ async function startServer(port, env) {
   const srv = spawn("npx", ["next", "start", "-p", String(port)], {
     cwd: root,
     // Gerçek API anahtarları testlere asla verilmez
-    env: { ...process.env, ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "", ...env },
+    // Sayaçlar testte bellekte tutulur (proje klasöründe .data/ dosyası biriktirmesin)
+    env: { ...process.env, ANTHROPIC_API_KEY: "", OPENAI_API_KEY: "", UPSTASH_REDIS_REST_URL: "", UPSTASH_REDIS_REST_TOKEN: "", COUNTER_STORE: "memory", ...env },
     stdio: "ignore",
     detached: true, // süreç grubu: next-server alt süreciyle birlikte kapatılır
   });
