@@ -82,7 +82,7 @@ export function TutorPanel({ solution, stepIndex, onBeforeAsk, onPrevStep, onTea
     <Card className="scroll-mt-20 p-4" id="ogretmene-sor">
       <h2 className="mb-1 text-lg font-bold">Öğretmenine sor</h2>
       <p className="mb-3 text-sm text-muted-foreground">Anlatımı istediğin an durdurup soru sorabilirsin. Öğretmen bulunduğun adımı ({stepIndex + 1}. adım) dikkate alır.</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
         {ACTIONS.map(({ action, label, icon: Icon }) => (
           <button
             key={action}

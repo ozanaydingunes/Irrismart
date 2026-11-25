@@ -24,7 +24,7 @@ async function post<T>(url: string, body: unknown, timeoutMs = 130_000): Promise
     return json as T | ApiFailure;
   } catch (e) {
     if (e instanceof DOMException && e.name === "TimeoutError") return { ok: false, code: "TIMEOUT", message: "Yanıt çok uzun sürdü. Pi Hoca'nın bilgisayarı yavaş olabilir; biraz bekleyip tekrar dene." };
-    return { ok: false, code: "NETWORK", message: "Sunucuya ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene." };
+    return { ok: false, code: "NETWORK", message: "Pi Hoca'nın bilgisayarına ulaşılamadı. Evdeki bilgisayar açık mı? Ev dışındaysan Tailscale açık mı? Kontrol edip tekrar dene." };
   }
 }
 

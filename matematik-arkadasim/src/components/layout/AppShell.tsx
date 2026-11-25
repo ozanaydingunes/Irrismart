@@ -11,7 +11,9 @@ import { useStatus } from "@/hooks/useStatus";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 import { MOBILE_PRIMARY, NAV_ITEMS } from "./nav";
+import { ServerOfflineBanner } from "./ServerOfflineBanner";
 import { StudyTimer } from "./StudyTimer";
+import { SyncManager } from "./SyncManager";
 import { ThemeSync } from "./ThemeSync";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -33,38 +35,58 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         İçeriğe geç
       </a>
       {/* Masaüstü / tablet yan menü */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-2 border-r border-border bg-card/70 p-4 backdrop-blur md:flex">
-        <Link href="/" className="mb-4 flex items-center gap-2 rounded-2xl p-2" aria-label="Matematik Arkadaşım ana sayfa">
+      {/* Tablette (768–1279 px) ince simge şeridi: tahtaya daha çok yer kalır; geniş ekranda tam menü */}
+      <aside className="sticky top-0 hidden h-dvh w-24 shrink-0 flex-col gap-2 border-r border-border bg-card/70 p-2 backdrop-blur md:flex xl:w-64 xl:p-4">
+        <Link href="/" className="mb-4 flex items-center justify-center gap-2 rounded-2xl p-2 xl:justify-start" aria-label="Matematik Arkadaşım ana sayfa">
           <Logo className="size-10" />
-          <span className="text-lg font-extrabold leading-tight">
+          <span className="hidden text-lg font-extrabold leading-tight xl:inline">
             Matematik
             <br />
             Arkadaşım
           </span>
         </Link>
         <nav aria-label="Ana menü" className="flex flex-col gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+          {NAV_ITEMS.map(({ href, label, short, icon: Icon }) => (
             <Link
               key={href}
               href={href}
               aria-current={isActive(href) ? "page" : undefined}
+              title={label}
               className={cn(
-                "flex min-h-12 items-center gap-3 rounded-2xl px-3 font-semibold transition-colors",
+                "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[11px] font-semibold leading-tight transition-colors xl:min-h-12 xl:flex-row xl:justify-start xl:gap-3 xl:px-3 xl:text-base",
                 isActive(href) ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <Icon className="size-5" />
-              {label}
+              <Icon className="size-5 shrink-0" />
+              <span className="text-center xl:text-left">
+                <span className="xl:hidden">{short}</span>
+                <span className="hidden xl:inline">{label}</span>
+              </span>
             </Link>
           ))}
         </nav>
         <div className="mt-auto flex flex-col gap-2">
           {status && (
-            <span className={cn("rounded-xl px-3 py-2 text-xs font-semibold", status.mode === "demo" ? "bg-warning/15 text-warning-strong" : "bg-success/12 text-success-strong")}>
-              {status.mode === "demo" ? "DEMO MODU — yapay zekâ bağlı değil" : "Yapay zekâ öğretmen hazır"}
+            <span className={cn("rounded-xl px-2 py-2 text-center text-[11px] font-semibold xl:px-3 xl:text-left xl:text-xs", status.mode === "demo" ? "bg-warning/15 text-warning-strong" : "bg-success/12 text-success-strong")}>
+              {status.mode === "demo" ? (
+                <>
+                  <span className="xl:hidden">DEMO</span>
+                  <span className="hidden xl:inline">DEMO MODU — yapay zekâ bağlı değil</span>
+                </>
+              ) : (
+                <>
+                  <span className="xl:hidden">Hazır</span>
+                  <span className="hidden xl:inline">Pi Hoca hazır</span>
+                </>
+              )}
             </span>
           )}
-          <ThemeToggle />
+          <div className="hidden xl:block">
+            <ThemeToggle />
+          </div>
+          <div className="flex justify-center xl:hidden">
+            <ThemeToggle compact />
+          </div>
         </div>
       </aside>
 
@@ -89,6 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        <ServerOfflineBanner />
         {!online && (
           <div className="flex items-center gap-2 bg-warning/20 px-4 py-2 text-sm font-medium text-warning-strong" role="status">
             <WifiOff className="size-4 shrink-0" /> Çevrimdışısın. Kayıtlı sorularını Soru Defterim&apos;den açabilirsin; yeni soru çözmek için internet gerekir.
@@ -153,6 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </ul>
       </nav>
       <StudyTimer />
+      <SyncManager />
       <ThemeSync />
     </div>
   );

@@ -65,7 +65,7 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
   // Geniş ekranda özet açık, telefonda kapalı başlar (yalnızca tarayıcıda hesaplanır)
   const wideScreen = useSyncExternalStore(
     () => () => {},
-    () => window.matchMedia("(min-width: 1024px)").matches,
+    () => window.matchMedia("(min-width: 1280px)").matches,
     () => false,
   );
   const lessonRecorded = useRef(false);
@@ -305,7 +305,8 @@ export function LessonView({ result, initialMode, imageDataUrl, existingEntry, o
             </div>
           </details>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          {/* Tablette (dikey ve yatay) tahta tam genişlikte; çok geniş ekranda yanında öğretmen paneli */}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <div className="flex min-w-0 flex-col gap-3">
               <SmartBoard
                 steps={steps}

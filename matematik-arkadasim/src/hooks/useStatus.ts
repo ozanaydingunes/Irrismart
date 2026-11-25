@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { StatusResponse } from "@/lib/schema/api";
 
 let cached: StatusResponse | null = null;
@@ -9,13 +9,17 @@ let inflight: Promise<StatusResponse | null> | null = null;
 function fetchStatus(): Promise<StatusResponse | null> {
   if (cached) return Promise.resolve(cached);
   if (!inflight) {
-    inflight = fetch("/api/status", { cache: "no-store" })
+    inflight = fetch("/api/status", { cache: "no-store", signal: AbortSignal.timeout(8000) })
       .then((r) => (r.ok ? (r.json() as Promise<StatusResponse>) : null))
       .then((s) => {
         cached = s;
+        setReachable(s !== null);
         return s;
       })
-      .catch(() => null)
+      .catch(() => {
+        setReachable(false);
+        return null;
+      })
       .finally(() => {
         inflight = null;
       });
@@ -47,4 +51,26 @@ export function useStatus() {
     };
   }, []);
   return status;
+}
+
+
+/* ───── Pi Hoca bilgisayarına (ev sunucusuna) ulaşılabiliyor mu? ───── */
+let reachable: boolean | null = null; // null: henüz bilinmiyor
+const reachListeners = new Set<() => void>();
+function setReachable(v: boolean) {
+  if (reachable === v) return;
+  reachable = v;
+  reachListeners.forEach((l) => l());
+}
+
+/** true: ulaşılıyor, false: ulaşılamıyor, null: henüz denenmedi */
+export function useServerReachable(): boolean | null {
+  return useSyncExternalStore(
+    (cb) => {
+      reachListeners.add(cb);
+      return () => reachListeners.delete(cb);
+    },
+    () => reachable,
+    () => null,
+  );
 }
