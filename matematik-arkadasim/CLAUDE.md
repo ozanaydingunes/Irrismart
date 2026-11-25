@@ -34,6 +34,16 @@ dosyalara (www/, android/, kök package.json) bu proje için dokunma.
 - Anlatımda ezber dil ("karşıya at") yok; işlemin nedeni (eşitliğin dengesi vb.) anlatılır.
 - Fotoğrafta birden fazla soru → `status: "multiple"`; eksik/kesik bilgi → `unreadable` (tahmin yok).
 
+## Ev kurulumu (varsayılan)
+- Varsayılan sağlayıcı yerel Ollama (`gemma3:4b`, 8 GB RAM). Ücretli sağlayıcı yalnızca `ALLOW_PAID_AI=1` ile
+  ve asla yedek olarak kullanılmaz. Gemini entegre edilmez (API şartları 18 yaş altına izin vermiyor).
+- Uygulama ve Ollama 127.0.0.1'de dinler; cihazlar Tailscale Serve (HTTPS) ile bağlanır. Port yönlendirme,
+  `tailscale funnel`, güvenlik duvarını kapatma önerme. `--wifi` modu yalnızca isteğe bağlı yedek.
+- Tek seferde tek YZ isteği (`src/lib/ai/queue.ts`); fazlası Türkçe "meşgul" mesajı alır.
+- Eşitleme yalnızca ev sunucusunda dosyaya (`src/lib/server/syncStore.ts`, `.data/esitleme.json`);
+  fotoğraflar eşitlenmez. Sunucusuz ortamda (Vercel) eşitleme kapalıdır (501).
+- Gerçek model testi yapılmadan performans/doğruluk garantisi verme.
+
 ## Kod kuralları
 - API anahtarları yalnızca sunucuda (`src/lib/server/config.ts`). İstemci bileşenlerinde
   `process.env` gizli değişkenlerine erişme; `NEXT_PUBLIC_` önekiyle anahtar tanımlama.

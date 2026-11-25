@@ -1,5 +1,8 @@
 # Yayınlama Kılavuzu — Matematik Arkadaşım
 
+> ⚠️ **İsteğe bağlı, ücretli yol — önerilmez.** Önerilen kurulum: **[EV_KURULUMU.md](EV_KURULUMU.md)** (ücretsiz, yerel Ollama + Tailscale).
+
+
 Bu kılavuz uygulamayı **Vercel** üzerinde yayınlamayı adım adım anlatır. Hiçbir adım otomatik yapılmadı;
 ücretli işlemleri ve yayını sen başlatırsın.
 

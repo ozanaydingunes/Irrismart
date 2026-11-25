@@ -1,5 +1,9 @@
 # Kurulum Rehberi (sade anlatım)
 
+> ⚠️ **İsteğe bağlı, ücretli yol — önerilmez.** Bu rehber ücretli API ve internette yayın içindir.
+> Ücretsiz, verinin evde kaldığı önerilen kurulum için **[EV_KURULUMU.md](EV_KURULUMU.md)** dosyasına bakın.
+
+
 Bu rehber, Matematik Arkadaşım'ı **demo modundan gerçek yapay zekâ moduna** geçirmek için yapman
 gerekenleri adım adım anlatır. Teknik bilgi gerekmez. Daha ayrıntılı bilgi: `DEPLOYMENT_GUIDE.md`.
 

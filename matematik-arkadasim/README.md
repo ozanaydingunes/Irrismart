@@ -23,12 +23,18 @@ Sıradan bir soru çözücü değil: öğretmen soruyu tahtada adım adım yazar
 
 ## Kurulum
 
+> 🏠 **Önerilen: ücretsiz ev kurulumu.** Yapay zekâ evdeki Windows bilgisayarda (Ollama) çalışır;
+> telefon ve tabletler Tailscale ile güvenli HTTPS adresinden bağlanır. Adım adım, teknik bilgi
+> gerektirmeyen rehber: **[EV_KURULUMU.md](EV_KURULUMU.md)**.
+> Kısaca: `npm install` → `npm run kurulum` → `tailscale serve --bg 3000` (bir kez) → `npm run evde-baslat`.
+> Ücretli API ile internette yayın (KURULUM_REHBERI.md, DEPLOYMENT_GUIDE.md) **isteğe bağlıdır ve önerilmez**.
+
 Gereksinim: **Node.js 20.9+** (22 önerilir).
 
 ```bash
 cd matematik-arkadasim
 npm install
-cp .env.example .env.local     # API anahtarını buraya yaz (isteğe bağlı)
+npm run kurulum                # .env.local dosyasını ücretsiz ayarlarla yazar
 npm run dev                    # http://localhost:3000
 ```
 

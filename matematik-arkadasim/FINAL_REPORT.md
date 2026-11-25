@@ -195,3 +195,63 @@ Tüm ölçülerde görüntüler `npm run test:e2e` ile `e2e/screens/` klasörün
 Ayrıntılı ve resimsiz sade anlatım: `KURULUM_REHBERI.md`. Teknik ayrıntılar: `DEPLOYMENT_GUIDE.md`.
 
 **Bu aşamadan sonra yeni özellik geliştirilmedi.** Öncelik: gerçek API bağlantısı ve öğrenci kullanım testleri.
+
+---
+
+# Ek: Ücretsiz ev kurulumu ve çoklu cihaz (25.11.2026)
+
+## Yapılanlar
+- **Yerel yapay zekâ (Ollama)** varsayılan sağlayıcı oldu. 8 GB RAM için varsayılan model `gemma3:4b`,
+  bağlam penceresi 8192. Ücretli API yalnızca `ALLOW_PAID_AI=1` ile açılır ve asla yedek olarak devreye girmez.
+- **Tek seferde tek YZ isteği.** En fazla 2 istek sırada bekler. Fazlası "Pi Hoca şu an başka bir
+  soruyu çözüyor" mesajı alır.
+- **Günlük soru sınırı** varsayılan olarak 10'dur ve sunucuda uygulanır. Ebeveyn PIN'iyle Ayarlar ekranından değiştirilir.
+- **Telefon ve tablet erişimi.** Uygulama 127.0.0.1'de dinler. Cihazlar Tailscale Serve ile HTTPS
+  adresinden bağlanır, böylece mikrofon ve PWA çalışır. Port yönlendirme, güvenlik duvarı değişikliği
+  veya Ollama'nın dışa açılması gerekmez. İsteğe bağlı `--wifi` modu da var (HTTP; mikrofon ve PWA sınırlı).
+- **Bilgisayar kapalı uyarısı.** "Pi Hoca'nın bilgisayarına bağlanılamıyor…" mesajı gösterilir, 20 sn'de bir otomatik yeniden denenir.
+- **Cihazlar arası eşitleme.** Soru defteri, cevaplar, dersler ve çalışma süresi yalnızca ev bilgisayarında
+  (`.data/esitleme.json`) tutulur. Çakışmada son değişiklik geçerli olur. Silmeler diğer cihazlara yayılır.
+  Fotoğraflar eşitlenmez. Aile PIN'i gerekir.
+- **Tablet düzeni.** Yan menü (ray), xl altında tam genişlik tahta, md+ ekranda daha büyük formüller.
+  Dikey ve yatay kullanım desteklenir.
+- **Windows başlatıcıları:** `scripts/windows/PiHoca-Baslat.bat` ve `PiHoca-Baslat-WiFi.bat`.
+- **Rehber:** `EV_KURULUMU.md` (teknik olmayan, Türkçe). Ücretli rehberler "önerilmez" olarak işaretlendi.
+- **Düzeltme:** LAN üzerinden HTTP'de Secure çerez yüzünden PIN döngüsü oluşuyordu. Artık çerez yalnızca HTTPS'te Secure işaretleniyor.
+- **Düzeltme:** mutlak `DATA_DIR` yolu proje klasörünün altına yazılıyordu. Artık doğru çözümleniyor.
+
+## Kullanım şartları incelemesi (resmî metinler okundu)
+| Servis | Bulgu | Karar |
+|---|---|---|
+| Google Gemini API | Kullanıcılar 18+ olmalı; API istemcileri "18 yaş altındaki kişilere yönelik veya onlarca erişilmesi muhtemel" olamaz. Ücretsiz katmanda veriler ürün geliştirmede kullanılır ve insanlarca incelenebilir. | **Entegre edilmedi** |
+| Ollama | Hizmetleri kullanmak için 18+ gerekir. Yazılım MIT lisanslıdır. Yerel kullanımda istem ve veriler Ollama'ya gitmez. | Kurulum ve işletim **ebeveyn** tarafından yapılır |
+| Gemma (model) | Gemma 3 kullanım şartları ve yasaklı kullanım politikası geçerli; Gemma 4 Apache 2.0. | Lisans sahibi ebeveyn |
+| Tailscale | 16 yaş altına yönelik değil; reşit olmayanlar hesap açamaz/yönetemez. Kişisel plan ücretsiz (6 kullanıcı). Trafik uçtan uca şifreli; Tailscale meta veriyi görür. HTTPS açıkken cihaz adları herkese açık sertifika kayıtlarına girer. | Hesap ebeveynin; cihazlara çocuğun adı verilmez; Funnel kullanılmaz |
+
+## Bu turun gerçek test sonuçları (bu ortamda çalıştırıldı)
+- `npm run typecheck` ve `npm run lint`: hatasız.
+- `npx vitest run`: **343 geçti, 1 atlandı**. Yeni testler: tek istek kuyruğu, meşgul mesajı,
+  eşitleme deposu (son-yazan-kazanır, silme, sayfalama, kalıcılık, fotoğraf saklamama), eşitleme API'si
+  (PIN, boyut sınırı, sunucusuz ortamda kapalı), çalışma süresi birleştirme, 8 GB varsayılanları.
+- `npm run build`: başarılı.
+- `npm run test:e2e`: **32/32 senaryo geçti**. Kapsam: 5 telefon ölçüsü, 4 tablet ölçüsü
+  (820×1180, 1180×820, 1024×1366, 1366×1024; alt menü gizli, tahta geniş, taşma yok), masaüstü,
+  bilgisayar kapalı uyarısı, iki ayrı tarayıcı bağlamı arasında PIN'li eşitleme (telefonda kaydedilen
+  soru tablette görünür).
+
+## Test EDİLMEYENLER (dürüst not)
+- **Gerçek Ollama ve `gemma3:4b` ile hiç test yapılmadı.** Bu ortamda model indirilemedi.
+  Hız, bellek kullanımı ve matematiksel doğruluk için **hiçbir garanti verilmiyor**. 8 GB RAM'de
+  bir soru dakikalar sürebilir, model hata yapabilir. 4B boyutlu bir model fotoğraftaki soruyu yanlış okuyabilir.
+- **Gerçek telefon ve tabletler** (iOS Safari, Android Chrome) ile test yapılmadı. Testler Chromium'da
+  ekran ölçüsü taklidiyle yapıldı. iOS'ta Web Speech ile konuşma tanıma ve Türkçe ses, cihaza göre değişir.
+- **Tailscale gerçek ortamda denenmedi.** `evde-baslat` betiği yalnızca `tailscale serve status` çıktısını okur.
+- **Gizlilik notu:** Tarayıcıların konuşma tanıma özelliği (özellikle Android Chrome) sesi yazıya
+  çevirmek için üreticinin (Google/Apple) sunucusunu kullanabilir. Bu uygulamanın denetimi dışındadır.
+  Tam gizlilik için soru yazarak veya fotoğrafla sorulabilir. Seslendirme (TTS) cihazda çalışır.
+
+## Senin yapman gerekenler
+`EV_KURULUMU.md` dosyasını sırayla izle: Node.js + Ollama + `ollama pull gemma3:4b` → `npm install`
+→ `npm run kurulum` → Tailscale (kendi hesabınla, HTTPS açık, nötr cihaz adı) → `tailscale serve --bg 3000`
+→ `PiHoca-Baslat.bat` → her telefon/tablette Tailscale + adresi aç + ana ekrana ekle.
+İlk hafta çözümleri birlikte kontrol edin.
