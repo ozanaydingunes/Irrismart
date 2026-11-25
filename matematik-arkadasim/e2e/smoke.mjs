@@ -2,6 +2,7 @@
 // Kullanım: npm run test:e2e   (BASE_URL verilirse sunucu başlatılmaz)
 // Ekran görüntüleri: e2e/screens/
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +16,8 @@ mkdirSync(OUT, { recursive: true });
 const PORT = 3217;
 const MOCK_PORT = 3218;
 const SYNC_PORT = 3219;
+const FAKE_AI_PORT = 3220;
+const CLOUD_PORT = 3221;
 const servers = [];
 
 async function startServer(port, env) {
@@ -43,13 +46,64 @@ async function startServer(port, env) {
 let base = process.env.BASE_URL ?? (await startServer(PORT, { AI_PROVIDER: "demo" }));
 const mockBase = process.env.BASE_URL
   ? null
-  : await startServer(MOCK_PORT, { AI_PROVIDER: "mock", ALLOW_MOCK_PROVIDER: "1", APP_ACCESS_PIN: "2468", APP_SESSION_SECRET: "e2e-test-gizli-anahtar-en-az-32-karakter-uzun" });
+  : await startServer(MOCK_PORT, { AI_PROVIDER: "mock", ALLOW_MOCK_PROVIDER: "1", LOCAL_SOLVER_FIRST: "0", APP_ACCESS_PIN: "2468", APP_SESSION_SECRET: "e2e-test-gizli-anahtar-en-az-32-karakter-uzun" });
 
 // 3) Ev sunucusu gibi: dosyaya kayıt (geçici klasör) + aile PIN'i → cihazlar arası eşitleme testi
 const syncDir = mkdtempSync(join(tmpdir(), "pihoca-esitleme-"));
 const syncBase = process.env.BASE_URL
   ? null
   : await startServer(SYNC_PORT, { AI_PROVIDER: "demo", COUNTER_STORE: "file", DATA_DIR: syncDir, APP_ACCESS_PIN: "1357", APP_SESSION_SECRET: "e2e-esitleme-gizli-anahtar-en-az-32-karakter" });
+
+// 4) Ücretsiz bulut kurulumu: Cloudflare + Groq'u taklit eden SAHTE yerel sunucu (gerçek hesap/ağ yok).
+//    Sahte yanıtlar demo çözücünün ürettiği geçerli bir çözümdür; gerçek model kalitesini ÖLÇMEZ.
+const fakeAi = { cf: "ok", groq: "ok", cfCalls: 0, groqCalls: 0, solution: null };
+let fakeServer = null;
+let cloudBase = null;
+if (!process.env.BASE_URL) {
+  const demoSol = await (await fetch(base + "/api/solve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: "2x + 5 = 15", mode: "full" }) })).json();
+  fakeAi.solution = { ...demoSol.solution, question: "Bir sayının 2 katının 5 fazlası 15'tir. Bu sayı kaçtır?" };
+  fakeServer = createServer((req, res) => {
+    let raw = "";
+    req.on("data", (c) => (raw += c));
+    req.on("end", () => {
+      const send = (status, obj) => {
+        res.writeHead(status, { "content-type": "application/json" });
+        res.end(JSON.stringify(obj));
+      };
+      const isCf = req.url.startsWith("/cf/client/v4/accounts/e2e-hesap/ai/v1/chat/completions");
+      const isGroq = req.url === "/groq/openai/v1/chat/completions";
+      if (!isCf && !isGroq) return send(404, {});
+      const body = JSON.parse(raw || "{}");
+      const sys = String(body.messages?.[0]?.content ?? "");
+      if (isCf) {
+        fakeAi.cfCalls++;
+        if (req.headers.authorization !== "Bearer e2e-cf-token") return send(401, { errors: [{ code: 10000, message: "Authentication error" }] });
+        if (fakeAi.cf === "quota") return send(429, { errors: [{ code: 4006, message: "You have used up your daily free allocation of 10,000 neurons." }] });
+      } else {
+        fakeAi.groqCalls++;
+        if (fakeAi.groq === "quota") return send(429, { error: { message: "Rate limit reached on tokens per day (TPD)", code: "rate_limit_exceeded" } });
+      }
+      const content = sys.includes("ETKİLEŞİMLİ ÖZEL DERS")
+        ? { message: "Hiç sorun değil! Terazi örneğiyle tekrar bakalım.", narration: "Hiç sorun değil! Terazi örneğiyle tekrar bakalım.", steps: [] }
+        : { status: "ok", solution: fakeAi.solution };
+      send(200, { model: body.model, choices: [{ message: { role: "assistant", content: JSON.stringify(content) }, finish_reason: "stop" }], usage: { prompt_tokens: 3000, completion_tokens: 1500 } });
+    });
+  });
+  await new Promise((r) => fakeServer.listen(FAKE_AI_PORT, "127.0.0.1", r));
+  cloudBase = await startServer(CLOUD_PORT, {
+    AI_PROVIDER: "cloudflare",
+    CLOUDFLARE_ACCOUNT_ID: "e2e-hesap",
+    CLOUDFLARE_API_TOKEN: "e2e-cf-token",
+    CLOUDFLARE_API_BASE_URL: `http://127.0.0.1:${FAKE_AI_PORT}/cf/client/v4`,
+    GROQ_API_KEY: "e2e-groq",
+    GROQ_BASE_URL: `http://127.0.0.1:${FAKE_AI_PORT}/groq/openai/v1`,
+    AI_FALLBACK_PROVIDERS: "groq",
+    APP_ACCESS_PIN: "8642",
+    APP_SESSION_SECRET: "e2e-bulut-gizli-anahtar-en-az-32-karakter-uzun",
+    // Ücretli anahtar verilse bile kullanılmamalı
+    ANTHROPIC_API_KEY: "sk-ant-e2e-asla-kullanilmaz",
+  });
+}
 
 const browser = await chromium.launch();
 const results = [];
@@ -405,7 +459,7 @@ for (const vp of VIEWPORTS) {
   });
 }
 
-await test("Ev bilgisayarı kapalıysa açık Türkçe uyarı görünür", desktop, async (p) => {
+await test("Sunucuya ulaşılamıyorsa açık Türkçe uyarı görünür", desktop, async (p) => {
   await p.goto(base + "/");
   await p.getByRole("button", { name: /Fotoğraf çek/ }).first().waitFor();
   await p.route("**/api/status", (r) => r.abort("connectionrefused"));
@@ -451,6 +505,64 @@ if (syncBase) {
     } finally {
       await tabletCtx.close();
     }
+  });
+}
+
+if (cloudBase) {
+  const cloudLogin = async (p) => {
+    await p.goto(cloudBase + "/coz");
+    await p.getByLabel("Aile PIN'i").fill("8642");
+    await p.getByRole("button", { name: "Giriş" }).click();
+    await p.getByLabel("Aile PIN'i").waitFor({ state: "detached" });
+  };
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVR42mP8z8DwnwEJMOIAAP0gAgEnU0Y1AAAAAElFTkSuQmCC", "base64");
+
+  await test("Bulut: PIN zorunlu; fotoğraf Cloudflare ile çözülür; Tekrar dinle ve tekrar 'Anlamadım' yeni istek göndermez", { ...devices["iPhone 13"] }, async (p) => {
+    const r = await p.request.post(cloudBase + "/api/solve", { data: { text: "Bir sayının 2 katının 5 fazlası 15'tir.", mode: "full" } });
+    expect(r.status() === 401, `PIN'siz istek 401 olmalı, gelen ${r.status()}`);
+    await cloudLogin(p);
+    let apiCalls = 0;
+    p.on("request", (q) => /\/api\/(solve|tutor|practice|check)/.test(q.url()) && apiCalls++);
+    await p.locator('input[aria-label="Galeriden fotoğraf seç"]').setInputFiles({ name: "soru.png", mimeType: "image/png", buffer: png });
+    await p.getByText("Göndermeden önce bak").waitFor();
+    await p.getByRole("button", { name: "Soruyu çöz" }).click();
+    await p.getByRole("button", { name: "Evet, doğru" }).click();
+    await p.getByText("Yapay zekâ çözümü").first().waitFor();
+    await p.locator('section[aria-label="Akıllı tahta"] .katex').first().waitFor();
+    expect(fakeAi.cfCalls === 1 && fakeAi.groqCalls === 0, `Cloudflare 1, Groq 0 çağrı beklenirdi (${fakeAi.cfCalls}/${fakeAi.groqCalls})`);
+    const before = apiCalls;
+    await p.getByRole("button", { name: "Bu adımı tekrar anlat" }).click();
+    await p.waitForTimeout(800);
+    expect(apiCalls === before, "Tekrar dinle yapay zekâya istek göndermemeli");
+    await p.locator("main").getByRole("button", { name: "Anlamadım" }).first().click();
+    await p.getByText("Terazi örneğiyle").first().waitFor();
+    const afterFirst = fakeAi.cfCalls;
+    await p.locator("main").getByRole("button", { name: "Anlamadım" }).first().click();
+    await p.waitForTimeout(800);
+    expect(fakeAi.cfCalls === afterFirst, "Aynı adım için ikinci 'Anlamadım' önbellekten gelmeli");
+    await p.screenshot({ path: `${OUT}/bulut-cloudflare-cozum.png` });
+  });
+
+  await test("Bulut: Cloudflare kotası dolunca onaylı ücretsiz Groq'a geçer; hepsi dolunca Türkçe uyarı; basit denklem yine çözülür", desktop, async (p) => {
+    await cloudLogin(p);
+    fakeAi.cf = "quota";
+    await p.goto(cloudBase + "/coz?q=" + encodeURIComponent("Ayşe'nin yaşının 2 katının 5 fazlası 15'tir. Ayşe kaç yaşındadır?") + "&mode=full");
+    await p.getByText("Yapay zekâ çözümü").first().waitFor();
+    expect(fakeAi.groqCalls === 1, `Groq 1 kez çağrılmalı (${fakeAi.groqCalls})`);
+    await p.goto(cloudBase + "/ayarlar");
+    await p.getByText("Ücretsiz yapay zekâ durumu").waitFor();
+    await p.getByText("Bugünkü ücretsiz kapasite doldu").first().waitFor();
+    await p.screenshot({ path: `${OUT}/bulut-ayarlar-kapasite.png`, fullPage: true });
+    const bodyText = await p.locator("main").innerText();
+    expect(!/kalan soru|soru hakkın/i.test(bodyText), "Kalan soru hakkı göstergesi olmamalı");
+    fakeAi.groq = "quota";
+    await p.goto(cloudBase + "/coz?q=" + encodeURIComponent("Mehmet'in parasının 3 katı 60 TL'dir. Mehmet'in kaç TL'si var?") + "&mode=full");
+    await p.getByText("bugünkü ücretsiz yapay zekâ kapasitesi doldu").first().waitFor();
+    await p.screenshot({ path: `${OUT}/bulut-kapasite-doldu.png` });
+    await p.goto(cloudBase + "/coz?q=" + encodeURIComponent("3x + 4 = 25") + "&mode=full");
+    await p.getByText("Yerel hesaplama — yapay zekâ kullanılmadı").waitFor();
+    fakeAi.cf = "ok";
+    fakeAi.groq = "ok";
   });
 }
 
@@ -502,6 +614,7 @@ if (mockBase) {
 }
 
 await browser.close();
+fakeServer?.close();
 rmSync(syncDir, { recursive: true, force: true });
 for (const srv of servers) {
   try {
